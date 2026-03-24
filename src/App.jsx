@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { GlobalProvider } from './context/GlobalState';
 import './index.css';
-import Login     from './pages/Login';
-import Layout    from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Agenda    from './pages/Agenda';
-import Clients   from './pages/Clients';
-import Services  from './pages/Services';
-import Payments  from './pages/Payments';
-import Inventory from './pages/Inventory';
-import Users     from './pages/Users';
+import Login     from './features/auth/Login';
+import Layout    from './components/layout/Layout';
+import Dashboard from './features/dashboard/Dashboard';
+import Agenda    from './features/agenda/Agenda';
+import Clients   from './features/clients/Clients';
+import Services  from './features/services/Services';
+import Payments  from './features/payments/Payments';
+import Inventory from './features/inventory/Inventory';
+import Users     from './features/users/Users';
 
 function AppContent() {
   const [user, setUser] = useState(null); // null when not logged in

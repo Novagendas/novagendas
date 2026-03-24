@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useGlobalState } from '../context/GlobalState';
+import { useGlobalState } from '../../context/GlobalState';
 
 /* ─── Helpers ──────────────────────────────────────────── */
 const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
