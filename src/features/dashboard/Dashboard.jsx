@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGlobalState } from '../context/GlobalState';
+import { useGlobalState } from '../../context/GlobalState';
 
 /* ── Stat card ───────────────────────────────────────── */
 const StatCard = ({ label, value, sub, color, icon, delay = 0 }) => (
