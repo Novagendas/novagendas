@@ -1,9 +1,11 @@
 import React, { useState, useRef } from 'react';
+import { supabase } from '../../Supabase/supabaseClient';
 
-export default function Login({ onLogin }) {
+export default function Login({ tenant, onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('Credenciales inválidas.');
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [focusedInput, setFocusedInput] = useState(null);
@@ -24,24 +26,70 @@ export default function Login({ onLogin }) {
     { email: 'especialista@soleil.com', pass: 'especialista', user: { name: 'Dra. Fabiola Rodríguez', email: 'especialista@soleil.com', role: 'especialista' } },
   ];
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(false);
 
+    try {
+      // Validamos que la cuenta inicie sesión solo dentro de su propio negocio/tienda
+      if (!tenant || !tenant.id) {
+         setError(true);
+         setLoading(false);
+         console.error("No hay contexto de tienda para validar el login.");
+         return;
+      }
+
+      const { data: users, error: dbErr } = await supabase
+        .from('usuario') // Postgres makes unquoted tables lowercase internally
+        .select('*, rolpermisos(idrol)')
+        .eq('email', email)
+        .eq('contraseña', password)
+        .eq('idnegocios', tenant.id);
+
+      if (!dbErr && users && users.length > 0) {
+        const u = users[0];
+        let role = 'recepcion';
+        
+        if (u.rolpermisos && u.rolpermisos.length > 0) {
+          const idRol = u.rolpermisos[0].idrol;
+          if (idRol === 1) role = 'admin';
+          else if (idRol === 2) role = 'especialista';
+          else if (idRol === 3) role = 'recepcion';
+        }
+        
+        onLogin({
+          id: u.idusuario,
+          name: u.nombre + ' ' + u.apellido,
+          email: u.email,
+          role: role
+        });
+        return;
+      }
+    } catch(err) {
+      console.warn("Error validando usuario en BBDD, intentando fallback:", err);
+    }
+
+    // Fallback MOCK - also scoped to tenant subdomain
     setTimeout(() => {
       const match = MOCK_USERS.find(u => u.email === email && u.pass === password);
-      const fallbackMatch = password === '1' || password === 'admin' ? MOCK_USERS[0] : null;
-
       if (match) {
+        // Validate mock user belongs to this tenant's subdomain
+        const tenantSub = tenant?.subdomain || tenant?.id || '';
+        const emailDomain = match.user.email.split('@')[1]?.split('.')[0];
+        if (tenantSub && emailDomain && emailDomain !== tenantSub) {
+          setErrorMsg('Esta cuenta no está registrada en este negocio.');
+          setError(true);
+          setLoading(false);
+          return;
+        }
         onLogin(match.user);
-      } else if (fallbackMatch && (email === '1@1' || email === 'admin')) {
-        onLogin(fallbackMatch.user);
       } else {
+        setErrorMsg('Credenciales inválidas.');
         setError(true);
         setLoading(false);
       }
-    }, 800);
+    }, 600);
   };
 
   const handleMouseMove = (e) => {
@@ -181,7 +229,7 @@ export default function Login({ onLogin }) {
               }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-              Credenciales inválidas.
+              {errorMsg}
             </div>
           )}
 
