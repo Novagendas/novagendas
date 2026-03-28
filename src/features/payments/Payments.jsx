@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGlobalState } from '../context/GlobalState';
+import { useGlobalState } from '../../context/GlobalState';
 
 const METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / Daviplata'];
 

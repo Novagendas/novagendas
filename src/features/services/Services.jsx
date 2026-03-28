@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGlobalState } from '../context/GlobalState';
+import { useGlobalState } from '../../context/GlobalState';
 
 export default function Services() {
   const { services, addService, updateService, deleteService } = useGlobalState();
