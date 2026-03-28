@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGlobalState } from '../../context/GlobalState';
 
-export default function Inventory() {
+export default function Inventory({ tenant }) {
   const { inventory, addInventory, updateInventoryItem, updateStock } = useGlobalState();
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ name: '', category: 'Inyectables', initial: '', minStock: 5 });
@@ -100,7 +100,7 @@ export default function Inventory() {
       <div className="card w-full" style={{ padding: 0, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', maxHeight: '80vh' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Inventario Central Soleil</h3>
+            <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Inventario · {tenant?.name || 'Central'}</h3>
             <p style={{ margin: '0.2rem 0 0', fontSize: '0.77rem', color: 'var(--text-4)', fontWeight: 500 }}>{inventory.length} productos · {alertas} alertas activas</p>
           </div>
           <span className={`badge ${alertas > 0 ? 'badge-danger' : 'badge-success'}`}>

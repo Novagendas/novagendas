@@ -12,7 +12,7 @@ const ROUTE_META = {
   users:     { label: 'Gestión de Usuarios',     emoji: '🔑' },
 };
 
-export default function Layout({ children, user, currentRoute, onNavigate, onLogout }) {
+export default function Layout({ children, user, tenant, currentRoute, onNavigate, onLogout }) {
   const [theme, setTheme] = useState(() => localStorage.getItem('soleil_theme') || 'light');
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function Layout({ children, user, currentRoute, onNavigate, onLog
   return (
     <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden' }}>
       {/* Sidebar */}
-      <Sidebar user={user} currentRoute={currentRoute} onNavigate={onNavigate} onLogout={onLogout} />
+      <Sidebar user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={onNavigate} onLogout={onLogout} />
 
       {/* Main Area */}
       <div
@@ -126,7 +126,7 @@ export default function Layout({ children, user, currentRoute, onNavigate, onLog
               cursor: 'default',
               boxShadow: '0 2px 8px var(--primary-glow)',
             }}>
-              AD
+              {user?.name?.substring(0, 2).toUpperCase() || 'AD'}
             </div>
           </div>
         </header>
