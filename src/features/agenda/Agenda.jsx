@@ -138,7 +138,7 @@ export default function Agenda({ user }) {
   };
 
   /* ── Drag handlers ── */
-  const onDragStart = (e, appt, colDateStr) => {
+  const onDragStart = (e, appt) => {
     dragging.current = { id: appt.id, startDecHour: timeToDec(appt.time) };
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => { if (e.target) e.target.style.opacity = '0.45'; }, 0);
