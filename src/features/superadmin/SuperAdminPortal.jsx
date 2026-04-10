@@ -122,7 +122,7 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
 }
 
 /* UserForm — outside main to avoid remounting */
-function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
+function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }) {
   return (
     <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
@@ -140,8 +140,13 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
             {ROL_OPTIONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
         </Field>
-        <Field label="ID del Negocio">
-          <input type="number" className="input-field" value={form.idnegocios} onChange={e => setForm(f => ({...f, idnegocios: e.target.value}))} placeholder="ID del negocio (ver Negocios)" />
+        <Field label="Negocio al que pertenece">
+          <select className="input-field" value={form.idnegocios} onChange={e => setForm(f => ({...f, idnegocios: e.target.value}))}>
+            <option value="">Seleccione un negocio...</option>
+            {tenants && tenants.map(t => (
+              <option key={t.idnegocios} value={t.idnegocios}>{t.nombre} (ID: {t.idnegocios})</option>
+            ))}
+          </select>
         </Field>
         <Field label="Estado">
           <select className="input-field" value={form.idestado} onChange={e => setForm(f => ({...f, idestado: parseInt(e.target.value)}))}>
@@ -314,18 +319,20 @@ export default function SuperAdminPortal() {
   const userName  = id => { const u = users.find(u => u.idusuario === id); return u ? `${u.nombre} ${u.apellido}` : null; };
 
   /* ── Domain helper ── */
-  const rawHost  = window.location.hostname.replace('127.0.0.1', 'localhost');
-  const hostParts = rawHost.split('.');
-  const baseDomain = hostParts.length > 1 ? hostParts[hostParts.length - 1] : rawHost;
-  const port = window.location.port ? `:${window.location.port}` : '';
+  const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+  const hostHost  = window.location.hostname.replace(/^www\./, '').replace('127.0.0.1', 'localhost');
+  const hostParts = hostHost.split('.');
+  const baseDomain = (!isLocal && hostParts.length > 2) ? hostParts.slice(1).join('.') : (isLocal && hostParts.length > 1 ? hostParts.slice(1).join('.') : hostHost);
+  const protocol = isLocal ? 'http:' : 'https:';
+  const port = window.location.port ? `:${window.location.port}` : (isLocal ? ':5173' : '');
 
   /* ── Login screen ── */
   if (!adminLogged) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--surface-2)' }}>
       <form onSubmit={handleLogin} className="card flex-col gap-4" style={{ width: 360, padding: '2.5rem' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'linear-gradient(135deg, var(--primary), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 10px 25px var(--primary-glow)' }}>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <div style={{ width: 72, height: 72, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', overflow: 'hidden' }}>
+            <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
           </div>
           <h2 style={{ margin: '0 0 0.25rem' }}>Portal Super Admin</h2>
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-3)' }}>novagendas · Solo personal autorizado</p>
@@ -343,11 +350,11 @@ export default function SuperAdminPortal() {
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0.85rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg, var(--primary), var(--accent))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+              <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>nova<span style={{ color: 'var(--primary)' }}>agendas</span></div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>NovAgendas</div>
               <div style={{ fontSize: '0.62rem', color: 'var(--text-4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Super Admin</div>
             </div>
           </div>
@@ -381,7 +388,7 @@ export default function SuperAdminPortal() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead><tr>
-                  {['ID', 'Subdominio', 'Nombre / NIT', 'Teléfono', 'Admin', 'Deployed', 'Estado', 'Editar', 'Abrir'].map(h => <TH key={h}>{h}</TH>)}
+                  {['ID', 'Subdominio', 'Nombre / NIT', 'Teléfono', 'Deployed', 'Estado', 'Editar', 'Abrir'].map(h => <TH key={h}>{h}</TH>)}
                 </tr></thead>
                 <tbody>
                   {tenantLoad ? (
@@ -407,14 +414,7 @@ export default function SuperAdminPortal() {
                         {t.descripcion && <div style={{ fontSize: '0.69rem', color: 'var(--text-4)', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.descripcion}</div>}
                       </TD>
                       <TD style={{ color: 'var(--text-3)' }}>{t.telefono || '—'}</TD>
-                      <TD>
-                        {t.idusuarioadmin
-                          ? <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{userName(t.idusuarioadmin) || `#${t.idusuarioadmin}`}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-4)' }}>ID: {t.idusuarioadmin}</div>
-                            </div>
-                          : <span style={{ color: '#9ca3af' }}>—</span>}
-                      </TD>
+
                       <TD style={{ textAlign: 'center' }}>
                         <input type="checkbox" checked={!!t.deployed} onChange={() => toggleDeployed(t.idnegocios, t.deployed)}
                           style={{ width: 17, height: 17, cursor: 'pointer', accentColor: 'var(--primary)' }} />
@@ -433,7 +433,7 @@ export default function SuperAdminPortal() {
                         </button>
                       </TD>
                       <TD>
-                        <a href={`http://${t.dominio}.${baseDomain}${port}`} target="_blank" rel="noreferrer"
+                        <a href={`${protocol}//${t.dominio}.${baseDomain}${port}`} target="_blank" rel="noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none', fontSize: '0.8rem', padding: '4px 10px', border: '1px solid var(--primary)', borderRadius: 8 }}
                           onMouseEnter={e => e.currentTarget.style.background='var(--primary-light)'}
                           onMouseLeave={e => e.currentTarget.style.background='transparent'}>
@@ -558,7 +558,7 @@ export default function SuperAdminPortal() {
       {/* ══ User Modal ══ */}
       {userModal && userModal !== 'delete' && (
         <Modal title={userModal === 'add' ? 'Nuevo Usuario' : `Editar · ${userModal.nombre} ${userModal.apellido}`} onClose={() => setUserModal(null)}>
-          <UserForm form={uForm} setForm={setUForm} onSubmit={handleSaveUser} onDelete={() => deleteUser(userModal)} isEdit={userModal !== 'add'} saving={savingU} />
+          <UserForm form={uForm} setForm={setUForm} onSubmit={handleSaveUser} onDelete={() => deleteUser(userModal)} isEdit={userModal !== 'add'} saving={savingU} tenants={tenants} />
         </Modal>
       )}
     </div>

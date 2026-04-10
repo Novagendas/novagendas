@@ -16,7 +16,17 @@ import LandingPage      from './features/landing/LandingPage';
 import { supabase } from './Supabase/supabaseClient';
 
 function TenantApp({ tenant }) {
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('novagendas_user');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (new Date().getTime() < parsed.exp) return parsed.user;
+        else localStorage.removeItem('novagendas_user');
+      } catch (e) {}
+    }
+    return null;
+  });
   const [currentRoute, setCurrentRoute] = useState('dashboard');
 
   const renderRoute = () => {
@@ -31,7 +41,7 @@ function TenantApp({ tenant }) {
       case 'dashboard': return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
       case 'agenda':    return <Agenda user={user} />;
       case 'clients':   return <Clients user={user} />;
-      case 'services':  return <Services />;
+      case 'services':  return <Services user={user} tenant={tenant} />;
       case 'payments':  return <Payments />;
       case 'inventory': return <Inventory tenant={tenant} />;
       case 'users':     return user.role === 'admin' ? <Users /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
@@ -40,13 +50,18 @@ function TenantApp({ tenant }) {
   };
 
   if (!user) return <Login tenant={tenant} onLogin={(userObj) => {
-    setUser({ ...userObj, tenant_id: tenant.id });
+    const loggedUser = { ...userObj, tenant_id: tenant.id };
+    setUser(loggedUser);
+    localStorage.setItem('novagendas_user', JSON.stringify({
+      user: loggedUser,
+      exp: new Date().getTime() + 24 * 60 * 60 * 1000 // 24 hours
+    }));
     setCurrentRoute(userObj.role === 'especialista' ? 'agenda' : 'dashboard');
   }} />;
 
   return (
     <GlobalProvider tenantId={tenant.id}>
-      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} onLogout={() => setUser(null)}>
+      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }}>
         {renderRoute()}
       </Layout>
     </GlobalProvider>
@@ -138,7 +153,10 @@ export default function App() {
         </div>
         <h2 style={{ margin: 0 }}>Tienda No Encontrada</h2>
         <p style={{ color: 'var(--text-3)', margin: 0, fontSize: '0.9rem' }}>El subdominio al que intentas acceder no se encuentra registrado o ha sido suspendido.</p>
-        <button onClick={() => window.location.href = `http://${window.location.hostname.includes('localhost') ? 'localhost:5173' : 'novagendas.com'}`} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Ir al Inicio</button>
+        <button onClick={() => {
+          const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+          window.location.href = isLocal ? 'http://localhost:5173' : 'https://novagendas.com';
+        }} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Ir al Inicio</button>
       </div>
     </div>
   );

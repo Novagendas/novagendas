@@ -69,6 +69,14 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
   const uInitials = uName.substring(0, 2).toUpperCase();
   const uRole = user?.role || 'admin';
 
+  const [isDark, setIsDark] = React.useState(false);
+  React.useEffect(() => {
+    setIsDark(document.documentElement.getAttribute('data-theme') === 'dark');
+    const observer = new MutationObserver(() => setIsDark(document.documentElement.getAttribute('data-theme') === 'dark'));
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div style={{
       width: 256, minWidth: 256, height: '100vh',
@@ -81,11 +89,11 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
 
       {/* ── Brand ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.35rem 0.6rem 1.4rem', borderBottom: '1px solid var(--border)', marginBottom: '1.2rem' }}>
-        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, var(--primary) 0%, #6366f1 50%, var(--accent) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px var(--primary-glow)', flexShrink: 0 }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
+        <div style={{ width: 36, height: 36, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
+          <img src={isDark ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
         </div>
         <div>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.025em', lineHeight: 1.1, color: 'var(--text)' }}>Nova<span style={{ color: 'var(--primary)' }}>Agendas</span></h3>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, letterSpacing: '-0.025em', lineHeight: 1.1, color: 'var(--text)' }}>NovAgendas</h3>
           <p style={{ margin: 0, fontSize: '0.62rem', color: 'var(--text-4)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: '1px' }}>{tenant?.name || 'novagendas'}</p>
         </div>
       </div>
