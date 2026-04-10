@@ -186,28 +186,23 @@ export default function Login({ tenant, onLogin }) {
           <div style={{ textAlign: 'center' }}>
             <div
               style={{
-                width: 58,
-                height: 58,
+                width: 72,
+                height: 72,
                 borderRadius: 18,
-                background: 'linear-gradient(135deg, var(--primary, #3b82f6), var(--accent, #8b5cf6))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1.35rem',
-                boxShadow: '0 10px 25px -5px var(--primary-glow, rgba(59,130,246,0.3)), inset 0 1px 0 rgba(255,255,255,0.2)'
+                overflow: 'hidden'
               }}
             >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+              <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
             </div>
             <h2 style={{ margin: '0 0 0.35rem', fontSize: '1.85rem', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>
-              nova<span style={{ color: 'var(--primary, #3b82f6)' }}>agendas</span>
+              NovAgendas
             </h2>
             <p style={{ color: 'var(--text-3, #64748b)', fontSize: '0.98rem', margin: 0, fontWeight: 500 }}>
-              Centro de Medicina Estética Soleil
+              {tenant?.name || 'Plataforma Administrativa'}
             </p>
           </div>
 
@@ -376,7 +371,7 @@ export default function Login({ tenant, onLogin }) {
       {/* Footer hint */}
       <div style={{ position: 'absolute', bottom: '1.5rem', width: '100%', textAlign: 'center', zIndex: 1 }}>
         <p style={{ fontSize: '0.82rem', color: 'var(--text-4, #94a3b8)', fontWeight: 500, letterSpacing: '0.02em', margin: 0 }}>
-          Centro Médico Soleil © {new Date().getFullYear()}
+          {tenant?.name || 'NovaAgendas'} © {new Date().getFullYear()}
         </p>
       </div>
 

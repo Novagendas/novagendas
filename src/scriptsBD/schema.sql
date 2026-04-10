@@ -172,7 +172,8 @@ CREATE TABLE Pagos (
     IdMetodoPago INT REFERENCES MetodoPago(IdMetodoPago),
     Monto DECIMAL(10,2) NOT NULL,
     Estado VARCHAR(50) NOT NULL,
-    Observacion TEXT
+    Observacion TEXT,
+    IdNegocios INT REFERENCES Negocios(IdNegocios)
 );
 
 CREATE TABLE PagosCita (

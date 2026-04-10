@@ -26,12 +26,23 @@ export default function LandingPage() {
         </p>
 
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <a href={`http://admin.${window.location.hostname.replace('127.0.0.1', 'localhost')}:${window.location.port || '5173'}`} className="btn btn-primary" style={{ textDecoration: 'none', padding: '0.8rem 1.5rem', fontSize: '1rem', borderRadius: '1rem' }}>
-             Portal de Administración
-          </a>
-          <a href={`http://soleil.${window.location.hostname.replace('127.0.0.1', 'localhost')}:${window.location.port || '5173'}`} className="btn btn-outline" style={{ textDecoration: 'none', padding: '0.8rem 1.5rem', fontSize: '1rem', borderRadius: '1rem' }}>
-             Ver Tienda Demo
-          </a>
+          {(() => {
+            const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+            const baseDomain = window.location.hostname.replace(/^www\./, '').replace('127.0.0.1', 'localhost');
+            const protocol = isLocal ? 'http:' : 'https:';
+            const portPart = window.location.port ? `:${window.location.port}` : (isLocal ? ':5173' : '');
+            
+            return (
+              <>
+                <a href={`${protocol}//admin.${baseDomain}${portPart}`} className="btn btn-primary" style={{ textDecoration: 'none', padding: '0.8rem 1.5rem', fontSize: '1rem', borderRadius: '1rem' }}>
+                   Portal de Administración
+                </a>
+                <a href={`${protocol}//soleil.${baseDomain}${portPart}`} className="btn btn-outline" style={{ textDecoration: 'none', padding: '0.8rem 1.5rem', fontSize: '1rem', borderRadius: '1rem' }}>
+                   Ver Tienda Demo
+                </a>
+              </>
+            );
+          })()}
         </div>
       </div>
       
