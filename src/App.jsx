@@ -10,7 +10,7 @@ import Services  from './features/services/Services';
 import Payments  from './features/payments/Payments';
 import Inventory from './features/inventory/Inventory';
 import Users     from './features/users/Users';
-import LogsView from './features/logs/LogsView.jsx';
+import AuditLogs from './features/audit/AuditLogs.jsx';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import LandingPage      from './features/landing/LandingPage';
@@ -46,7 +46,7 @@ function TenantApp({ tenant }) {
       case 'payments':  return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
       case 'users':     return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
-      case 'logs':      return <LogsView tenant={tenant} />;
+      case 'logs':      return <AuditLogs tenant={tenant} />;
       default:          return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
   };
