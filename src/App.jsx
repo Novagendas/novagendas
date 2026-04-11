@@ -10,7 +10,7 @@ import Services  from './features/services/Services';
 import Payments  from './features/payments/Payments';
 import Inventory from './features/inventory/Inventory';
 import Users     from './features/users/Users';
-import LogsView  from './features/logs/LogsView';
+import LogsView from './features/logs/LogsView.jsx';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import LandingPage      from './features/landing/LandingPage';
