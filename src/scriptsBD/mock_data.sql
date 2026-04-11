@@ -1,105 +1,83 @@
--- SCRIPT DE INSERCIÓN DE DATOS DE PRUEBA (MOCK) PARA SUPABASE
--- Ejecutar en el Editor SQL de Supabase después de ejecutar schema.sql
+-- ==========================================
+-- 1. ESTADOS Y CATALOGOS MAESTROS
+-- ==========================================
 
--- 1. Estados Básicos
 INSERT INTO EstadoApp (IdEstadoApp, Estado) VALUES 
-(1, 'Activo'), 
-(2, 'Suspendido'),
-(3, 'Eliminado'),
-(4, 'En Espera'),
-(5, 'En Revisión'),
-(6, 'Deployed')
-ON CONFLICT DO NOTHING;
+(1, 'Activo'), (2, 'Suspendido'), (3, 'Eliminado'), (4, 'En Espera'), (5, 'En Revisión'), (6, 'Deployed');
 
 INSERT INTO Estado (IdEstado, Descripcion) VALUES 
-(1, 'Activo'), 
-(2, 'Inactivo') 
-ON CONFLICT DO NOTHING;
+(1, 'Activo'), (2, 'Inactivo');
 
 INSERT INTO Rol (IdRol, Nombre) VALUES 
-(1, 'admin'), 
-(2, 'recepcionista'), 
-(3, 'profesional') 
-ON CONFLICT DO NOTHING;
+(1, 'admin'), (2, 'recepcionista'), (3, 'profesional');
 
 INSERT INTO EstadoCita (IdEstadoCita, Descripcion) VALUES 
-(1, 'Confirmada'), 
-(2, 'En Espera'), 
-(3, 'Cancelada'), 
-(4, 'Completada') 
-ON CONFLICT DO NOTHING;
+(1, 'Confirmada'), (2, 'En Espera'), (3, 'Cancelada'), (4, 'Completada');
 
 INSERT INTO TipoCita (IdTipoCita, Descripcion) VALUES 
-(1, 'Valoracion'), 
-(2, 'Tratamiento'),
-(3, 'Seguimiento'),
-(4, 'Consulta'),
-(5, 'Control'),
-(6, 'Post-operatorio'),
-(7, 'Reunion'),
-(8, 'Otro')
-ON CONFLICT DO NOTHING;
+(1, 'Valoración'), (2, 'Tratamiento'), (3, 'Seguimiento'), (4, 'Consulta'), (5, 'Control'), (6, 'Otro');
 
--- 2. Negocios Iniciales
+INSERT INTO Permisos (IdPermiso, Nombre) VALUES 
+(1, '📊 Dashboard'), (2, '📅 Agenda'), (3, '👥 Pacientes'), (4, '💰 Pagos/Servicios'), (5, '📦 Inventario'), (6, '🔑 Usuarios');
+
+INSERT INTO MetodoPago (IdMetodoPago, Tipo) VALUES 
+(1, 'Efectivo'), (2, 'Tarjeta'), (3, 'Transferencia'), (4, 'Nequi / Daviplata');
+
+-- ==========================================
+-- 2. NEGOCIOS INICIALES
+-- ==========================================
+
 INSERT INTO Negocios (IdNegocios, NIT, Nombre, Dominio, IdEstadoApp, Descripcion) VALUES 
 (1, '901234567-1', 'Centro Soleil', 'soleil', 1, 'Centro de Medicina Estética'),
-(2, '902345678-2', 'Clínica Dra. Fabiola', 'drfabiola', 1, 'Clínica Dermatológica') 
-ON CONFLICT DO NOTHING;
+(2, '902345678-2', 'Clínica Especializada', 'clinica', 1, 'Clínica de prueba'),
+(3, '12345-6', 'Negocio de Prueba', 'prueba', 1, 'Negocio para pruebas de sistema');
 
--- 3. Usuarios de Prueba
-INSERT INTO Usuario (IdUsuario, Nombre, Apellido, Email, Contraseña, IdEstado, IdNegocios, Cedula) VALUES 
-(1, 'Admin', 'Soleil', 'admin@soleil.com', 'admin', 1, 1, '10000001'),
-(2, 'Karen', 'Useche', 'recepcion@soleil.com', 'recepcion', 1, 1, '10000002'),
-(3, 'Dra. Fabiola', 'Rodríguez', 'especialista@soleil.com', 'especialista', 1, 1, '10000003'),
-(4, 'Admin', 'Fabiola', 'admin@drfabiola.com', 'admin', 1, 2, '20000001')
-ON CONFLICT DO NOTHING;
+-- ==========================================
+-- 3. USUARIOS INICIALES (Hashing automático vía Trigger)
+-- ==========================================
 
--- 3.5. Permisos y Asignación de Roles (Actualizado por diseño de permisos detallados)
-INSERT INTO Permisos (IdPermiso, Nombre) VALUES 
-(1, '📊 Dashboard General'),
-(2, '📅 Agenda de Citas'),
-(3, '👥 Pacientes'),
-(4, '💰 Catálogo y Pagos'),
-(5, '📦 Inventario'),
-(6, '🔑 Gestión de Usuarios')
-ON CONFLICT DO NOTHING;
+INSERT INTO Usuario (IdUsuario, Nombre, Apellido, Email, password, IdEstado, IdNegocios, IsSuperAdmin, Cedula) VALUES 
+-- Personal Negocio 1 (Soleil)
+(4, 'Admin', 'Soleil', 'admin@soleil.com', 'admin', 1, 1, FALSE, '20000001'),
+(5, 'Karen', 'Useche', 'recepcion@soleil.com', 'recepcion', 1, 1, FALSE, '20000002'),
+(6, 'Dra. Fabiola', 'Rodríguez', 'especialista@soleil.com', 'especialista', 1, 1, FALSE, '20000003'),
+-- Personal Negocio 3 (Prueba)
+(7, 'Prueba', 'Admin', 'admin@prueba.com', 'admin', 1, 3, FALSE, '30000001');
 
-INSERT INTO RolPermisos (IdRolPermisos, IdUsuario, IdRol, IdPermiso) VALUES 
--- Admin Soleil (IdUsuario 1, IdRol 1): Todos los permisos (1-6)
-(1, 1, 1, 1), (2, 1, 1, 2), (3, 1, 1, 3), (4, 1, 1, 4), (5, 1, 1, 5), (6, 1, 1, 6),
--- Recepcionista Karen (IdUsuario 2, IdRol 2): Citas, Pacientes, Inventario (2, 3, 5)
-(7, 2, 2, 2), (8, 2, 2, 3), (9, 2, 2, 5),
--- Dra. Fabiola (IdUsuario 3, IdRol 3): Agenda de Citas (2)
-(10, 3, 3, 2),
--- Admin Dra.Fabiola (IdUsuario 4, IdRol 1): Todos
-(11, 4, 1, 1), (12, 4, 1, 2), (13, 4, 1, 3), (14, 4, 1, 4), (15, 4, 1, 5), (16, 4, 1, 6)
-ON CONFLICT DO NOTHING;
+-- ==========================================
+-- 4. PERMISOS Y ROLES (RolPermisos)
+-- ==========================================
 
--- Asignar el Admin responsable de cada negocio
-UPDATE Negocios SET IdUsuarioAdmin = 1 WHERE IdNegocios = 1;
-UPDATE Negocios SET IdUsuarioAdmin = 4 WHERE IdNegocios = 2;
+INSERT INTO RolPermisos (IdUsuario, IdRol, IdPermiso) VALUES 
+-- Admin Soleil (Id 4): Todos (1-6)
+(4, 1, 1), (4, 1, 2), (4, 1, 3), (4, 1, 4), (4, 1, 5), (4, 1, 6),
+-- Karen (Id 5): Recepcionista (2,3,5)
+(5, 2, 2), (5, 2, 3), (5, 2, 5),
+-- Dra. Fabiola (Id 6): Profesional (2)
+(6, 3, 2),
+-- Admin Prueba (Id 7): Todos (1-6)
+(7, 1, 1), (7, 1, 2), (7, 1, 3), (7, 1, 4), (7, 1, 5), (7, 1, 6);
 
--- 4. Clientes de Prueba
+-- ==========================================
+-- 5. ASIGNAR ADMINS A NEGOCIOS
+-- ==========================================
+
+UPDATE Negocios SET IdUsuarioAdmin = 4 WHERE IdNegocios = 1;
+UPDATE Negocios SET IdUsuarioAdmin = 7 WHERE IdNegocios = 3;
+
+-- ==========================================
+-- 6. DATOS DE NEGOCIO (INICIALES)
+-- ==========================================
+
 INSERT INTO Cliente (IdCliente, Nombre, Apellido, Cedula, Telefono, IdNegocios) VALUES 
 (1, 'Ana', 'Rodríguez', '1010123456', '+57 300 123 4567', 1),
 (2, 'María', 'Gómez', '52345678', '+57 320 987 6543', 1),
-(3, 'Carlos', 'Mendoza', '90012345', '+57 311 444 5555', 2) 
-ON CONFLICT DO NOTHING;
+(3, 'Carlos', 'Mendoza', '30000001', '+57 311 444 5555', 3);
 
--- 5. Categorías y Servicios
-INSERT INTO CategoriaServicio (IdCategoriaServicio, Descripcion, IdNegocios) VALUES 
-(1, 'Inyectables', 1),
-(2, 'Aparatología', 1),
-(3, 'Cosmetología', 2) 
-ON CONFLICT DO NOTHING;
+-- ==========================================
+-- 7. REINICIAR SECUENCIAS
+-- ==========================================
 
-INSERT INTO Servicios (IdServicios, Nombre, Descripcion, Precio, Duracion, IdCategoriaServicio, IdNegocios, Color) VALUES 
-(1, 'Aplicación Bótox (3 Zonas)', 'Retoque y botox general', 850000, 45, 1, 1, '#3b82f6'),
-(2, 'Depilación Láser', 'Cuerpo Completo', 450000, 60, 2, 1, '#2dd4bf'),
-(3, 'Limpieza Facial Profunda', 'Limpieza y extracción', 180000, 90, 3, 2, '#8b5cf6') 
-ON CONFLICT DO NOTHING;
-
--- Ajustes de secuencias de PostgreSQL para que los siguientes insertos autogenerados de la App funcionen sin colisión (ID's standarizados)
 SELECT setval('estadoapp_idestadoapp_seq', COALESCE((SELECT MAX(idestadoapp) FROM estadoapp), 1));
 SELECT setval('estado_idestado_seq', COALESCE((SELECT MAX(idestado) FROM estado), 1));
 SELECT setval('rol_idrol_seq', COALESCE((SELECT MAX(idrol) FROM rol), 1));

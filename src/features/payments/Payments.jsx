@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useGlobalState } from '../../context/GlobalState';
+import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import { useState, useEffect } from 'react';
 
 const METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / Daviplata'];
 
@@ -12,41 +12,133 @@ const METHOD_ICONS = {
 
 const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
 
-export default function Payments() {
-  const { payments, addPayment, deletePayment, updatePayment, clients, services, appointments } = useGlobalState();
+export default function Payments({ user, tenant }) {
+  const [payments, setPayments] = useState([]);
+  const [methods, setMethods] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+
+  const showSnack = (message, type = 'success') => {
+    setSnackbar({ show: true, message, type });
+    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+  };
+
   const [showModal, setShowModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [form, setForm] = useState({ clientId: '', serviceId: '', appointmentId: '', amount: '', method: 'Efectivo', note: '' });
+  const [form, setForm] = useState({ clientId: '', serviceId: '', amount: '', method: 'Efectivo', note: '' });
   const [filter, setFilter] = useState('all');
+
+  const fetchData = async () => {
+    if (!tenant?.id) return;
+    setLoading(true);
+
+    // Methods
+    const { data: methData } = await supabase.from('metodopago').select('*');
+    setMethods(methData || []);
+    if (methData?.length > 0 && !form.method) update('method', methData[0].tipo);
+
+    // Clients
+    const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
+    setClients(cliData || []);
+
+    // Services
+    const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
+    setServices(svcData || []);
+
+    // Local Payments
+    const { data: payData, error } = await supabase
+      .from('pagos')
+      .select('*, cliente(nombre, apellido), servicios(nombre)')
+      .eq('idnegocios', tenant.id)
+      .order('idpagos', { ascending: false });
+
+    if (!error) setPayments(payData || []);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [tenant]);
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   // Auto-fill amount when service selected
   const handleServiceChange = (serviceId) => {
-    const svc = services.find(s => s.id === parseInt(serviceId));
+    const svc = services.find(s => s.idservicios === parseInt(serviceId));
     update('serviceId', serviceId);
-    if (svc) update('amount', svc.price);
+    if (svc) update('amount', svc.precio);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.clientId || !form.amount) return;
-    addPayment({
-      clientId:      parseInt(form.clientId),
-      serviceId:     parseInt(form.serviceId),
-      appointmentId: parseInt(form.appointmentId) || null,
-      amount:        parseInt(form.amount),
-      method:        form.method,
-      note:          form.note,
-    });
-    setShowModal(false);
-    setForm({ clientId: '', serviceId: '', appointmentId: '', amount: '', method: 'Efectivo', note: '' });
+    setSaving(true);
+
+    const meth = methods.find(m => m.tipo === form.method) || methods[0];
+    
+    const payload = {
+      idmetodopago: meth?.idmetodopago || 1,
+      idcliente: parseInt(form.clientId),
+      idservicios: form.serviceId ? parseInt(form.serviceId) : null,
+      monto: parseInt(form.amount),
+      estado: 'Pagado',
+      observacion: form.note,
+      idnegocios: tenant.id
+    };
+
+    const { data, error } = await supabase.from('pagos').insert([payload]).select();
+    
+    if (!error) {
+      const client = clients.find(c => c.idcliente === parseInt(form.clientId));
+      await insertLog({
+        accion: 'CREATE',
+        entidad: 'Pago',
+        descripcion: `Se registró pago de ${fmt(payload.monto)} de ${client?.nombre || 'Paciente'} vía ${form.method}`,
+        idUsuario: user.idusuario || user.id,
+        idNegocios: tenant.id
+      });
+
+      // If there was a service, we could link it in PagosCita if we had an appt, 
+      // but for now let's just keep the payment record.
+
+      showSnack('Pago registrado correctamente');
+      fetchData();
+      setShowModal(false);
+      setForm({ clientId: '', serviceId: '', amount: '', method: methods[0]?.tipo || 'Efectivo', note: '' });
+    } else {
+      showSnack('Error al registrar pago', 'error');
+    }
+    setSaving(false);
   };
 
-  const filtered = filter === 'all' ? payments : payments.filter(p => p.method === filter);
+  const handleDelete = async (id) => {
+    const { error } = await supabase.from('pagos').delete().eq('idpagos', id);
+    if (!error) {
+      await insertLog({
+        accion: 'DELETE',
+        entidad: 'Pago',
+        descripcion: `Se eliminó registro de pago #${id}`,
+        idUsuario: user.idusuario || user.id,
+        idNegocios: tenant.id
+      });
+      showSnack('Registro de pago eliminado');
+      fetchData();
+    }
+    setDeleteTarget(null);
+  };
 
-  const totalRevenue = payments.reduce((s, p) => s + p.amount, 0);
-  const todayRevenue = payments.filter(p => p.date === new Date().toISOString().split('T')[0]).reduce((s, p) => s + p.amount, 0);
+  const filtered = filter === 'all' ? payments : payments.filter(p => {
+    const meth = methods.find(m => m.idmetodopago === p.idmetodopago);
+    return meth?.tipo === filter;
+  });
+
+  const totalRevenue = payments.reduce((s, p) => s + Number(p.monto), 0);
+  // Approx today revenue (comparing only date part)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayRevenue = payments.filter(p => p.fecha?.startsWith(todayStr)).reduce((s, p) => s + Number(p.monto), 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
@@ -96,11 +188,15 @@ export default function Payments() {
           </div>
         ))}
       </div>
-
-
-      {/* ── Filter Tabs ── */}
+      
+      {methods.length === 0 && !loading && (
+        <div className="alert alert-danger animate-fade-in" style={{ padding: '1.25rem', borderRadius: 'var(--radius)', background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', marginBottom: '1rem' }}>
+          <h4 style={{ margin: 0, color: 'var(--danger)', fontSize: '0.95rem' }}>Faltan métodos de pago</h4>
+          <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--danger)' }}>No se han encontrado opciones como Efectivo o Tarjeta. Corre el script de Mock Data en tu base de datos.</p>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: '0.4rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.3rem', width: 'fit-content' }}>
-        {['all', ...METHODS].map(m => (
+        {['all', ...methods.map(m => m.tipo)].map(m => (
           <button key={m} onClick={() => setFilter(m)}
             style={{
               padding: '0.35rem 0.9rem', borderRadius: 8, border: 'none', cursor: 'pointer',
@@ -109,7 +205,7 @@ export default function Payments() {
               fontWeight: filter === m ? 700 : 500, fontSize: '0.82rem',
               fontFamily: 'var(--font-main)', boxShadow: filter === m ? 'var(--shadow-xs)' : 'none',
               transition: 'var(--transition)',
-            }}>{m === 'all' ? '📊 Todos' : `${METHOD_ICONS[m]} ${m}`}</button>
+            }}>{m === 'all' ? '📊 Todos' : `${METHOD_ICONS[m] || '💰'} ${m}`}</button>
         ))}
       </div>
 
@@ -123,42 +219,35 @@ export default function Payments() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => {
-                const client  = clients.find(c => c.id === p.clientId);
-                const service = services.find(s => s.id === p.serviceId);
+              {loading ? (
+                <tr><td colSpan="7" style={{ padding: '4rem', textAlign: 'center', color: 'var(--primary)' }}>Cargando transacciones...</td></tr>
+              ) : filtered.map(p => {
+                const meth = methods.find(m => m.idmetodopago === p.idmetodopago);
                 return (
-                  <tr key={p.id}>
+                  <tr key={p.idpagos}>
                     <td>
                       <span style={{ fontWeight: 600, color: 'var(--text-2)', fontSize: '0.875rem' }}>
-                        {new Date(p.date + 'T12:00:00').toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(p.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 700, flexShrink: 0 }}>
-                          {client?.name?.charAt(0) || '?'}
-                        </div>
-                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>{client?.name || '—'}</span>
-                      </div>
+                      <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+                        {p.cliente ? `${p.cliente.nombre} ${p.cliente.apellido}` : 'Paciente Genérico'}
+                      </span>
                     </td>
                     <td>
-                      {service ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <span style={{ width: 8, height: 8, borderRadius: '50%', background: service.color, flexShrink: 0 }} />
-                          <span style={{ color: 'var(--text-2)', fontSize: '0.875rem', fontWeight: 500 }}>{service.name}</span>
-                        </div>
-                      ) : <span style={{ color: 'var(--text-4)' }}>—</span>}
+                      <span style={{ color: 'var(--text-2)', fontSize: '0.85rem' }}>{p.servicios?.nombre || '—'}</span>
                     </td>
                     <td>
                       <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
-                        {METHOD_ICONS[p.method]} {p.method}
+                        {METHOD_ICONS[meth?.tipo] || '💰'} {meth?.tipo || 'Desconocido'}
                       </span>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--success)' }}>{fmt(p.amount)}</span>
+                      <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--success)' }}>{fmt(p.monto)}</span>
                     </td>
                     <td>
-                      <span className="badge badge-success">{p.status}</span>
+                      <span className={`badge ${p.estado === 'Pagado' ? 'badge-success' : 'badge-warning'}`}>{p.estado}</span>
                     </td>
                     <td>
                       <button
@@ -199,10 +288,10 @@ export default function Payments() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="input-group">
                 <label>Paciente</label>
-                <select className="input-field" value={form.clientId} onChange={e => update('clientId', e.target.value)} required>
-                  <option value="" disabled>Selecciona paciente...</option>
-                  {clients.map(c => <option key={c.id} value={c.id}>{c.name} (CC {c.doc})</option>)}
-                </select>
+                 <select className="input-field" value={form.clientId} onChange={e => update('clientId', e.target.value)} required>
+                    <option value="" disabled>Selecciona paciente...</option>
+                    {clients.map(c => <option key={c.idcliente} value={c.idcliente}>{c.nombre} {c.apellido} (CC {c.cedula})</option>)}
+                  </select>
               </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -210,13 +299,13 @@ export default function Payments() {
                   <label>Servicio Prestado</label>
                   <select className="input-field" value={form.serviceId} onChange={e => handleServiceChange(e.target.value)}>
                     <option value="">Sin especificar</option>
-                    {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                     {services.map(s => <option key={s.idservicios} value={s.idservicios}>{s.nombre}</option>)}
                   </select>
                 </div>
                 <div className="input-group" style={{ flex: 1 }}>
                   <label>Método de Pago</label>
-                  <select className="input-field" value={form.method} onChange={e => update('method', e.target.value)}>
-                    {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
+                   <select className="input-field" value={form.method} onChange={e => update('method', e.target.value)}>
+                    {methods.map(m => <option key={m.idmetodopago} value={m.tipo}>{m.tipo}</option>)}
                   </select>
                 </div>
               </div>
@@ -258,10 +347,19 @@ export default function Payments() {
             <h3 style={{ margin: '0 0 0.5rem' }}>¿Eliminar transacción?</h3>
             <p style={{ margin: '0 0 1.5rem', fontSize: '0.875rem' }}>Esta acción es irreversible.</p>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn btn-outline w-full" onClick={() => setDeleteTarget(null)}>Cancelar</button>
-              <button className="btn btn-danger w-full" onClick={() => { deletePayment(deleteTarget); setDeleteTarget(null); }}>Eliminar</button>
+               <button className="btn btn-outline w-full" onClick={() => setDeleteTarget(null)}>Cancelar</button>
+              <button className="btn btn-danger w-full" onClick={() => handleDelete(deleteTarget)}>Eliminar</button>
             </div>
           </div>
+        </div>
+      )}
+      {/* ── Snackbar ── */}
+      {snackbar.show && (
+        <div style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', transform: 'translateY(0)', animation: 'slideIn 0.3s ease-out' }}>
+          <style>{`
+            @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          `}</style>
+          {snackbar.type === 'success' ? '✓' : '✕'} {snackbar.message}
         </div>
       )}
     </div>

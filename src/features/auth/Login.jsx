@@ -40,23 +40,20 @@ export default function Login({ tenant, onLogin }) {
          return;
       }
 
-      const { data: users, error: dbErr } = await supabase
-        .from('usuario') // Postgres makes unquoted tables lowercase internally
-        .select('*, rolpermisos(idrol)')
-        .eq('email', email)
-        .eq('contraseña', password)
-        .eq('idnegocios', tenant.id);
+      const { data: users, error: dbErr } = await supabase.rpc('login_usuario', {
+        p_email: email,
+        p_password: password,
+        p_idnegocios: tenant.id
+      });
 
       if (!dbErr && users && users.length > 0) {
         const u = users[0];
         let role = 'recepcion';
         
-        if (u.rolpermisos && u.rolpermisos.length > 0) {
-          const idRol = u.rolpermisos[0].idrol;
-          if (idRol === 1) role = 'admin';
-          else if (idRol === 2) role = 'especialista';
-          else if (idRol === 3) role = 'recepcion';
-        }
+        // Map DB roles to frontend expectations
+        if (u.rol_nombre === 'admin') role = 'admin';
+        else if (u.rol_nombre === 'profesional') role = 'especialista';
+        else if (u.rol_nombre === 'recepcionista') role = 'recepcion';
         
         onLogin({
           id: u.idusuario,

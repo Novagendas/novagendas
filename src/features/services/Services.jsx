@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../Supabase/supabaseClient';
+import { supabase, insertLog } from '../../Supabase/supabaseClient';
 
 export default function Services({ user, tenant }) {
   const [services, setServices] = useState([]);
@@ -19,7 +19,14 @@ export default function Services({ user, tenant }) {
   const [editCatId, setEditCatId] = useState(null);
 
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ name: '', category: 'Inyectables', duration: 30, price: '', color: '#3b82f6' });
+  const [form, setForm] = useState({ name: '', category: '', duration: 30, price: '', color: '#3b82f6' });
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+  const showSnack = (message, type = 'success') => {
+    setSnackbar({ show: true, message, type });
+    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const catIcon = { Inyectables: '💉', Aparatología: '🔬', Cosmetología: '✨', Valoraciones: '📋' };
   const catColor = { Inyectables: '#6366f1', Aparatología: '#0ea5e9', Cosmetología: '#ec4899', Valoraciones: '#f59e0b' };
@@ -75,8 +82,12 @@ export default function Services({ user, tenant }) {
   };
 
   const openCreate = () => {
+    if (categories.length === 0) {
+      showAlert('No hay categorías', 'Debes crear al menos una categoría de servicio antes de agregar tratamientos.');
+      return;
+    }
     setEditId(null);
-    setForm({ name: '', category: categories.length ? categories[0].descripcion : 'Inyectables', duration: 30, price: '', color: '#3b82f6' });
+    setForm({ name: '', category: categories[0].descripcion, duration: 30, price: '', color: '#3b82f6' });
     setShowModal(true);
   };
 
@@ -86,21 +97,9 @@ export default function Services({ user, tenant }) {
     setShowModal(true);
   };
 
-  const ensureCategory = async (catName) => {
-    let exist = categories.find(c => c.descripcion.toLowerCase() === catName.toLowerCase());
-    if (exist) return exist.idcategoriaservicio;
-
-    const { data } = await supabase
-      .from('categoriaservicio')
-      .insert([{ descripcion: catName, idnegocios: tenant.id }])
-      .select('idcategoriaservicio, descripcion')
-      .single();
-
-    if (data) {
-      setCategories(prev => [...prev, data]);
-      return data.idcategoriaservicio;
-    }
-    return null;
+  const getCategoryId = (catName) => {
+    const exist = categories.find(c => c.descripcion === catName);
+    return exist?.idcategoriaservicio || null;
   };
 
   // ----- CATEGORY CRUD ACTIONS -----
@@ -113,15 +112,25 @@ export default function Services({ user, tenant }) {
       // Editar
       const { error } = await supabase.from('categoriaservicio').update({ descripcion: catName }).eq('idcategoriaservicio', editCatId);
       if (!error) {
+        await insertLog({
+          accion: 'UPDATE',
+          entidad: 'Categoría Servicio',
+          descripcion: `Se actualizó la categoría '${catName}'`,
+          idUsuario: user.idusuario || user.id,
+          idNegocios: tenant.id
+        });
         setCategories(prev => prev.map(c => c.idcategoriaservicio === editCatId ? { ...c, descripcion: catName } : c));
-        // Actualizar localmente los servicios que tenían esa categoría
-        const oldCat = categories.find(c => c.idcategoriaservicio === editCatId)?.descripcion;
-        if (oldCat) setServices(prev => prev.map(s => s.category === oldCat ? { ...s, category: catName } : s));
+        if (oldCat?.descripcion) setServices(prev => prev.map(s => s.category === oldCat.descripcion ? { ...s, category: catName } : s));
+        showSnack('Categoría editada');
+        setCategories(prev => prev.map(c => c.idcategoriaservicio === editCatId ? { ...c, descripcion: catName } : c));
       } else showAlert('Fallo en la Edición', "Error al editar categoría: " + error.message);
     } else {
       // Crear
       const { data, error } = await supabase.from('categoriaservicio').insert([{ descripcion: catName, idnegocios: tenant.id }]).select();
-      if (!error && data) setCategories(prev => [...prev, data[0]]);
+      if (!error && data) {
+        showSnack('Categoría creada');
+        setCategories(prev => [...prev, data[0]]);
+      }
       else showAlert('Fallo en la Creación', "Error al crear categoría: " + error.message);
     }
 
@@ -134,7 +143,10 @@ export default function Services({ user, tenant }) {
     showConfirm('Eliminar Categoría', '¿Eliminar esta categoría permanentemente?', async () => {
       setSaving(true);
       const { error } = await supabase.from('categoriaservicio').delete().eq('idcategoriaservicio', id);
-      if (!error) setCategories(prev => prev.filter(c => c.idcategoriaservicio !== id));
+      if (!error) {
+        showSnack('Categoría eliminada');
+        setCategories(prev => prev.filter(c => c.idcategoriaservicio !== id));
+      }
       else showAlert('Eliminación Rechazada', 'No se puede eliminar la categoría porque hay servicios asociados a ella.');
       setSaving(false);
     });
@@ -146,16 +158,19 @@ export default function Services({ user, tenant }) {
     if (!form.name || !form.price) return;
     setSaving(true);
 
-    const price = parseInt(form.price, 10);
-    const duration = parseInt(form.duration, 10);
-    const catId = await ensureCategory(form.category);
+    const catId = getCategoryId(form.category);
+    if (!catId) {
+      showAlert('Error de Categoría', 'Por favor selecciona una categoría válida.');
+      setSaving(false);
+      return;
+    }
 
     const payload = {
       nombre: form.name,
-      precio: price,
-      duracion: duration,
-      color: form.color,
       idcategoriaservicio: catId,
+      duracion: parseInt(form.duration, 10),
+      precio: parseFloat(form.price),
+      color: form.color,
       idnegocios: tenant.id,
       idestado: 1
     };
@@ -163,9 +178,17 @@ export default function Services({ user, tenant }) {
     if (editId) {
       const { error } = await supabase.from('servicios').update(payload).eq('idservicios', editId);
       if (error) showAlert('Fallo de Edición', "Error actualizando: " + error.message);
+      else {
+        showSnack('Servicio actualizado');
+        fetchData();
+      }
     } else {
       const { error } = await supabase.from('servicios').insert([payload]);
       if (error) showAlert('Fallo de Creación', "Error insertando: " + error.message);
+      else {
+        showSnack('Servicio creado');
+        fetchData();
+      }
     }
 
     setShowModal(false);
@@ -175,12 +198,15 @@ export default function Services({ user, tenant }) {
   };
 
   const handleDelete = (id, e) => {
-    e.stopPropagation(); // Prevenir abrir modo edición
+    e.stopPropagation(); 
     showConfirm('Eliminar Servicio', '¿Seguro que deseas eliminar este tratamiento permanentemente?', async () => {
       setLoading(true);
       const { error } = await supabase.from('servicios').delete().eq('idservicios', id);
       if (error) showAlert('Eliminación Rechazada', "Este servicio probablemente está siendo usado en Citas activas.\nError: " + error.message);
-      else fetchData();
+      else {
+        showSnack('Servicio eliminado', 'error');
+        fetchData();
+      }
     });
   };
 
@@ -228,6 +254,18 @@ export default function Services({ user, tenant }) {
             <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border)" strokeWidth="4.5" style={{ opacity: 0.3 }} />
           </svg>
           <span style={{ fontWeight: 700, fontSize: '0.88rem', marginTop: '1rem', color: 'var(--text-4)' }}>Sincronizando...</span>
+        </div>
+      )}
+
+      {categories.length === 0 && !loading && (
+        <div className="alert alert-danger animate-fade-in" style={{ borderRadius: 'var(--radius)', padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', gap: '0.8rem', alignItems: 'center', background: '#fef2f2', border: '1px solid #fee2e2' }}>
+          <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div>
+            <h4 style={{ margin: 0, color: '#991b1b', fontSize: '0.95rem' }}>No hay categorías configuradas</h4>
+            <p style={{ margin: '0.1rem 0 0', color: '#b91c1c', fontSize: '0.8rem', fontWeight: 500 }}>Debes crear al menos una categoría arriba en "Editar Categorías" para poder registrar tratamientos.</p>
+          </div>
         </div>
       )}
 
