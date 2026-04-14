@@ -84,7 +84,7 @@ export default function Agenda({ user, tenant }) {
           return {
             id: a.idcita,
             clientId: a.idcliente,
-            serviceId: null, 
+            serviceId: a.idservicio, 
             date: start.split('T')[0] || new Date().toISOString().split('T')[0],
             time: start.includes('T') ? start.split('T')[1].substring(0, 5) : '09:00',
             duration: start && end ? (new Date(end) - new Date(start)) / 60000 : 30,
@@ -209,10 +209,11 @@ export default function Agenda({ user, tenant }) {
     
     const startStr = `${form.date}T${form.time}:00`;
     const end = new Date(new Date(startStr).getTime() + duration * 60000);
-    const endStr = end.toISOString();
+    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}T${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}:00`;
 
     const payload = {
       idcliente: parseInt(form.clientId),
+      idservicio: form.serviceId ? parseInt(form.serviceId) : null,
       idusuario: form.specialistId ? parseInt(form.specialistId) : null,
       fechahorainicio: startStr,
       fechahorafin: endStr,
@@ -270,7 +271,7 @@ export default function Agenda({ user, tenant }) {
 
     const startStr = `${dateStr}T${toTimeStr(hour)}:00`;
     const end = new Date(new Date(startStr).getTime() + appt.duration * 60000);
-    const endStr = end.toISOString();
+    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}T${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}:00`;
 
     const { error } = await supabase.from('cita').update({
       fechahorainicio: startStr,
@@ -292,17 +293,32 @@ export default function Agenda({ user, tenant }) {
 
   const apptStyle = (appt) => {
     const top    = (timeToDec(appt.time) - 7) * SLOT_H;
-    const height = (appt.duration / 60)        * SLOT_H;
+    const height = Math.max((appt.duration / 60) * SLOT_H, 28);
+    
+    // Exact Service Color
+    const service = services.find(s => s.id === appt.serviceId || s.idservicios === appt.serviceId);
+    const baseColor = service?.color || 'var(--primary)';
+    
     return {
-      position: 'absolute', top: top + 1, left: 3, right: 3,
-      minHeight: height - 3, height: height - 3,
-      background: 'var(--primary)', borderRadius: 6, padding: '4px 7px',
-      color: '#fff', fontSize: '0.75rem', cursor: 'pointer',
-      boxShadow: `0 2px 8px var(--primary-light)`, overflow: 'hidden', zIndex: 10,
-      borderLeft: '3px solid rgba(255,255,255,0.45)',
-      transition: 'opacity 0.15s',
+      position: 'absolute', top: top + 1, left: 4, right: 4,
+      minHeight: height - 2, height: height - 2,
+      background: baseColor,
+      borderRadius: 10, padding: '6px 9px',
+      color: '#fff', fontSize: '0.82rem', cursor: 'pointer',
+      boxShadow: `0 4px 12px ${baseColor}33`,
+      overflow: 'hidden', zIndex: 10,
+      borderLeft: `4px solid rgba(255,255,255,0.4)`,
+      transition: 'box-shadow 0.2s, transform 0.2s',
+      display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
     };
   };
+
+  const getEndTime = (appt) => {
+    const [h, m] = appt.time.split(':').map(Number);
+    const endMinutes = h * 60 + m + appt.duration;
+    return toTimeStr(Math.floor(endMinutes / 60), endMinutes % 60);
+  };
+
 
   const DayColumn = ({ dateStr }) => {
     const dayAppts = appointments.filter(a => a.date === dateStr);
@@ -314,13 +330,16 @@ export default function Agenda({ user, tenant }) {
             onDragOver={onDragOver}
             onDrop={e => onDropCell(e, dateStr, h)}
             onClick={() => openCreate(dateStr, toTimeStr(h))}
-            style={{ height: SLOT_H, borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(59,130,246,0.04)'}
+            style={{ height: SLOT_H, borderBottom: '1px solid var(--border)', cursor: 'pointer', transition: 'background 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-light)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           />
         ))}
         {dayAppts.map(appt => {
           const client = clients.find(c => c.idcliente === appt.clientId);
+          const cardH = Math.max((appt.duration / 60) * SLOT_H, 28);
+          const showTime = cardH > 34;
+          const showStatus = cardH > 52;
           return (
             <div
               key={appt.id}
@@ -329,12 +348,15 @@ export default function Agenda({ user, tenant }) {
               onDragStart={e => onDragStart(e, appt)}
               onDragEnd={onDragEnd}
               onClick={e => openDetail(appt, e)}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 18px var(--primary-glow)'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 3px 10px var(--primary-glow-sm)'; }}
             >
-              <div style={{ fontWeight: 700, fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{client?.nombre || 'Cita'}</div>
-              {(appt.duration / 60) * SLOT_H > 52 && (
-                <div style={{ marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(0,0,0,0.18)', padding: '1px 6px', borderRadius: 4, fontSize: '0.65rem', fontWeight: 700 }}>
-                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: statusColor[appt.status] || '#fff', flexShrink: 0 }} />
-                  {appt.status}
+              <div style={{ fontWeight: 700, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
+                {client?.nombre || 'Cita'}
+              </div>
+              {showTime && (
+                <div style={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 600, marginTop: 1 }}>
+                  {appt.time} — {getEndTime(appt)}
                 </div>
               )}
             </div>
