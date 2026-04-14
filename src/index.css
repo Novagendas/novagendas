@@ -170,7 +170,7 @@
 }
 
 html {
-  font-size: 14px;
+  font-size: 15px;
   scroll-behavior: smooth;
 }
 
@@ -193,28 +193,28 @@ body {
 ───────────────────────────────────────────────────── */
 h1 {
   font-family: var(--font-main);
-  font-size: 2.4rem;
+  font-size: 2.2rem;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.035em;
   color: var(--text);
 }
 h2 {
-  font-size: 1.85rem;
+  font-size: 1.7rem;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.025em;
   color: var(--text);
 }
 h3 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   line-height: 1.35;
   letter-spacing: -0.015em;
   color: var(--text);
 }
 h4 {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--text);
 }
@@ -273,6 +273,11 @@ p { color: var(--text-3); line-height: 1.75; }
 }
 .btn:active        { transform: scale(0.96); }
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* Primary */
 .btn-primary {
@@ -426,12 +431,15 @@ textarea.input-field {
 /* Base card */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
-  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.3s;
   position: relative;
+}
+.card:hover {
+  border-color: var(--border-strong);
 }
 
 /* Glass card */
@@ -449,9 +457,9 @@ textarea.input-field {
 /* Stat card with lift effect */
 .card-stat {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 1.75rem;
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-sm);
@@ -459,8 +467,8 @@ textarea.input-field {
   cursor: default;
 }
 .card-stat:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px);
   border-color: var(--border-strong);
 }
 
@@ -469,8 +477,8 @@ textarea.input-field {
   transition: var(--transition-slow);
 }
 .card-hover:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-4px) scale(1.005);
   border-color: var(--border-strong);
 }
 

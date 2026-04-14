@@ -282,60 +282,131 @@ export default function Services({ user, tenant }) {
           )}
 
           {services.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '1.1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '1.25rem' }}>
               {services.map((s, i) => (
                 <div
                   key={s.id}
                   onClick={() => startEdit(s)}
-                  className="card card-hover animate-fade-in"
-                  style={{ animationDelay: `${i * 35}ms`, padding: 0, overflow: 'hidden', border: '1px solid var(--border)', cursor: 'pointer', position: 'relative' }}
+                  className="animate-fade-in"
+                  style={{
+                    animationDelay: `${i * 45}ms`,
+                    padding: 0, overflow: 'hidden', cursor: 'pointer', position: 'relative',
+                    background: 'var(--surface)',
+                    border: '1.5px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+                    borderLeft: `5px solid ${s.color}`,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'translateY(-5px) scale(1.005)';
+                    e.currentTarget.style.boxShadow = `0 16px 40px -8px ${s.color}25, var(--shadow-lg)`;
+                    e.currentTarget.style.borderColor = `${s.color}60`;
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.borderLeftColor = s.color;
+                  }}
                 >
-                  <div style={{ background: `linear-gradient(135deg, ${s.color}22, ${s.color}08)`, borderBottom: `1px solid ${s.color}20`, padding: '1.1rem 1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-sm)', background: `${s.color}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                  {/* ── Big Color Banner ── */}
+                  <div style={{
+                    background: `linear-gradient(135deg, ${s.color}, ${s.color}cc)`,
+                    padding: '1.1rem 1.35rem',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    position: 'relative', overflow: 'hidden',
+                  }}>
+                    {/* Decorative blob */}
+                    <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', pointerEvents: 'none' }} />
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', position: 'relative', zIndex: 1 }}>
+                      <div style={{
+                        width: 40, height: 40, borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.2)',
+                        border: '1.5px solid rgba(255,255,255,0.3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '1.2rem', flexShrink: 0, color: '#fff',
+                      }}>
                         {catIcon[s.category] || '💎'}
                       </div>
-                      <span className="capitalize-text" style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 9px', borderRadius: 99, background: `${s.color}18`, color: s.color, fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.06em' }}>
+                      <span className="capitalize-text" style={{
+                        display: 'inline-flex', alignItems: 'center',
+                        padding: '0.3rem 0.9rem', borderRadius: 99,
+                        background: 'rgba(255,255,255,0.22)', color: '#fff',
+                        fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.04em',
+                        backdropFilter: 'blur(4px)',
+                      }}>
                         {s.category}
                       </span>
                     </div>
-                    
-                    <button
-                      onClick={(e) => handleDelete(s.id, e)}
-                      title="Eliminar servicio"
-                      style={{ background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer', color: 'var(--text-4)', padding: '0.35rem', borderRadius: '50%', display: 'flex', transition: 'var(--transition)', zIndex: 2 }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger-light)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'transparent'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface)'; e.currentTarget.style.color = 'var(--text-4)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
-                    </button>
+
+                    <div style={{ display: 'flex', gap: '0.35rem', position: 'relative', zIndex: 1 }}>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startEdit(s); }}
+                        title="Editar servicio"
+                        style={{
+                          background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer',
+                          color: '#fff', padding: '0.4rem', borderRadius: 10,
+                          display: 'flex', transition: 'var(--transition)', zIndex: 2
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.35)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(s.id, e)}
+                        title="Eliminar servicio"
+                        style={{
+                          background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.3)', cursor: 'pointer',
+                          color: '#fff', padding: '0.4rem', borderRadius: 10,
+                          display: 'flex', transition: 'var(--transition)', zIndex: 2
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,50,50,0.45)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.2)'; }}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4h6v2" /></svg>
+                      </button>
+                    </div>
                   </div>
 
-                  <div style={{ padding: '1.1rem 1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h3 className="capitalize-text" style={{ margin: '0 0 0.55rem', fontSize: '1.05rem', lineHeight: 1.3, color: 'var(--text)' }}>
-                        {s.name}
-                      </h3>
-                      <div style={{ color: 'var(--text-4)', padding: '0.2rem', background: 'var(--surface-2)', borderRadius: 6 }}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-3)', fontSize: '0.81rem', marginBottom: '1rem' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                  {/* Content Section */}
+                  <div style={{ padding: '1.25rem 1.35rem 1.35rem' }}>
+                    <h3 className="capitalize-text" style={{
+                      margin: '0 0 0.65rem', fontSize: '1.15rem', lineHeight: 1.3,
+                      color: 'var(--text)', fontWeight: 800, letterSpacing: '-0.01em'
+                    }}>
+                      {s.name}
+                    </h3>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-3)', fontSize: '0.88rem', marginBottom: '1.15rem' }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
                       <span style={{ fontWeight: 600 }}>{s.duration} minutos de sesión</span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '0.85rem', borderTop: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, boxShadow: `0 0 6px ${s.color}` }} />
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-4)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Valor</span>
+                    {/* Price Section */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      paddingTop: '1rem', borderTop: `2px solid ${s.color}18`,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <div style={{
+                          width: 12, height: 12, borderRadius: '50%',
+                          background: s.color, boxShadow: `0 0 10px ${s.color}80`
+                        }} />
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Valor</span>
                       </div>
-                      <span style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.025em' }}>{fmt(s.price)}</span>
+                      <span style={{
+                        fontSize: '1.65rem', fontWeight: 900, color: 'var(--text)',
+                        letterSpacing: '-0.03em'
+                      }}>{fmt(s.price)}</span>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+
           ) : (
             <div className="empty-state animate-fade-in">
               <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
