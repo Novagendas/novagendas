@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../../Supabase/supabaseClient';
+import { supabase, insertLog } from '../../Supabase/supabaseClient';
 
 /* ─── Constants ────────────────────────────────────── */
 const ESTADO_OPTIONS = [
-  { id: 1, label: 'Activo',      bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
-  { id: 2, label: 'Suspendido',  bg: '#fff7ed', color: '#ea580c', border: '#fdba74' },
-  { id: 3, label: 'Eliminado',   bg: '#fee2e2', color: '#dc2626', border: '#fca5a5' },
-  { id: 4, label: 'En Espera',   bg: '#eff6ff', color: '#2563eb', border: '#93c5fd' },
+  { id: 1, label: 'Activo', bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
+  { id: 2, label: 'Suspendido', bg: '#fff7ed', color: '#ea580c', border: '#fdba74' },
+  { id: 3, label: 'Eliminado', bg: '#fee2e2', color: '#dc2626', border: '#fca5a5' },
+  { id: 4, label: 'En Espera', bg: '#eff6ff', color: '#2563eb', border: '#93c5fd' },
   { id: 5, label: 'En Revisión', bg: '#eff6ff', color: '#7c3aed', border: '#a5b4fc' },
-  { id: 6, label: 'Deployed',    bg: '#eff6ff', color: '#0891b2', border: '#67e8f9' },
+  { id: 6, label: 'Deployed', bg: '#eff6ff', color: '#0891b2', border: '#67e8f9' },
 ];
 
 const ROL_OPTIONS = [
@@ -64,7 +64,7 @@ function FilterBar({ search, onSearch, sort, onSort, extra }) {
   return (
     <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
       <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-        <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
         <input className="input-field" style={{ paddingLeft: '2rem', fontSize: '0.84rem', height: 36 }} placeholder="Buscar…" value={search} onChange={e => onSearch(e.target.value)} />
       </div>
       <select value={sort} onChange={e => onSort(e.target.value)}
@@ -82,28 +82,28 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
   return (
     <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-        <Field label="NIT"><input className="input-field" required value={form.nit} onChange={e => setForm(f => ({...f, nit: e.target.value}))} placeholder="900123456-1" /></Field>
-        <Field label="Nombre"><input className="input-field" required value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} placeholder="Clínica Ejemplo" /></Field>
-        <Field label="Teléfono"><input className="input-field" value={form.telefono} onChange={e => setForm(f => ({...f, telefono: e.target.value}))} placeholder="+57 300..." /></Field>
-        <Field label="Dirección"><input className="input-field" value={form.direccion} onChange={e => setForm(f => ({...f, direccion: e.target.value}))} placeholder="Calle 123..." /></Field>
-        <Field label="Descripción" style={{ flex: '1 1 100%' }}><input className="input-field" value={form.descripcion} onChange={e => setForm(f => ({...f, descripcion: e.target.value}))} placeholder="Descripción del negocio" /></Field>
+        <Field label="NIT"><input className="input-field" required value={form.nit} onChange={e => setForm(f => ({ ...f, nit: e.target.value }))} placeholder="900123456-1" /></Field>
+        <Field label="Nombre"><input className="input-field" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Clínica Ejemplo" /></Field>
+        <Field label="Teléfono"><input className="input-field" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} placeholder="+57 300..." /></Field>
+        <Field label="Dirección"><input className="input-field" value={form.direccion} onChange={e => setForm(f => ({ ...f, direccion: e.target.value }))} placeholder="Calle 123..." /></Field>
+        <Field label="Descripción" style={{ flex: '1 1 100%' }}><input className="input-field" value={form.descripcion} onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} placeholder="Descripción del negocio" /></Field>
         <Field label="Estado">
-          <select className="input-field" value={form.idestadoapp} onChange={e => setForm(f => ({...f, idestadoapp: parseInt(e.target.value)}))}>
+          <select className="input-field" value={form.idestadoapp} onChange={e => setForm(f => ({ ...f, idestadoapp: parseInt(e.target.value) }))}>
             {ESTADO_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </Field>
         <Field label="ID Usuario Admin">
-          <input type="number" className="input-field" value={form.idusuarioadmin} onChange={e => setForm(f => ({...f, idusuarioadmin: e.target.value}))} placeholder="ID del admin (ver Usuarios)" />
+          <input type="number" className="input-field" value={form.idusuarioadmin} onChange={e => setForm(f => ({ ...f, idusuarioadmin: e.target.value }))} placeholder="ID del admin (ver Usuarios)" />
         </Field>
         <Field label="Subdominio" style={{ flex: '1 1 100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <input className="input-field" required value={form.subdomain} onChange={e => setForm(f => ({...f, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')}))} placeholder="mi-clinica" style={{ flex: 1 }} />
+            <input className="input-field" required value={form.subdomain} onChange={e => setForm(f => ({ ...f, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="mi-clinica" style={{ flex: 1 }} />
             <span style={{ color: 'var(--text-4)', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>.novagendas.com</span>
           </div>
         </Field>
         <Field label="¿Deployed en producción?">
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', paddingTop: '0.45rem' }}>
-            <input type="checkbox" checked={form.deployed} onChange={e => setForm(f => ({...f, deployed: e.target.checked}))} style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }} />
+            <input type="checkbox" checked={form.deployed} onChange={e => setForm(f => ({ ...f, deployed: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }} />
             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-2)' }}>Activo en producción</span>
           </label>
         </Field>
@@ -126,22 +126,22 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
   return (
     <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
-        <Field label="Nombre"><input className="input-field" required value={form.nombre} onChange={e => setForm(f => ({...f, nombre: e.target.value}))} placeholder="Karen" /></Field>
-        <Field label="Apellido"><input className="input-field" required value={form.apellido} onChange={e => setForm(f => ({...f, apellido: e.target.value}))} placeholder="Useche" /></Field>
-        <Field label="Cédula"><input className="input-field" required value={form.cedula} onChange={e => setForm(f => ({...f, cedula: e.target.value}))} placeholder="1010000001" /></Field>
-        <Field label="Email"><input type="email" className="input-field" required value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} placeholder="usuario@tienda.com" /></Field>
+        <Field label="Nombre"><input className="input-field" required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Karen" /></Field>
+        <Field label="Apellido"><input className="input-field" required value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} placeholder="Useche" /></Field>
+        <Field label="Cédula"><input className="input-field" required value={form.cedula} onChange={e => setForm(f => ({ ...f, cedula: e.target.value }))} placeholder="1010000001" /></Field>
+        <Field label="Email"><input type="email" className="input-field" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="usuario@tienda.com" /></Field>
         <Field label={isEdit ? 'Nueva Contraseña (vacío = no cambiar)' : 'Contraseña *'}>
-          <input type="password" className="input-field" required={!isEdit} value={form.contrasena} onChange={e => setForm(f => ({...f, contrasena: e.target.value}))} placeholder="••••••" />
+          <input type="password" className="input-field" required={!isEdit} value={form.contrasena} onChange={e => setForm(f => ({ ...f, contrasena: e.target.value }))} placeholder="••••••" />
         </Field>
-        <Field label="Teléfono"><input className="input-field" value={form.telefono} onChange={e => setForm(f => ({...f, telefono: e.target.value}))} placeholder="+57 300..." /></Field>
-        <Field label="Profesión"><input className="input-field" value={form.profesion} onChange={e => setForm(f => ({...f, profesion: e.target.value}))} placeholder="Médico estético..." /></Field>
+        <Field label="Teléfono"><input className="input-field" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} placeholder="+57 300..." /></Field>
+        <Field label="Profesión"><input className="input-field" value={form.profesion} onChange={e => setForm(f => ({ ...f, profesion: e.target.value }))} placeholder="Médico estético..." /></Field>
         <Field label="Rol por defecto">
-          <select className="input-field" value={form.idrol} onChange={e => setForm(f => ({...f, idrol: parseInt(e.target.value)}))}>
+          <select className="input-field" value={form.idrol} onChange={e => setForm(f => ({ ...f, idrol: parseInt(e.target.value) }))}>
             {ROL_OPTIONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
         </Field>
         <Field label="Negocio al que pertenece">
-          <select className="input-field" value={form.idnegocios} onChange={e => setForm(f => ({...f, idnegocios: e.target.value}))}>
+          <select className="input-field" value={form.idnegocios} onChange={e => setForm(f => ({ ...f, idnegocios: e.target.value }))}>
             <option value="">Seleccione un negocio...</option>
             {tenants && tenants.map(t => (
               <option key={t.idnegocios} value={t.idnegocios}>{t.nombre} (ID: {t.idnegocios})</option>
@@ -149,7 +149,7 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
           </select>
         </Field>
         <Field label="Estado">
-          <select className="input-field" value={form.idestado} onChange={e => setForm(f => ({...f, idestado: parseInt(e.target.value)}))}>
+          <select className="input-field" value={form.idestado} onChange={e => setForm(f => ({ ...f, idestado: parseInt(e.target.value) }))}>
             <option value={1}>Activo</option><option value={2}>Inactivo</option>
           </select>
         </Field>
@@ -170,30 +170,30 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
 /* ══════════════════════════════ MAIN ══════════════════════════════════════ */
 export default function SuperAdminPortal() {
   const [adminLogged, setAdminLogged] = useState(false);
-  const [pass, setPass]               = useState('');
-  const [tab, setTab]                 = useState('negocios');
-  const [copied, setCopied]           = useState(null);
+  const [pass, setPass] = useState('');
+  const [tab, setTab] = useState('negocios');
+  const [copied, setCopied] = useState(null);
 
   /* Negocios */
-  const [tenants, setTenants]         = useState([]);
-  const [tenantLoad, setTenantLoad]   = useState(true);
+  const [tenants, setTenants] = useState([]);
+  const [tenantLoad, setTenantLoad] = useState(true);
   const [tenantSearch, setTenantSearch] = useState('');
-  const [tenantSort, setTenantSort]   = useState('newest');
+  const [tenantSort, setTenantSort] = useState('newest');
   const [tenantModal, setTenantModal] = useState(null);
-  const [savingT, setSavingT]         = useState(false);
-  const blankT = { nit:'', name:'', subdomain:'', descripcion:'', direccion:'', telefono:'', deployed:false, idestadoapp:1, idusuarioadmin:'' };
-  const [tForm, setTForm]             = useState(blankT);
+  const [savingT, setSavingT] = useState(false);
+  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, idestadoapp: 1, idusuarioadmin: '' };
+  const [tForm, setTForm] = useState(blankT);
 
   /* Usuarios */
-  const [users, setUsers]             = useState([]);
-  const [userLoad, setUserLoad]       = useState(true);
-  const [userSearch, setUserSearch]   = useState('');
-  const [userSort, setUserSort]       = useState('newest');
+  const [users, setUsers] = useState([]);
+  const [userLoad, setUserLoad] = useState(true);
+  const [userSearch, setUserSearch] = useState('');
+  const [userSort, setUserSort] = useState('newest');
   const [userRolFilter, setUserRolFilter] = useState('all');
-  const [userModal, setUserModal]     = useState(null);
-  const [savingU, setSavingU]         = useState(false);
-  const blankU = { nombre:'', apellido:'', email:'', cedula:'', contrasena:'', telefono:'', profesion:'', idnegocios:'', idestado:1, idrol:1 };
-  const [uForm, setUForm]             = useState(blankU);
+  const [userModal, setUserModal] = useState(null);
+  const [savingU, setSavingU] = useState(false);
+  const blankU = { nombre: '', apellido: '', email: '', cedula: '', contrasena: '', telefono: '', profesion: '', idnegocios: '', idestado: 1, idrol: 1 };
+  const [uForm, setUForm] = useState(blankU);
 
   /* ── Fetchers ── */
   const fetchTenants = useCallback(async () => {
@@ -220,11 +220,64 @@ export default function SuperAdminPortal() {
   useEffect(() => { if (adminLogged) { fetchTenants(); fetchUsers(); } }, [adminLogged]);
 
   /* ── Login ── */
-  const handleLogin = e => { e.preventDefault(); if (pass === 'super123') setAdminLogged(true); else alert('Clave incorrecta'); };
+  const [email, setEmail] = useState('sanabria3210@gmail.com');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [masterPass, setMasterPass] = useState('');
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setTenantLoad(true);
+    let { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+    setTenantLoad(false);
+    if (error) {
+      if (error.message.includes('Email not confirmed')) {
+        alert('Error: Correo no confirmado. Debes confirmar el email en Supabase Auth o desactivar "Confirm Email" en Authentication -> Settings.');
+      } else {
+        alert('Error: ' + error.message);
+      }
+    }
+    else if (data.session) setAdminLogged(true);
+  };
+
+  const handleRegisterSuper = async (e) => {
+    e.preventDefault();
+    if (masterPass !== 'super123') return alert('Contraseña maestra incorrecta.');
+    setTenantLoad(true);
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: pass,
+      options: { data: { is_super_admin: true } }
+    });
+
+    if (!error) {
+      const { data: newUser } = await supabase.from('usuario').insert([{
+        nombre: 'Nuevo',
+        apellido: 'SuperAdmin',
+        email: email,
+        'password': pass,
+        issuperadmin: true,
+        idestado: 1
+      }]).select();
+      
+      await insertLog({
+        accion: 'CREATE',
+        entidad: 'SuperAdmin',
+        descripcion: `Se creó una nueva cuenta de SuperAdmin: ${email}`,
+        idUsuario: data.user?.id,
+        idNegocios: null // Global action
+      });
+
+      alert('Cuenta de SuperAdmin creada exitosamente. Recuerda confirmar el email si es necesario.');
+      setIsRegistering(false);
+    } else {
+      alert('Error al crear SuperAdmin: ' + error.message);
+    }
+    setTenantLoad(false);
+  };
 
   /* ── Negocios CRUD ── */
-  const openAddTenant  = () => { setTForm(blankT); setTenantModal('add'); };
-  const openEditTenant = t  => { setTForm({ nit: t.nit||'', name: t.nombre||'', subdomain: t.dominio||'', descripcion: t.descripcion||'', direccion: t.direccion||'', telefono: t.telefono||'', deployed: !!t.deployed, idestadoapp: t.idestadoapp||1, idusuarioadmin: t.idusuarioadmin||'' }); setTenantModal(t); };
+  const openAddTenant = () => { setTForm(blankT); setTenantModal('add'); };
+  const openEditTenant = t => { setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, idestadoapp: t.idestadoapp || 1, idusuarioadmin: t.idusuarioadmin || '' }); setTenantModal(t); };
 
   const handleSaveTenant = async e => {
     e.preventDefault(); setSavingT(true);
@@ -233,8 +286,16 @@ export default function SuperAdminPortal() {
       ? await supabase.from('negocios').insert([payload])
       : await supabase.from('negocios').update(payload).eq('idnegocios', tenantModal.idnegocios);
     setSavingT(false);
-    if (error) alert('Error: ' + error.message);
-    else { setTenantModal(null); fetchTenants(); }
+    if (!error) {
+      await insertLog({
+        accion: tenantModal === 'add' ? 'CREATE' : 'UPDATE',
+        entidad: 'Negocio',
+        descripcion: `${tenantModal === 'add' ? 'Registro' : 'Actualización'} del negocio '${tForm.name}'`,
+        idUsuario: user?.idusuario || user?.id,
+        idNegocios: tenantModal === 'add' ? null : tenantModal.idnegocios
+      });
+      setTenantModal(null); fetchTenants();
+    }
   };
 
   const deleteTenant = async () => {
@@ -254,15 +315,15 @@ export default function SuperAdminPortal() {
   };
 
   /* ── Usuarios CRUD ── */
-  const openAddUser  = () => { setUForm(blankU); setUserModal('add'); };
-  const openEditUser = u => { setUForm({ nombre: u.nombre||'', apellido: u.apellido||'', email: u.email||'', cedula: u.cedula||'', contrasena:'', telefono: u.telefono||'', profesion: u.profesion||'', idnegocios: u.idnegocios||'', idestado: u.idestado||1, idrol: u._idrol||1 }); setUserModal(u); };
+  const openAddUser = () => { setUForm(blankU); setUserModal('add'); };
+  const openEditUser = u => { setUForm({ nombre: u.nombre || '', apellido: u.apellido || '', email: u.email || '', cedula: u.cedula || '', contrasena: '', telefono: u.telefono || '', profesion: u.profesion || '', idnegocios: u.idnegocios || '', idestado: u.idestado || 1, idrol: u._idrol || 1 }); setUserModal(u); };
 
   const handleSaveUser = async e => {
     e.preventDefault(); setSavingU(true);
     const payload = { nombre: uForm.nombre, apellido: uForm.apellido, email: uForm.email, cedula: uForm.cedula, telefono: uForm.telefono, profesion: uForm.profesion, idestado: uForm.idestado, idnegocios: uForm.idnegocios ? parseInt(uForm.idnegocios) : null };
-    if (uForm.contrasena) payload['contraseña'] = uForm.contrasena;
+    if (uForm.contrasena) payload['password'] = uForm.contrasena;
     const { error } = userModal === 'add'
-      ? await supabase.from('usuario').insert([{ ...payload, 'contraseña': uForm.contrasena }])
+      ? await supabase.from('usuario').insert([{ ...payload, 'password': uForm.contrasena }])
       : await supabase.from('usuario').update(payload).eq('idusuario', userModal.idusuario);
     setSavingU(false);
     if (error) { alert('Error: ' + error.message); console.error(error); }
@@ -279,6 +340,13 @@ export default function SuperAdminPortal() {
           await supabase.from('rolpermisos').insert([{ idusuario: savedId, idrol: uForm.idrol, idpermiso: 1 }]);
         }
       }
+      await insertLog({
+        accion: userModal === 'add' ? 'CREATE' : 'UPDATE',
+        entidad: 'Usuario',
+        descripcion: `${userModal === 'add' ? 'Creación' : 'Edición'} de usuario: ${uForm.nombre} ${uForm.apellido} (${uForm.email})`,
+        idUsuario: user?.idusuario || user?.id,
+        idNegocios: uForm.idnegocios ? parseInt(uForm.idnegocios) : null
+      });
       setUserModal(null); fetchUsers();
     }
   };
@@ -287,8 +355,19 @@ export default function SuperAdminPortal() {
     const target = u || userModal;
     if (!target || !window.confirm('¿Eliminar este usuario?')) return;
     await supabase.from('rolpermisos').delete().eq('idusuario', target.idusuario);
-    await supabase.from('usuario').delete().eq('idusuario', target.idusuario);
-    setUserModal(null); fetchUsers();
+    const { error } = await supabase.from('usuario').delete().eq('idusuario', target.idusuario);
+    if (!error) {
+      await insertLog({
+        accion: 'DELETE',
+        entidad: 'Usuario',
+        descripcion: `Se eliminó al usuario: ${target.nombre} ${target.apellido} (${target.email})`,
+        idUsuario: user?.idusuario || user?.id,
+        idNegocios: target.idnegocios
+      });
+      setUserModal(null); fetchUsers();
+    } else {
+      alert("Error eliminando: " + error.message);
+    }
   };
 
   const copyId = (id, e) => {
@@ -299,7 +378,7 @@ export default function SuperAdminPortal() {
   };
 
   /* ── Filtering & sorting ── */
-  const sortFn = (a, b, key, dir) => dir === 'newest' ? (b[key]||0)-(a[key]||0) : (a[key]||0)-(b[key]||0);
+  const sortFn = (a, b, key, dir) => dir === 'newest' ? (b[key] || 0) - (a[key] || 0) : (a[key] || 0) - (b[key] || 0);
 
   const filteredTenants = tenants
     .filter(t => !tenantSearch || [t.nombre, t.dominio, t.nit].join(' ').toLowerCase().includes(tenantSearch.toLowerCase()))
@@ -316,30 +395,45 @@ export default function SuperAdminPortal() {
 
   // Lookup helpers
   const tenantName = id => tenants.find(t => t.idnegocios === id)?.nombre || null;
-  const userName  = id => { const u = users.find(u => u.idusuario === id); return u ? `${u.nombre} ${u.apellido}` : null; };
+  const userName = id => { const u = users.find(u => u.idusuario === id); return u ? `${u.nombre} ${u.apellido}` : null; };
 
   /* ── Domain helper ── */
   const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
-  const hostHost  = window.location.hostname.replace(/^www\./, '').replace('127.0.0.1', 'localhost');
+  const hostHost = window.location.hostname.replace(/^www\./, '').replace('127.0.0.1', 'localhost');
   const hostParts = hostHost.split('.');
   const baseDomain = (!isLocal && hostParts.length > 2) ? hostParts.slice(1).join('.') : (isLocal && hostParts.length > 1 ? hostParts.slice(1).join('.') : hostHost);
   const protocol = isLocal ? 'http:' : 'https:';
   const port = window.location.port ? `:${window.location.port}` : (isLocal ? ':5173' : '');
 
-  /* ── Login screen ── */
   if (!adminLogged) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--surface-2)' }}>
-      <form onSubmit={handleLogin} className="card flex-col gap-4" style={{ width: 360, padding: '2.5rem' }}>
+      <div className="card flex-col gap-4" style={{ width: 360, padding: '2.5rem' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', overflow: 'hidden' }}>
             <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
           </div>
-          <h2 style={{ margin: '0 0 0.25rem' }}>Portal Super Admin</h2>
+          <h2 style={{ margin: '0 0 0.25rem' }}>{isRegistering ? 'Crear Super Admin' : 'Portal Super Admin'}</h2>
           <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-3)' }}>novagendas · Solo personal autorizado</p>
         </div>
-        <input type="password" className="input-field" placeholder="Contraseña maestra" value={pass} onChange={e => setPass(e.target.value)} autoFocus />
-        <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>Ingresar</button>
-      </form>
+        <form onSubmit={isRegistering ? handleRegisterSuper : handleLogin} className="flex-col gap-4">
+          <input type="email" className="input-field" placeholder="Correo electrónico" value={email} onChange={e => setEmail(e.target.value)} autoFocus style={{ marginBottom: '1rem' }} />
+          <input type="password" className="input-field" placeholder="Contraseña" value={pass} onChange={e => setPass(e.target.value)} style={{ marginBottom: '1rem' }} />
+
+          {isRegistering && (
+            <input type="password" className="input-field" placeholder="Confirmación Maestra" value={masterPass} onChange={e => setMasterPass(e.target.value)} style={{ marginBottom: '1rem', border: '1px solid var(--accent)' }} />
+          )}
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>
+            {tenantLoad ? 'Procesando...' : (isRegistering ? 'Registrar SuperAdmin' : 'Ingresar')}
+          </button>
+        </form>
+
+        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+          <button type="button" onClick={() => setIsRegistering(!isRegistering)} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+            {isRegistering ? '← Volver al Login' : '¿Eres nuevo? Crear SuperAdmin'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 
@@ -397,8 +491,8 @@ export default function SuperAdminPortal() {
                     <tr><td colSpan="9" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-4)' }}>{tenantSearch ? 'Sin resultados.' : 'Sin negocios registrados.'}</td></tr>
                   ) : filteredTenants.map(t => (
                     <tr key={t.idnegocios}
-                      onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
-                      onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       style={{ transition: 'background 0.15s' }}>
                       <TD>
                         {/* Copy ID for negocios */}
@@ -435,8 +529,8 @@ export default function SuperAdminPortal() {
                       <TD>
                         <a href={`${protocol}//${t.dominio}.${baseDomain}${port}`} target="_blank" rel="noreferrer"
                           style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none', fontSize: '0.8rem', padding: '4px 10px', border: '1px solid var(--primary)', borderRadius: 8 }}
-                          onMouseEnter={e => e.currentTarget.style.background='var(--primary-light)'}
-                          onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                          onMouseEnter={e => e.currentTarget.style.background = 'var(--primary-light)'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                           Ir ↗
                         </a>
                       </TD>
@@ -471,7 +565,7 @@ export default function SuperAdminPortal() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead><tr>
-                  {['ID', 'Nombre', 'Email', 'Cédula', 'Negocio', 'Rol', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}
+                  {['ID', 'Nombre', 'Email', 'Negocio', 'Rol', 'Super', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}
                 </tr></thead>
                 <tbody>
                   {userLoad ? (
@@ -480,8 +574,8 @@ export default function SuperAdminPortal() {
                     <tr><td colSpan="9" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-4)' }}>{userSearch ? 'Sin resultados.' : 'Sin usuarios registrados.'}</td></tr>
                   ) : filteredUsers.map(u => (
                     <tr key={u.idusuario}
-                      onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
-                      onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       style={{ transition: 'background 0.15s' }}>
                       <TD>
                         <button onClick={e => copyId(u.idusuario, e)} title="Copiar ID"
@@ -491,28 +585,25 @@ export default function SuperAdminPortal() {
                       </TD>
                       <TD><div style={{ fontWeight: 600 }}>{u.nombre} {u.apellido}</div></TD>
                       <TD style={{ color: 'var(--text-2)', fontSize: '0.83rem' }}>{u.email}</TD>
-                      <TD style={{ color: 'var(--text-3)', fontFamily: 'monospace', fontSize: '0.83rem' }}>{u.cedula}</TD>
                       <TD>
                         {u.idnegocios
                           ? <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{tenantName(u.idnegocios) || '—'}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-4)' }}>ID: {u.idnegocios}</div>
-                            </div>
+                            <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{tenantName(u.idnegocios) || '—'}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-4)' }}>ID: {u.idnegocios}</div>
+                          </div>
                           : <span style={{ color: '#9ca3af' }}>—</span>}
                       </TD>
                       <TD>
                         {(() => {
                           const rolOpt = ROL_OPTIONS.find(r => r.id === u._idrol);
                           const rolColor = u._idrol === 1 ? '#7c3aed' : u._idrol === 2 ? '#0891b2' : '#16a34a';
-                          const rolBg   = u._idrol === 1 ? '#ede9fe' : u._idrol === 2 ? '#e0f2fe' : '#dcfce7';
+                          const rolBg = u._idrol === 1 ? '#ede9fe' : u._idrol === 2 ? '#e0f2fe' : '#dcfce7';
                           return (
                             <select
                               value={u._idrol || ''}
                               onChange={async e => {
                                 const newRol = parseInt(e.target.value);
-                                // Try update first
                                 const { data: updatedRows } = await supabase.from('rolpermisos').update({ idrol: newRol }).eq('idusuario', u.idusuario).select();
-                                // If no rows were updated, they have no permissions yet, so insert
                                 if (!updatedRows || updatedRows.length === 0) {
                                   await supabase.from('rolpermisos').insert([{ idusuario: u.idusuario, idrol: newRol, idpermiso: 1 }]);
                                 }
@@ -525,6 +616,9 @@ export default function SuperAdminPortal() {
                             </select>
                           );
                         })()}
+                      </TD>
+                      <TD style={{ textAlign: 'center' }}>
+                        <input type="checkbox" checked={!!u.issuperadmin} readOnly style={{ width: 16, height: 16, accentColor: 'var(--accent)' }} />
                       </TD>
                       <TD>
                         <span style={{ background: u.idestado === 1 ? '#dcfce7' : '#fee2e2', color: u.idestado === 1 ? '#16a34a' : '#dc2626', padding: '3px 8px', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700 }}>
