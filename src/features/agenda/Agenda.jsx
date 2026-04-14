@@ -84,7 +84,7 @@ export default function Agenda({ user, tenant }) {
           return {
             id: a.idcita,
             clientId: a.idcliente,
-            serviceId: null, 
+            serviceId: a.idservicio, 
             date: start.split('T')[0] || new Date().toISOString().split('T')[0],
             time: start.includes('T') ? start.split('T')[1].substring(0, 5) : '09:00',
             duration: start && end ? (new Date(end) - new Date(start)) / 60000 : 30,
@@ -213,6 +213,7 @@ export default function Agenda({ user, tenant }) {
 
     const payload = {
       idcliente: parseInt(form.clientId),
+      idservicio: form.serviceId ? parseInt(form.serviceId) : null,
       idusuario: form.specialistId ? parseInt(form.specialistId) : null,
       fechahorainicio: startStr,
       fechahorafin: endStr,
@@ -293,16 +294,20 @@ export default function Agenda({ user, tenant }) {
   const apptStyle = (appt) => {
     const top    = (timeToDec(appt.time) - 7) * SLOT_H;
     const height = Math.max((appt.duration / 60) * SLOT_H, 28);
-    const sColor = statusColor[appt.status] || 'var(--primary)';
+    
+    // Exact Service Color
+    const service = services.find(s => s.id === appt.serviceId || s.idservicios === appt.serviceId);
+    const baseColor = service?.color || 'var(--primary)';
+    
     return {
       position: 'absolute', top: top + 1, left: 4, right: 4,
       minHeight: height - 2, height: height - 2,
-      background: 'linear-gradient(135deg, var(--primary), var(--primary-deep))',
+      background: baseColor,
       borderRadius: 10, padding: '6px 9px',
       color: '#fff', fontSize: '0.82rem', cursor: 'pointer',
-      boxShadow: '0 3px 10px var(--primary-glow-sm)',
+      boxShadow: `0 4px 12px ${baseColor}33`,
       overflow: 'hidden', zIndex: 10,
-      borderLeft: `4px solid ${sColor}`,
+      borderLeft: `4px solid rgba(255,255,255,0.4)`,
       transition: 'box-shadow 0.2s, transform 0.2s',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
     };
