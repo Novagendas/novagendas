@@ -1,50 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import ThemeToggle from '../ThemeToggle';
+import NotificationsPopover from '../NotificationsPopover';
 
 /* ── Route label map ────────────────────────────────────── */
 const ROUTE_META = {
-  dashboard: { label: 'Dashboard',              emoji: '📊' },
-  agenda:    { label: 'Agenda de Citas',         emoji: '📅' },
-  clients:   { label: 'Pacientes',               emoji: '👥' },
-  services:  { label: 'Catálogo de Servicios',   emoji: '💉' },
-  payments:  { label: 'Registro de Pagos',       emoji: '💳' },
-  inventory: { label: 'Inventario',              emoji: '📦' },
-  users:     { label: 'Gestión de Usuarios',     emoji: '🔑' },
-  audit:     { label: 'Registro de Auditoría',   emoji: '📜' },
+  dashboard: { label: 'Dashboard', emoji: '📊' },
+  agenda: { label: 'Agenda de Citas', emoji: '📅' },
+  clients: { label: 'Pacientes', emoji: '👥' },
+  services: { label: 'Catálogo de Servicios', emoji: '💉' },
+  payments: { label: 'Registro de Pagos', emoji: '💳' },
+  inventory: { label: 'Inventario', emoji: '📦' },
+  users: { label: 'Gestión de Usuarios', emoji: '🔑' },
+  audit: { label: 'Registro de Auditoría', emoji: '📜' },
 };
 
 export default function Layout({ children, user, tenant, currentRoute, onNavigate, onLogout }) {
-  const [theme, setTheme] = useState(() => localStorage.getItem('novagendas_theme') || 'light');
-
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('novagendas_theme', theme);
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
+  const [mobileOpen, setMobileOpen] = useState(false);
   const meta = ROUTE_META[currentRoute] || { label: currentRoute, emoji: '🏠' };
   const today = new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  // Cerrar sidebar en navegación móvil
+  const handleNavigate = (route) => {
+    onNavigate(route);
+    setMobileOpen(false);
+  };
+
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-      {/* Sidebar Navigation */}
-      <Sidebar user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={onNavigate} onLogout={onLogout} />
+    <div style={{ display: 'flex', width: '100%', height: '100vh', overflow: 'hidden', background: 'var(--bg)', position: 'relative' }}>
+
+      {/* Mobile Overlay */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(2px)', zIndex: 998, animation: 'fadeIn 0.2s' }}
+        />
+      )}
+
+      {/* Sidebar Wrapper */}
+      <div
+        className={`sidebar-wrapper ${mobileOpen ? 'open' : ''}`}
+        style={{
+          height: '100vh',
+          zIndex: 999,
+          transition: 'transform 0.3s var(--ease)',
+          flexShrink: 0
+        }}
+      >
+        <Sidebar user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={handleNavigate} onLogout={onLogout} />
+      </div>
 
       {/* Main Content Area */}
       <div className="animate-fade-in" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        
+
         {/* Top Header Bar */}
         <header className="glass" style={{
           height: 72, minHeight: 72,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0 2rem',
-          borderBottom: '1px solid var(--border)',
           zIndex: 100,
           position: 'relative'
         }}>
           {/* Breadcrumb / Title Section */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{
+            {/* Hamburger Button (Mobile Only) */}
+            <button
+              className="mobile-only-btn btn-icon btn-ghost"
+              onClick={() => setMobileOpen(true)}
+              style={{ display: 'none', marginRight: '-0.5rem' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+            </button>
+
+            <div className="hide-on-mobile" style={{
               width: 42, height: 42,
               background: 'var(--primary-light)',
               borderRadius: '12px',
@@ -66,33 +94,16 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
 
           {/* Right Action Center */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            
-            {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme}
-              className="btn-outline"
-              title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
-              style={{ width: 40, height: 40, padding: 0, borderRadius: 10, border: '1px solid var(--border)' }}
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
 
-            {/* Notifications Button */}
-            <button 
-              className="btn-outline"
-              title="Notificaciones"
-              style={{ width: 40, height: 40, padding: 0, borderRadius: 10, border: '1px solid var(--border)', position: 'relative' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-              </svg>
-              <div style={{ position: 'absolute', top: 10, right: 10, width: 8, height: 8, background: 'var(--danger)', borderRadius: '50%', border: '2px solid var(--surface)' }} />
-            </button>
+            <ThemeToggle style={{ position: 'relative' }} />
+
+            {/* Notifications Popover */}
+            <NotificationsPopover user={user} tenant={tenant} />
 
             <div style={{ height: 24, width: 1, background: 'var(--border)', margin: '0 0.5rem' }} />
 
             {/* Profile Summary */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3" onClick={() => onNavigate('profile')} style={{ cursor: 'pointer' }}>
               <div style={{ textAlign: 'right', display: 'none', md: 'block' }}>
                 <p style={{ fontSize: '0.85rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>{user?.name?.split(' ')[0]}</p>
                 <p style={{ fontSize: '0.65rem', fontWeight: 600, margin: 0, color: 'var(--text-4)', textTransform: 'uppercase' }}>{user?.role}</p>
@@ -111,22 +122,14 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
         </header>
 
         {/* Page Main Content */}
-        <main style={{ 
-          flex: 1, 
-          overflowY: 'auto', 
+        <main style={{
+          flex: 1,
+          overflowY: 'auto',
           padding: '2rem',
           background: 'var(--bg)',
           position: 'relative'
         }}>
-          {/* Subtle Background Decoration */}
-          <div style={{
-            position: 'absolute', top: 0, right: 0,
-            width: '400px', height: '400px',
-            background: 'radial-gradient(circle, var(--primary-light) 0%, transparent 70%)',
-            pointerEvents: 'none', opacity: 0.5, zIndex: 0
-          }} />
-          
-          <div style={{ position: 'relative', zIndex: 1, maxWidth: '1400px', margin: '0 auto' }}>
+          <div style={{ position: 'relative', zIndex: 1, maxWidth: '1400px', margin: '0 auto', height: '100%' }}>
             {children}
           </div>
         </main>

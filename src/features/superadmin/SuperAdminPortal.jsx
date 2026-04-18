@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import ParticleBackground from '../../components/ParticleBackground';
+import ThemeToggle from '../../components/ThemeToggle';
 
 /* ─── Constants ────────────────────────────────────── */
 const ESTADO_OPTIONS = [
@@ -406,8 +408,10 @@ export default function SuperAdminPortal() {
   const port = window.location.port ? `:${window.location.port}` : (isLocal ? ':5173' : '');
 
   if (!adminLogged) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--surface-2)' }}>
-      <div className="card flex-col gap-4" style={{ width: 360, padding: '2.5rem' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--surface-2)', position: 'relative' }}>
+      <ParticleBackground />
+      <ThemeToggle style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 100 }} />
+      <div className="card flex-col gap-4" style={{ width: 360, padding: '2.5rem', zIndex: 1 }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: 72, height: 72, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', overflow: 'hidden' }}>
             <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
@@ -438,7 +442,7 @@ export default function SuperAdminPortal() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-main)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-main)', position: 'relative' }}>
 
       {/* ── Sticky header ── */}
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0.85rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)' }}>
@@ -461,10 +465,13 @@ export default function SuperAdminPortal() {
             ))}
           </div>
         </div>
-        <button className="btn btn-primary" style={{ borderRadius: 10, padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-          onClick={tab === 'negocios' ? openAddTenant : openAddUser}>
-          ＋ {tab === 'negocios' ? 'Nueva Tienda' : 'Nuevo Usuario'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <ThemeToggle style={{ position: 'relative' }} />
+          <button className="btn btn-primary" style={{ borderRadius: 10, padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+            onClick={tab === 'negocios' ? openAddTenant : openAddUser}>
+            ＋ {tab === 'negocios' ? 'Nueva Tienda' : 'Nuevo Usuario'}
+          </button>
+        </div>
       </div>
 
       <div style={{ maxWidth: 1360, margin: '0 auto', padding: '1.75rem 2rem' }}>

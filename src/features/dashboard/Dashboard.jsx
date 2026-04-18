@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../Supabase/supabaseClient';
 
-/* ── Stat card ───────────────────────────────────────── */
 const StatCard = ({ label, value, sub, color, icon, delay = 0 }) => (
   <div className="card-stat animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
-    {/* Decorative Bubbles */}
-    <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: `${color}08`, pointerEvents: 'none' }} />
-    <div style={{ position: 'absolute', bottom: -10, left: -10, width: 40, height: 40, borderRadius: '50%', background: `${color}05`, pointerEvents: 'none' }} />
-    
     <div style={{ 
-      width: 48, height: 48, borderRadius: '14px', 
+      width: 44, height: 44, borderRadius: 'var(--radius)', 
       background: `${color}12`, 
       display: 'flex', alignItems: 'center', justifyContent: 'center', 
       marginBottom: '1.25rem',
@@ -19,8 +14,8 @@ const StatCard = ({ label, value, sub, color, icon, delay = 0 }) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
     </div>
     
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-      <h2 style={{ fontSize: '2rem', margin: 0, color: 'var(--text)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+      <h2 style={{ fontSize: '1.75rem', margin: 0, color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
         {value}
       </h2>
       <p style={{ fontWeight: 700, color: 'var(--text-2)', fontSize: '0.875rem', margin: 0 }}>{label}</p>
@@ -84,7 +79,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
 
       const { data: appData } = await supabase
         .from('cita')
-        .select(`*, estadocita(descripcion), cliente(nombre, cedula)`)
+        .select(`*, estadocita(descripcion), cliente(nombre, cedula), usuario(nombre, apellido)`)
         .eq('idnegocios', tenant.id)
         .gte('fechahorainicio', `${todayStr}T00:00:00`)
         .lte('fechahorainicio', `${todayStr}T23:59:59`);
@@ -128,25 +123,23 @@ export default function Dashboard({ user, tenant, onNavigate }) {
       
       {/* 🟢 Greeting Banner */}
       <div style={{ 
-        background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)', 
-        borderRadius: '24px', 
-        padding: '2.5rem', 
+        background: 'var(--surface)', 
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)', 
+        padding: '2rem 2.5rem', 
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
-        boxShadow: '0 20px 40px -10px var(--primary-light)', 
-        position: 'relative', overflow: 'hidden',
-        color: '#fff'
+        boxShadow: 'var(--shadow-sm)'
       }}>
-        <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '300px', height: '300px', background: 'rgba(255,255,255,0.08)', borderRadius: '50%', filter: 'blur(60px)' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h1 style={{ color: '#fff', margin: '0 0 0.5rem', fontSize: '2.4rem', fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em' }}>
-            ¡Hola de nuevo, {user?.name?.split(' ')[0] || 'Admin'}! ✨
+        <div>
+          <h1 style={{ color: 'var(--text)', margin: '0 0 0.25rem', fontSize: '1.75rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+            Bienvenido, {user?.name?.split(' ')[0] || 'Administrador'}
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.85)', margin: 0, fontSize: '1rem', fontWeight: 600 }}>
-             Tienes {data.todayAppts.length} citas programadas para hoy. ¡Que sea un gran día!
+          <p style={{ color: 'var(--text-3)', margin: 0, fontSize: '0.95rem' }}>
+             Hoy tienes {data.todayAppts.length} citas programadas. Manten el control de tu negocio.
           </p>
         </div>
-        <button className="btn" style={{ background: '#fff', color: 'var(--primary)', fontWeight: 800, padding: '0.85rem 1.5rem', borderRadius: '14px', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }} onClick={() => onNavigate('agenda')}>
-          Ver Agenda Completa
+        <button className="btn btn-primary" onClick={() => onNavigate('agenda')}>
+          Ver Agenda Diaria
         </button>
       </div>
 
@@ -156,7 +149,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
       </div>
 
       {/* 🔵 Main Layout Sections */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="dashboard-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '1.5rem', alignItems: 'start' }}>
         
         {/* Left: Agenda Table */}
         <div className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

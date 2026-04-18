@@ -14,6 +14,7 @@ export default function Clients({ user, tenant }) {
 
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const [editForm, setEditForm] = useState({ doc: '', name: '', phone: '' });
   const [habeas, setHabeas] = useState(false);
 
@@ -94,6 +95,7 @@ export default function Clients({ user, tenant }) {
       });
       setForm({ doc: '', name: '', phone: '' });
       setHabeas(false);
+      setShowRegisterModal(false);
       fetchData();
     } else {
       alert("Error registrando paciente: " + error.message);
@@ -181,6 +183,11 @@ export default function Clients({ user, tenant }) {
           </div>
         </div>
 
+        {/* Action Button */}
+        <button className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', position: 'sticky', top: 0, zIndex: 10 }} onClick={() => setShowRegisterModal(true)}>
+          + Nuevo Paciente
+        </button>
+
         {/* Patient List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {loading ? (
@@ -248,36 +255,6 @@ export default function Clients({ user, tenant }) {
               </div>
             );
           })}
-        </div>
-
-        {/* Register form */}
-        <div className="card" style={{ padding: '1.5rem', background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%)', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px var(--success)' }} />
-            <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>Nuevo Paciente</h4>
-          </div>
-
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div className="input-group">
-              <input className="input-field" placeholder="CC / Documento *" required value={form.doc} onChange={e => setForm({ ...form, doc: e.target.value })} style={{ background: 'var(--bg)' }} />
-            </div>
-            <div className="input-group">
-              <input className="input-field capitalize-text" placeholder="Nombre Completo *" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ background: 'var(--bg)' }} />
-            </div>
-            <div className="input-group">
-              <input className="input-field" placeholder="WhatsApp (Opcional)" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={{ background: 'var(--bg)' }} />
-            </div>
-
-            <div style={{ background: habeas ? 'var(--success-light)' : 'var(--surface)', border: `1px solid ${habeas ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`, padding: '0.85rem', borderRadius: 'var(--radius-sm)', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', transition: 'var(--transition)' }}>
-              <input type="checkbox" id="habeas" checked={habeas} onChange={e => setHabeas(e.target.checked)} required style={{ marginTop: 2, accentColor: habeas ? 'var(--success)' : 'var(--text-4)', width: 16, height: 16, flexShrink: 0, cursor: 'pointer' }} />
-              <label htmlFor="habeas" style={{ fontSize: '0.72rem', color: habeas ? 'var(--success)' : 'var(--text-4)', fontWeight: 600, lineHeight: 1.45, cursor: 'pointer', transition: 'var(--transition)' }}>
-                Autorizo el tratamiento de datos clínicos y personales (Ley 1581 Habeas Data).
-              </label>
-            </div>
-            <button type="submit" className="btn btn-primary w-full" disabled={!habeas || saving} style={{ padding: '0.8rem', fontSize: '0.9rem', opacity: habeas ? 1 : 0.6 }}>
-              {saving ? 'Creando paciente...' : 'Aperturar Paciente'}
-            </button>
-          </form>
         </div>
       </div>
 
@@ -410,53 +387,53 @@ export default function Clients({ user, tenant }) {
 
       {/* ── Note Modal (Glassmorphism) ── */}
       {showNoteModal && (
-        <div className="modal-overlay animate-fade-in" onClick={e => !saving && e.target === e.currentTarget && setShowNoteModal(false)} style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 540, padding: 0, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-
-            {/* Modal Header */}
-            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.5rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span className="badge badge-primary" style={{ marginBottom: '0.5rem', display: 'inline-block' }}>Registro Médico</span>
-                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Añadir Evolución</h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-3)' }}>Paciente: <strong style={{ color: 'var(--text)', textTransform: 'capitalize' }}>{activeClient?.name}</strong></p>
+        <div className="modal-overlay animate-fade-in" onClick={e => !saving && e.target === e.currentTarget && setShowNoteModal(false)}>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 540 }}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.6rem', borderRadius: '14px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Evolución Médica</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>Paciente: <strong className="capitalize-text" style={{ color: 'var(--primary)' }}>{activeClient?.name}</strong></p>
+                </div>
               </div>
-              <button disabled={saving} className="btn btn-ghost btn-icon" onClick={() => setShowNoteModal(false)} style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowNoteModal(false)} style={{ borderRadius: '12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSaveNote} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg)' }}>
-              <style>{`
-                @keyframes spinner { 100% { transform: rotate(360deg); } }
-                .capitalize-text { text-transform: capitalize; }
-              `}</style>
+            <form onSubmit={handleSaveNote} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-2)' }}>Procedimiento / Servicio Realizado</label>
-                <div style={{ position: 'relative' }}>
-                  <svg style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>
-                  <input className="input-field capitalize-text" placeholder="Ej. Toxina Botulínica 3 Zonas..." value={noteForm.title} onChange={e => setNoteForm({ ...noteForm, title: e.target.value })} required style={{ paddingLeft: '2.5rem', background: 'var(--surface)' }} />
-                </div>
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Tratamiento o Servicio</label>
+                <input className="input-field capitalize-text" placeholder="Ej. Aplicación de Toxina Botulínica" value={noteForm.title} onChange={e => setNoteForm({ ...noteForm, title: e.target.value })} required style={{ borderRadius: '12px' }} />
               </div>
               <div className="input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-2)' }}>Anotaciones Clínicas Detalladas</label>
-                <textarea className="input-field" rows="6" placeholder="Describe los detalles de la sesión:&#10;• Dosis y productos aplicados&#10;• Zonas tratadas&#10;• Reacciones del paciente&#10;• Indicaciones post-tratamiento dadas" value={noteForm.notas} onChange={e => setNoteForm({ ...noteForm, notas: e.target.value })} required style={{ background: 'var(--surface)', resize: 'vertical', lineHeight: 1.6 }} />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Observaciones de la Evolución</label>
+                <textarea className="input-field" rows="5" placeholder="Describe los detalles clínicos..." value={noteForm.notas} onChange={e => setNoteForm({ ...noteForm, notas: e.target.value })} required style={{ borderRadius: '16px', resize: 'none', padding: '1rem', lineHeight: 1.6 }} />
               </div>
 
-              <div style={{ background: 'var(--surface-2)', border: '1px dashed var(--border)', borderRadius: 10, padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--text-4)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 800 }}>
-                  {user?.name?.charAt(0) || 'AD'}
+              <div style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'var(--surface)', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', fontWeight: 800, color: 'var(--primary)' }}>
+                  {user?.name?.charAt(0) || 'A'}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-3)', fontWeight: 600 }}>Firma digital del profesional</p>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)', fontWeight: 700 }}>{user?.role === 'especialista' ? user.name : 'Administrador'}</p>
+                <div>
+                  <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase' }}>Firma del Profesional</p>
+                  <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{user?.role === 'especialista' ? user.name : 'Administrador de Sistema'}</p>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-outline" disabled={saving} style={{ flex: 1, padding: '0.85rem', borderRadius: 12 }} onClick={() => setShowNoteModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" disabled={saving} style={{ flex: 2, padding: '0.85rem', borderRadius: 12, boxShadow: '0 4px 16px var(--primary-glow)' }}>
-                  {saving ? 'Guardando Evolución...' : 'Generar Evolución Oficial'}
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setShowNoteModal(false)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', padding: '0.8rem', fontSize: '1rem', boxShadow: '0 8px 24px var(--primary-light)' }} disabled={saving}>
+                  {saving ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div className="spinner" style={{ width: '1.1rem', height: '1.1rem' }}></div>
+                      Guardando...
+                    </div>
+                  ) : 'Confirmar Registro Clínico'}
                 </button>
               </div>
             </form>
@@ -466,36 +443,94 @@ export default function Clients({ user, tenant }) {
 
       {/* ── Edit Patient Modal ── */}
       {showEditModal && (
-        <div className="modal-overlay animate-fade-in" onClick={e => !saving && e.target === e.currentTarget && setShowEditModal(false)} style={{ backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 480, padding: 0, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-
-            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.5rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800 }}>Editar Paciente</h3>
+        <div className="modal-overlay animate-fade-in" onClick={e => !saving && e.target === e.currentTarget && setShowEditModal(false)}>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 480 }}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'var(--accent-light)', color: 'var(--accent)', padding: '0.6rem', borderRadius: '14px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Editar Paciente</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>Actualiza los datos de contacto del paciente.</p>
+                </div>
               </div>
-              <button disabled={saving} className="btn btn-ghost btn-icon" onClick={() => setShowEditModal(false)} style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowEditModal(false)} style={{ borderRadius: '12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
 
-            <form onSubmit={handleEditClient} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--bg)' }}>
+            <form onSubmit={handleEditClient} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-2)' }}>CC / Documento</label>
-                <input className="input-field" required value={editForm.doc} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ background: 'var(--surface)' }} />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Documento de Identidad</label>
+                <input className="input-field" required value={editForm.doc} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ borderRadius: '12px' }} />
               </div>
               <div className="input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-2)' }}>Nombre Completo</label>
-                <input className="input-field capitalize-text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ background: 'var(--surface)' }} />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre Completo</label>
+                <input className="input-field capitalize-text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ borderRadius: '12px' }} />
               </div>
               <div className="input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-2)' }}>WhatsApp (Opcional)</label>
-                <input className="input-field" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ background: 'var(--surface)' }} />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Teléfono / WhatsApp</label>
+                <input className="input-field" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ borderRadius: '12px' }} />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button type="button" className="btn btn-outline" disabled={saving} style={{ flex: 1, padding: '0.85rem', borderRadius: 12 }} onClick={() => setShowEditModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" disabled={saving} style={{ flex: 2, padding: '0.85rem', borderRadius: 12, boxShadow: '0 4px 16px var(--primary-glow)' }}>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setShowEditModal(false)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', padding: '0.8rem', fontSize: '1rem', boxShadow: '0 8px 24px var(--primary-light)' }} disabled={saving}>
                   {saving ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── Nuevo Paciente Modal ── */}
+      {showRegisterModal && (
+        <div className="modal-overlay animate-fade-in" onClick={e => !saving && e.target === e.currentTarget && setShowRegisterModal(false)}>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 480 }}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.6rem', borderRadius: '14px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Nuevo Paciente</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>Crea una nueva ficha clínica para el sistema.</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowRegisterModal(false)} style={{ borderRadius: '12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleRegister} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
+              <div className="input-group">
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Documento de Identidad *</label>
+                <input className="input-field" required value={form.doc} onChange={e => setForm({ ...form, doc: e.target.value })} style={{ borderRadius: '12px' }} />
+              </div>
+              <div className="input-group">
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre Completo *</label>
+                <input className="input-field capitalize-text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ borderRadius: '12px' }} />
+              </div>
+              <div className="input-group">
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Teléfono / WhatsApp</label>
+                <input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={{ borderRadius: '12px' }} />
+              </div>
+
+              <div style={{ background: habeas ? 'var(--success-light)' : 'var(--bg-subtle)', border: `1px solid ${habeas ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`, padding: '1.25rem', borderRadius: '16px', display: 'flex', gap: '0.85rem', alignItems: 'flex-start', transition: 'all 0.2s ease' }}>
+                <input type="checkbox" id="habeas" checked={habeas} onChange={e => setHabeas(e.target.checked)} required style={{ marginTop: 4, accentColor: 'var(--success)', width: 18, height: 18, flexShrink: 0, cursor: 'pointer' }} />
+                <label htmlFor="habeas" style={{ fontSize: '0.75rem', color: habeas ? 'var(--success)' : 'var(--text-3)', fontWeight: 600, lineHeight: 1.5, cursor: 'pointer' }}>
+                  Autorizo el tratamiento de mis datos personales y clínicos de acuerdo a la Ley 1581 de Habeas Data y la política de privacidad.
+                </label>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setShowRegisterModal(false)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', padding: '0.8rem', fontSize: '1rem', boxShadow: '0 8px 24px var(--primary-light)' }} disabled={!habeas || saving}>
+                  {saving ? 'Procesando...' : 'Aperturar Paciente'}
                 </button>
               </div>
             </form>

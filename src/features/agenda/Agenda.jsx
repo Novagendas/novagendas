@@ -13,11 +13,10 @@ const startOf = (date, unit) => {
   d.setHours(0, 0, 0, 0);
   return d;
 };
-const toDateStr  = (d) => d.toISOString().split('T')[0];
-const toTimeStr  = (h, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-const timeToDec  = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
-const SLOT_H     = 72; // px per hour
-const HOURS      = Array.from({ length: 13 }, (_, i) => i + 7); // 7 AM - 7 PM
+const toDateStr = (d) => d.toISOString().split('T')[0];
+const toTimeStr = (h, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+const timeToDec = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
+const SLOT_H = 72; // px per hour
 const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 const statusColor = { 'Confirmada': 'var(--success)', 'En Espera': 'var(--warning)', 'Pendiente': 'var(--text-3)', 'Cancelada': 'var(--danger)' };
@@ -26,7 +25,7 @@ const statusColor = { 'Confirmada': 'var(--success)', 'En Espera': 'var(--warnin
 function buildMonthGrid(pivot) {
   const y = pivot.getFullYear(), m = pivot.getMonth();
   const first = new Date(y, m, 1);
-  const last  = new Date(y, m + 1, 0);
+  const last = new Date(y, m + 1, 0);
   const startDow = (first.getDay() + 6) % 7; // Mon=0
   const cells = [];
   for (let i = 0; i < startDow; i++) cells.push(null);
@@ -35,25 +34,150 @@ function buildMonthGrid(pivot) {
   return cells;
 }
 
+/* ─── Searchable Select Component ─────────────────────────── */
+const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filtered = options.filter(opt => 
+    opt.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedOpt = options.find(o => String(o.value) === String(value));
+
+  return (
+    <div className="input-group" ref={wrapperRef} style={{ position: 'relative' }}>
+      <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>{label}</label>
+      <div 
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          background: 'var(--surface)',
+          border: `1.5px solid ${isOpen ? 'var(--primary)' : 'var(--border-strong)'}`,
+          borderRadius: '16px',
+          padding: '0.85rem 1.15rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.85rem',
+          cursor: 'pointer',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          boxShadow: isOpen ? '0 0 0 4px var(--primary-light)' : 'var(--shadow-sm)'
+        }}
+      >
+        <span style={{ fontSize: '1.2rem' }}>{icon}</span>
+        <div style={{ flex: 1, color: selectedOpt ? 'var(--text)' : 'var(--text-5)', fontWeight: selectedOpt ? 700 : 500, fontSize: '0.95rem' }}>
+          {selectedOpt ? selectedOpt.label : placeholder}
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="3" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}><polyline points="6 9 12 15 18 9" /></svg>
+      </div>
+
+      {isOpen && (
+        <div className="animate-scale-in" style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          right: 0,
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: '20px',
+          marginTop: '0.6rem',
+          boxShadow: 'var(--shadow-xl)',
+          zIndex: 2000,
+          overflow: 'hidden'
+        }}>
+          <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+            <div style={{ position: 'relative' }}>
+              <input 
+                autoFocus
+                className="input-field"
+                placeholder="Escribe para buscar..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                style={{ padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.9rem', borderRadius: '12px', border: '1.5px solid var(--border-strong)', background: 'var(--surface)' }}
+              />
+              <svg style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+          </div>
+          <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+            {filtered.length > 0 ? filtered.map(opt => (
+              <div 
+                key={opt.value}
+                onClick={() => { onChange(opt.value); setIsOpen(false); setSearch(''); }}
+                style={{
+                  padding: '0.9rem 1.25rem',
+                  fontSize: '0.925rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  background: String(value) === String(opt.value) ? 'var(--primary-light)' : 'transparent',
+                  color: String(value) === String(opt.value) ? 'var(--primary)' : 'var(--text-2)',
+                  transition: 'all 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = String(value) === String(opt.value) ? 'var(--primary-light)' : 'var(--bg-subtle)'}
+                onMouseLeave={e => e.currentTarget.style.background = String(value) === String(opt.value) ? 'var(--primary-light)' : 'transparent'}
+              >
+                {opt.label}
+                {String(value) === String(opt.value) && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>}
+              </div>
+            )) : (
+              <div style={{ padding: '2rem 1.5rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-4)', fontWeight: 500 }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>🔍</div>
+                No se encontraron resultados para "{search}"
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Agenda({ user, tenant }) {
   const [appointments, setAppointments] = useState([]);
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
-  const [loading, setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
   const [specialists, setSpecialists] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+  
+  // Configurable working hours
+  const [workHours, setWorkHours] = useState({ start: 6, end: 21 });
+  const HOURS = Array.from({ length: workHours.end - workHours.start + 1 }, (_, i) => i + workHours.start);
+  const START_H = workHours.start;
+
+  const showSnack = (message, type = 'success') => {
+    setSnackbar({ show: true, message, type });
+    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   /* ------ View state ------ */
-  const [view, setView]    = useState('week'); // 'day' | 'week' | 'month'
-  const [pivot, setPivot]  = useState(new Date()); 
+  const [view, setView] = useState('week'); // 'day' | 'week' | 'month'
+  const [pivot, setPivot] = useState(new Date());
 
   /* ------ Modal state ------ */
-  const [showModal, setShowModal]   = useState(false);
-  const [editId, setEditId]         = useState(null);
-  const [form, setForm]             = useState({ clientId: '', serviceId: '', specialistId: '', date: '', time: '09:00' });
+  const [showModal, setShowModal] = useState(false);
+  const [showHoursModal, setShowHoursModal] = useState(false);
+  const [tempWorkHours, setTempWorkHours] = useState({ start: 6, end: 21 });
+  const [editId, setEditId] = useState(null);
+  const [form, setForm] = useState({ clientId: '', serviceIds: [], specialistId: '', date: '', time: '09:00' });
+  const [showServiceMenu, setShowServiceMenu] = useState(false);
+  const [serviceSearch, setServiceSearch] = useState('');
 
   /* ------ Detail popover ------ */
-  const [detailAppt, setDetailAppt] = useState(null); 
-  const [editStatus, setEditStatus] = useState(null);  
+  const [detailAppt, setDetailAppt] = useState(null);
+  const [editStatus, setEditStatus] = useState(null);
 
   const fetchData = async () => {
     if (!tenant?.id) return;
@@ -62,36 +186,67 @@ export default function Agenda({ user, tenant }) {
     try {
       const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
       const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
-      const { data: usrData } = await supabase.from('usuario').select('*').eq('idnegocios', tenant.id);
       
+      // Fetch users with 'profesional' role (idrol = 3) via junction table
+      const { data: specData } = await supabase
+        .from('rolpermisos')
+        .select(`
+          idusuario,
+          usuario:idusuario (idusuario, nombre, apellido, idnegocios)
+        `)
+        .eq('idrol', 3);
+
+      const filteredSpecs = specData
+        ?.map(s => s.usuario)
+        .filter(u => u && u.idnegocios === tenant.id) || [];
+      
+      // Deduplicate
+      const uniqueSpecs = Array.from(new Map(filteredSpecs.map(u => [u.idusuario, u])).values());
+
       setClients(cliData || []);
       setServices(svcData || []);
-      setSpecialists(usrData || []);
+      setSpecialists(uniqueSpecs);
 
       const { data: apptData, error } = await supabase
         .from('cita')
         .select(`
           *,
-          estadocita (descripcion)
+          estadocita (descripcion),
+          usuario (nombre, apellido),
+          citaservicios (
+            idservicios,
+            servicios (*)
+          )
         `)
         .eq('idnegocios', tenant.id);
 
       if (!error && apptData) {
         const mapped = apptData.map(a => {
-          const start = a.fechahorainicio || '';
-          const end = a.fechahorafin || '';
+          const startStr = a.fechahorainicio || '';
+          const endStr = a.fechahorafin || '';
           
+          if (!startStr) return null;
+
+          // Parse to local date object
+          const startD = new Date(startStr.replace(' ', 'T'));
+          const endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + 30 * 60000);
+
+          const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
+          const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
+
           return {
             id: a.idcita,
             clientId: a.idcliente,
-            serviceId: a.idservicio, 
-            date: start.split('T')[0] || new Date().toISOString().split('T')[0],
-            time: start.includes('T') ? start.split('T')[1].substring(0, 5) : '09:00',
-            duration: start && end ? (new Date(end) - new Date(start)) / 60000 : 30,
+            serviceIds: apptServices.map(s => s.idservicios),
+            services: apptServices,
+            specialistId: a.idusuario,
+            date: toDateStr(startD),
+            time: toTimeStr(startD.getHours(), startD.getMinutes()),
+            duration: totalDuration,
             status: a.estadocita?.descripcion || 'Pendiente',
-            doctor: a.idusuario ? 'Especialista' : 'Pendiente'
+            doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : 'Pendiente'
           };
-        });
+        }).filter(Boolean);
         setAppointments(mapped);
       }
     } catch (err) {
@@ -105,19 +260,19 @@ export default function Agenda({ user, tenant }) {
     fetchData();
   }, [tenant]);
 
-  const openDetail  = (appt, e) => { e.stopPropagation(); setDetailAppt(appt); setEditStatus(appt.status); };
+  const openDetail = (appt, e) => { e.stopPropagation(); setDetailAppt(appt); setEditStatus(appt.status); };
   const closeDetail = () => setDetailAppt(null);
 
-  const saveStatus  = async () => {
+  const saveStatus = async () => {
     const statusMap = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4 };
     const statusId = statusMap[editStatus] || 1;
-    
+
     const { error } = await supabase.from('cita').update({ idestadocita: statusId }).eq('idcita', detailAppt.id);
     if (!error) {
       await insertLog({
         accion: 'UPDATE',
         entidad: 'Cita',
-        descripcion: `Cambio de estado: ${detailAppt.status} → ${editStatus} (Cita #${detailAppt.id})`,
+        descripcion: `Cambio de estado: ${detailAppt.status} → ${editStatus} (Cita paciente: ${clients.find(c => c.idcliente === detailAppt.clientId)?.nombre || ''})`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
@@ -142,55 +297,54 @@ export default function Agenda({ user, tenant }) {
   };
 
   /* ------ Drag state ------ */
-  const dragging = useRef(null); 
+  const dragging = useRef(null);
 
   /* ── Navigation ── */
   const goToday = () => setPivot(new Date());
-  const goPrev  = () => {
-    if (view === 'day')   setPivot(p => addDays(p, -1));
-    if (view === 'week')  setPivot(p => addDays(p, -7));
+  const goPrev = () => {
+    if (view === 'day') setPivot(p => addDays(p, -1));
+    if (view === 'week') setPivot(p => addDays(p, -7));
     if (view === 'month') setPivot(p => { const d = new Date(p); d.setMonth(d.getMonth() - 1); return d; });
   };
-  const goNext  = () => {
-    if (view === 'day')   setPivot(p => addDays(p, 1));
-    if (view === 'week')  setPivot(p => addDays(p, 7));
+  const goNext = () => {
+    if (view === 'day') setPivot(p => addDays(p, 1));
+    if (view === 'week') setPivot(p => addDays(p, 7));
     if (view === 'month') setPivot(p => { const d = new Date(p); d.setMonth(d.getMonth() + 1); return d; });
   };
 
   /* ── Date helpers based on view ── */
   const weekStart = startOf(pivot, 'week');
-  const weekDays  = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const todayStr  = toDateStr(new Date());
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const todayStr = toDateStr(new Date());
 
   const headerTitle = (() => {
     const opts = { month: 'long', year: 'numeric' };
-    if (view === 'day')   return pivot.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    if (view === 'week')  return `Semana del ${weekDays[0].toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${weekDays[6].toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    if (view === 'day') return pivot.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (view === 'week') return `Semana del ${weekDays[0].toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${weekDays[6].toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`;
     if (view === 'month') return pivot.toLocaleDateString('es-CO', opts);
     return '';
   })();
 
   const openCreate = (date = '', time = '') => {
     setEditId(null);
-    setForm({ 
-      clientId: '', 
-      serviceId: '', 
-      specialistId: specialists.length ? specialists[0].idusuario : '', 
-      date: date || todayStr, 
-      time: time || '09:00' 
+    setForm({
+      clientId: '',
+      serviceIds: [],
+      specialistId: specialists.length ? specialists[0].idusuario : '',
+      date: date || todayStr,
+      time: time || '09:00'
     });
     setShowModal(true);
   };
 
   const startEdit = (appt) => {
     setEditId(appt.id);
-    const original = appointments.find(a => a.id === appt.id);
-    setForm({ 
-      clientId: appt.clientId, 
-      serviceId: appt.serviceId, 
-      specialistId: original?.idusuario || '',
-      date: appt.date, 
-      time: appt.time 
+    setForm({
+      clientId: appt.clientId,
+      serviceIds: appt.serviceIds || [],
+      specialistId: appt.specialistId || '',
+      date: appt.date,
+      time: appt.time
     });
     closeDetail();
     setShowModal(true);
@@ -198,58 +352,96 @@ export default function Agenda({ user, tenant }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.clientId || !form.date) return;
-    
-    // Duration estimation
-    let duration = 60;
-    if (form.serviceId) {
-      const svc = services.find(s => s.idservicios === parseInt(form.serviceId));
-      if (svc) duration = svc.duracion;
-    }
-    
-    const startStr = `${form.date}T${form.time}:00`;
-    const end = new Date(new Date(startStr).getTime() + duration * 60000);
-    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}T${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}:00`;
+    if (!form.clientId || !form.date || !form.time) return;
+    setSaving(true);
 
-    const payload = {
-      idcliente: parseInt(form.clientId),
-      idservicio: form.serviceId ? parseInt(form.serviceId) : null,
-      idusuario: form.specialistId ? parseInt(form.specialistId) : null,
-      fechahorainicio: startStr,
-      fechahorafin: endStr,
-      idestadocita: 2, // En Espera (Default)
-      idtipocita: 1,   // Valoracion default
-      idnegocios: tenant.id
-    };
+    try {
+      // Duration estimation from all selected services
+      const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
+      const duration = selectedServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
+      
+      const startStr = `${form.date}T${form.time}:00`;
+      const startDate = new Date(startStr);
+      if (isNaN(startDate.getTime())) throw new Error("Fecha u hora inválida.");
 
-    if (editId) {
-      const { error } = await supabase.from('cita').update(payload).eq('idcita', editId);
-      if (!error) {
-        await insertLog({
-          accion: 'UPDATE',
-          entidad: 'Cita',
-          descripcion: `Reprogramación de cita #${editId} para el ${form.date} a las ${form.time}`,
-          idUsuario: user.idusuario || user.id,
-          idNegocios: tenant.id
-        });
-        fetchData();
+      const endDate = new Date(startDate.getTime() + duration * 60000);
+      const pad = (n) => String(n).padStart(2, '0');
+      const formattedEnd = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`;
+
+      const payload = {
+        idcliente: parseInt(form.clientId),
+        idservicio: form.serviceIds[0] || null, // Keep first for legacy/compatibility
+        idusuario: form.specialistId ? parseInt(form.specialistId) : null,
+        fechahorainicio: startStr,
+        fechahorafin: formattedEnd,
+        idestadocita: 2, // En Espera (Default)
+        idtipocita: 1,   // Valoracion default
+        idnegocios: tenant.id
+      };
+
+      let appointmentId = editId;
+
+      if (editId) {
+        const { error } = await supabase.from('cita').update(payload).eq('idcita', editId);
+        if (error) throw error;
+      } else {
+        const { data: newAppt, error } = await supabase.from('cita').insert([payload]).select().single();
+        if (error) throw error;
+        appointmentId = newAppt.idcita;
       }
-    } else {
-      const { error } = await supabase.from('cita').insert([payload]);
-      if (!error) {
-        const client = clients.find(c => c.idcliente === payload.idcliente);
-        await insertLog({
-          accion: 'CREATE',
-          entidad: 'Cita',
-          descripcion: `Nueva cita agendada para ${client?.nombre || 'Paciente'} el ${form.date} a las ${form.time}`,
-          idUsuario: user.idusuario || user.id,
-          idNegocios: tenant.id
-        });
-        fetchData();
+
+      // Sync Multi-Services
+      await supabase.from('citaservicios').delete().eq('idcita', appointmentId);
+      if (form.serviceIds.length > 0) {
+        const serviceEntries = form.serviceIds.map(sid => ({
+          idcita: appointmentId,
+          idservicios: sid
+        }));
+        await supabase.from('citaservicios').insert(serviceEntries);
       }
+      
+      showSnack(editId ? 'Cita actualizada correctamente' : 'Cita agendada correctamente');
+
+      const client = clients.find(c => c.idcliente === payload.idcliente);
+      await insertLog({
+        accion: editId ? 'UPDATE' : 'CREATE',
+        entidad: 'Cita',
+        descripcion: `${editId ? 'Reprogramación' : 'Nueva cita'} para ${client?.nombre || 'Paciente'} el ${form.date} a las ${form.time}`,
+        idUsuario: user.idusuario || user.id,
+        idNegocios: tenant.id
+      });
+
+      fetchData();
+      setShowModal(false);
+      setEditId(null);
+    } catch (err) {
+      console.error("Error saving appointment:", err);
+      alert("Error al guardar la cita: " + (err.message || "Error desconocido"));
+    } finally {
+      setSaving(false);
     }
-    setShowModal(false);
-    setEditId(null);
+  };
+
+  const handleSaveWorkHours = () => {
+    const conflicts = appointments.filter(appt => {
+      const apptStart = timeToDec(appt.time);
+      const apptEnd = apptStart + (appt.duration / 60);
+      return apptStart < tempWorkHours.start || apptEnd > tempWorkHours.end;
+    });
+
+    if (conflicts.length > 0) {
+      showSnack(`No se puede modificar la jornada: hay ${conflicts.length} cita(s) fuera del nuevo horario. Elimínalas o muévelas primero.`, 'error');
+      return;
+    }
+
+    setWorkHours(tempWorkHours);
+    setShowHoursModal(false);
+    showSnack('Jornada actualizada correctamente');
+  };
+
+  const openHoursModal = () => {
+    setTempWorkHours(workHours);
+    setShowHoursModal(true);
   };
 
   const onDragStart = (e, appt) => {
@@ -258,20 +450,20 @@ export default function Agenda({ user, tenant }) {
     setTimeout(() => { if (e.target) e.target.style.opacity = '0.45'; }, 0);
   };
 
-  const onDragEnd   = (e) => { if (e.target) e.target.style.opacity = '1'; dragging.current = null; };
-  const onDragOver  = (e) => e.preventDefault();
+  const onDragEnd = (e) => { if (e.target) e.target.style.opacity = '1'; dragging.current = null; };
+  const onDragOver = (e) => e.preventDefault();
 
-  const onDropCell  = async (e, dateStr, hour) => {
+  const onDropCell = async (e, dateStr, hour) => {
     e.preventDefault();
     if (!dragging.current) return;
-    
+
     const apptId = dragging.current.id;
     const appt = appointments.find(a => a.id === apptId);
     if (!appt) return;
 
     const startStr = `${dateStr}T${toTimeStr(hour)}:00`;
     const end = new Date(new Date(startStr).getTime() + appt.duration * 60000);
-    const endStr = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}T${String(end.getHours()).padStart(2,'0')}:${String(end.getMinutes()).padStart(2,'0')}:00`;
+    const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}T${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}:00`;
 
     const { error } = await supabase.from('cita').update({
       fechahorainicio: startStr,
@@ -282,7 +474,7 @@ export default function Agenda({ user, tenant }) {
       await insertLog({
         accion: 'UPDATE',
         entidad: 'Cita',
-        descripcion: `Cita #${apptId} movida (Drag&Drop) al ${dateStr} ${toTimeStr(hour)}`,
+        descripcion: `Cita de paciente ${clients.find(c => c.idcliente === appt.clientId)?.nombre || ''} movida al ${dateStr} ${toTimeStr(hour)}`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
@@ -292,13 +484,13 @@ export default function Agenda({ user, tenant }) {
   };
 
   const apptStyle = (appt) => {
-    const top    = (timeToDec(appt.time) - 7) * SLOT_H;
+    const top = (timeToDec(appt.time) - START_H) * SLOT_H;
     const height = Math.max((appt.duration / 60) * SLOT_H, 28);
-    
-    // Exact Service Color
-    const service = services.find(s => s.id === appt.serviceId || s.idservicios === appt.serviceId);
+
+    // Exact Service Color (from first service)
+    const service = appt.services?.[0] || services.find(s => s.idservicios === appt.serviceIds?.[0]);
     const baseColor = service?.color || 'var(--primary)';
-    
+
     return {
       position: 'absolute', top: top + 1, left: 4, right: 4,
       minHeight: height - 2, height: height - 2,
@@ -337,9 +529,10 @@ export default function Agenda({ user, tenant }) {
         ))}
         {dayAppts.map(appt => {
           const client = clients.find(c => c.idcliente === appt.clientId);
+          const serviceNames = appt.services?.map(s => s.nombre).join(', ') || 'Consulta General';
           const cardH = Math.max((appt.duration / 60) * SLOT_H, 28);
-          const showTime = cardH > 34;
-          const showStatus = cardH > 52;
+          const showService = cardH > 40;
+          const showTime = cardH > 52;
           return (
             <div
               key={appt.id}
@@ -351,12 +544,17 @@ export default function Agenda({ user, tenant }) {
               onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 18px var(--primary-glow)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 3px 10px var(--primary-glow-sm)'; }}
             >
-              <div style={{ fontWeight: 700, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3 }}>
-                {client?.nombre || 'Cita'}
+              <div style={{ fontWeight: 800, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3, letterSpacing: '-0.02em', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
+                {client?.nombre || 'Paciente'} {client?.apellido || ''}
               </div>
+              {showService && (
+                <div style={{ fontSize: '0.72rem', opacity: 0.95, fontWeight: 600, marginTop: 1, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
+                  {serviceNames}
+                </div>
+              )}
               {showTime && (
-                <div style={{ fontSize: '0.7rem', opacity: 0.85, fontWeight: 600, marginTop: 1 }}>
-                  {appt.time} — {getEndTime(appt)}
+                <div style={{ fontSize: '0.67rem', opacity: 1, fontWeight: 700, marginTop: 'auto', background: 'rgba(0,0,0,0.15)', display: 'inline-flex', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                  {appt.time} - {getEndTime(appt)} • {appt.status}
                 </div>
               )}
             </div>
@@ -368,26 +566,28 @@ export default function Agenda({ user, tenant }) {
 
   const ViewDay = () => (
     <div style={{ display: 'flex', flex: 1, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)' }}>
-      <div style={{ width: 60, flexShrink: 0, position: 'relative' }}>
-        {HOURS.map(h => (
-          <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 10, paddingTop: 4, fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-4)', borderBottom: '1px solid var(--border)' }}>
-            {h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`}
-          </div>
-        ))}
-      </div>
-      <div style={{ flex: 1, borderLeft: '1px solid var(--border)', position: 'relative' }}>
-        <DayColumn dateStr={toDateStr(pivot)} />
+      <div style={{ display: 'flex', flex: 1 }}>
+        <div style={{ width: 60, flexShrink: 0, position: 'relative' }}>
+          {HOURS.map(h => (
+            <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 10, paddingTop: 4, fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-4)', borderBottom: '1px solid var(--border)' }}>
+              {h === 12 ? '12:00 PM' : h > 12 ? `${String(h - 12).padStart(2, '0')}:00 PM` : `${String(h).padStart(2, '0')}:00 AM`}
+            </div>
+          ))}
+        </div>
+        <div style={{ flex: 1, borderLeft: '1px solid var(--border)', position: 'relative' }}>
+          <DayColumn dateStr={toDateStr(pivot)} />
+        </div>
       </div>
     </div>
   );
 
   const ViewWeek = () => (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 20 }}>
         <div style={{ width: 60, flexShrink: 0 }} />
         {weekDays.map((d, i) => {
-          const ds       = toDateStr(d);
-          const isToday  = ds === todayStr;
+          const ds = toDateStr(d);
+          const isToday = ds === todayStr;
           return (
             <div key={i} style={{ flex: 1, padding: '10px 0', textAlign: 'center', borderLeft: '1px solid var(--border)', cursor: 'pointer' }} onClick={() => { setPivot(d); setView('day'); }}>
               <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{DAY_LABELS[i]}</div>
@@ -398,11 +598,11 @@ export default function Agenda({ user, tenant }) {
           );
         })}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex' }}>
+      <div style={{ flex: 1, display: 'flex' }}>
         <div style={{ width: 60, flexShrink: 0 }}>
           {HOURS.map(h => (
             <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 8, paddingTop: 4, fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-4)', borderBottom: '1px solid var(--border)' }}>
-              {h === 12 ? '12 PM' : h > 12 ? `${h - 12}p` : `${h}a`}
+              {h === 12 ? '12:00 PM' : h > 12 ? `${String(h - 12).padStart(2, '0')}:00 PM` : `${String(h).padStart(2, '0')}:00 AM`}
             </div>
           ))}
         </div>
@@ -428,8 +628,8 @@ export default function Agenda({ user, tenant }) {
         <div style={{ flex: 1, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gridAutoRows: '1fr', alignItems: 'stretch' }}>
           {grid.map((day, idx) => {
             if (!day) return <div key={idx} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }} />;
-            const ds       = toDateStr(day);
-            const isToday  = ds === todayStr;
+            const ds = toDateStr(day);
+            const isToday = ds === todayStr;
             const dayAppts = appointments.filter(a => a.date === ds);
             const isCurrentMonth = day.getMonth() === pivotMonth;
             return (
@@ -468,16 +668,26 @@ export default function Agenda({ user, tenant }) {
             <button className="btn btn-outline" style={{ padding: '0.45rem 0.9rem', fontSize: '0.82rem', fontWeight: 700 }} onClick={goToday}>Hoy</button>
             <div style={{ display: 'flex', gap: '0.2rem' }}>
               <button className="btn btn-ghost btn-icon" onClick={goPrev}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6" /></svg>
               </button>
               <button className="btn btn-ghost btn-icon" onClick={goNext}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6" /></svg>
               </button>
             </div>
             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, textTransform: 'capitalize' }}>{headerTitle}</h3>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            {/* Hours Config Button */}
+            <button 
+              className="btn btn-outline" 
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.9rem', fontSize: '0.82rem', fontWeight: 700 }}
+              onClick={openHoursModal}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Jornada: {workHours.start}:00 {workHours.start >= 12 ? 'PM' : 'AM'} — {workHours.end === 12 ? '12:00 PM' : workHours.end > 12 ? `${workHours.end - 12}:00 PM` : `${workHours.end}:00 AM`}
+            </button>
+
             <div style={{ display: 'flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0.2rem' }}>
               {[['day', 'Día'], ['week', 'Semana'], ['month', 'Mes']].map(([v, label]) => (
                 <button key={v} onClick={() => setView(v)} style={{ padding: '0.38rem 0.9rem', borderRadius: 7, border: 'none', fontFamily: 'var(--font-main)', fontSize: '0.82rem', fontWeight: view === v ? 700 : 500, background: view === v ? 'var(--surface)' : 'transparent', color: view === v ? 'var(--text)' : 'var(--text-3)', cursor: 'pointer', boxShadow: view === v ? 'var(--shadow-xs)' : 'none', transition: 'var(--transition)' }}>
@@ -486,7 +696,7 @@ export default function Agenda({ user, tenant }) {
               ))}
             </div>
             <button className="btn btn-primary" style={{ padding: '0.55rem 1.1rem', fontSize: '0.875rem' }} onClick={() => openCreate()}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               Agendar Cita
             </button>
           </div>
@@ -495,92 +705,421 @@ export default function Agenda({ user, tenant }) {
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {loading ? <div style={{ padding: '4rem', textAlign: 'center' }}>Cargando agenda...</div> : (
             <>
-              {view === 'day'   && <ViewDay />}
-              {view === 'week'  && <ViewWeek />}
+              {view === 'day' && <ViewDay />}
+              {view === 'week' && <ViewWeek />}
               {view === 'month' && <ViewMonth />}
             </>
           )}
         </div>
       </div>
 
-      {showModal && (
-        <div className="card animate-slide-right" style={{ minWidth: 320, width: 320, height: '100%', overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{editId ? 'Editar Cita' : 'Nueva Cita'}</h3>
-            <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}>✕</button>
+      {/* Configuration Hours Modal */}
+      {showHoursModal && (
+        <div className="modal-overlay" onClick={() => setShowHoursModal(false)}>
+          <div className="modal-box" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.65rem', borderRadius: '14px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em' }}>Jornada Laboral</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>Define el horario de atención.</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowHoursModal(false)} style={{ borderRadius: '12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--surface)' }}>
+              <div className="modal-scroll-area" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                  <div className="input-group">
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>Apertura</label>
+                    <select 
+                      className="input-field"
+                      value={tempWorkHours.start} 
+                      onChange={e => setTempWorkHours(prev => ({ ...prev, start: parseInt(e.target.value) }))}
+                      style={{ borderRadius: '16px', height: '52px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={i}>{i}:00 AM</option>
+                      ))}
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i+12} value={i+12}>{i === 0 ? '12' : i}:00 PM</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="input-group">
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>Cierre</label>
+                    <select 
+                      className="input-field"
+                      value={tempWorkHours.end} 
+                      onChange={e => setTempWorkHours(prev => ({ ...prev, end: parseInt(e.target.value) }))}
+                      style={{ borderRadius: '16px', height: '52px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i} value={i}>{i}:00 AM</option>
+                      ))}
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i+12} value={i+12}>{i === 0 ? '12' : i}:00 PM</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ background: 'var(--primary-light)', padding: '1.25rem', borderRadius: '18px', border: '1px solid rgba(37, 99, 235, 0.1)', display: 'flex', gap: '0.85rem', alignItems: 'flex-start' }}>
+                  <div style={{ marginTop: '0.15rem' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--primary-deep)', fontWeight: 600, lineHeight: 1.5 }}>
+                    Los cambios afectarán la visualización de la agenda. Valida que no existan citas fuera del nuevo horario.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1.25rem', background: 'var(--surface)' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '16px', height: '52px' }} onClick={() => setShowHoursModal(false)}>Cancelar</button>
+                <button type="button" className="btn btn-primary" style={{ flex: 2, borderRadius: '16px', height: '52px', fontWeight: 800, fontSize: '1rem', boxShadow: '0 8px 24px var(--primary-light)' }} onClick={handleSaveWorkHours}>
+                  Guardar Jornada
+                </button>
+              </div>
+            </div>
           </div>
+        </div>
+      )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
-            <div className="input-group">
-              <label>Paciente</label>
-              <select className="input-field" value={form.clientId} onChange={e => setForm({ ...form, clientId: e.target.value })} required>
-                <option value="" disabled>Selecciona paciente...</option>
-                {clients.map(c => <option key={c.idcliente} value={c.idcliente}>{c.nombre} {c.apellido}</option>)}
-              </select>
-            </div>
-
-            <div className="input-group">
-              <label>Tratamiento (Opcional)</label>
-              <select className="input-field" value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value })}>
-                <option value="">Selecciona servicio...</option>
-                {services.map(s => <option key={s.idservicios} value={s.idservicios}>{s.nombre} ({s.duracion}m)</option>)}
-              </select>
-            </div>
-
-            <div className="input-group">
-              <label>Profesional / Especialista</label>
-              <select className="input-field" value={form.specialistId} onChange={e => setForm({ ...form, specialistId: e.target.value })} required>
-                <option value="" disabled>Selecciona profesional...</option>
-                {specialists.map(u => <option key={u.idusuario} value={u.idusuario}>{u.nombre} {u.apellido}</option>)}
-              </select>
-            </div>
-
-            <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div className="input-group">
-                <label>Fecha</label>
-                <input type="date" className="input-field" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
+      {showModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal-box" style={{ maxWidth: 520 }}>
+            {/* Professional Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '2rem 2rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.75rem', borderRadius: '14px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em' }}>{editId ? 'Gestión de Cita' : 'Nueva Cita'}</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>Agenda servicios para tus pacientes.</p>
+                </div>
               </div>
-              <div className="input-group">
-                <label>Hora</label>
-                <input type="time" className="input-field" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} required />
-              </div>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)} style={{ borderRadius: '12px', width: '38px', height: '38px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
             </div>
 
-            <button type="submit" className="btn btn-primary w-full">Confirmar</button>
-          </form>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: 'var(--surface)' }}>
+              <div className="modal-scroll-area" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <SearchableSelect 
+                  label="Paciente Responsable"
+                  placeholder="Busca un paciente..."
+                  icon="👤"
+                  options={clients.map(c => ({ value: c.idcliente, label: `${c.nombre} ${c.apellido} (${c.cedula || 'N/A'})` }))}
+                  value={form.clientId}
+                  onChange={val => setForm({ ...form, clientId: val })}
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                  <div className="input-group">
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Servicios & Tratamientos</label>
+                    <button 
+                      type="button" 
+                      className="btn btn-outline"
+                      onClick={() => setShowServiceMenu(true)}
+                      style={{
+                        height: '54px',
+                        borderRadius: '16px',
+                        justifyContent: 'space-between',
+                        padding: '0 1.25rem',
+                        background: form.serviceIds.length > 0 ? 'var(--primary-light)' : 'var(--surface)',
+                        borderColor: form.serviceIds.length > 0 ? 'var(--primary)' : 'var(--border-strong)',
+                        color: form.serviceIds.length > 0 ? 'var(--primary)' : 'var(--text-3)',
+                        width: '100%',
+                        borderWidth: '1.5px',
+                        fontWeight: 700
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
+                        <span>{form.serviceIds.length > 0 ? `${form.serviceIds.length} seleccionados` : 'Elegir...'}</span>
+                      </div>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                  </div>
+
+                  <SearchableSelect 
+                    label="Profesional Asignado"
+                    placeholder="Busca profesional..."
+                    icon="👨‍⚕️"
+                    options={specialists.map(u => ({ value: u.idusuario, label: `${u.nombre} ${u.apellido}` }))}
+                    value={form.specialistId}
+                    onChange={val => setForm({ ...form, specialistId: val })}
+                  />
+                </div>
+
+                {form.serviceIds.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', background: 'var(--bg-subtle)', padding: '1rem', borderRadius: '20px', border: '1.5px dashed var(--border)' }}>
+                    {form.serviceIds.map(sid => {
+                      const s = services.find(sv => sv.idservicios === sid);
+                      return (
+                        <div key={sid} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '0.4rem 0.8rem', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', boxShadow: 'var(--shadow-xs)' }}>
+                          {s?.nombre}
+                          <span onClick={() => setForm({ ...form, serviceIds: form.serviceIds.filter(id => id !== sid) })} style={{ cursor: 'pointer', color: 'var(--danger)', fontSize: '1.25rem', lineHeight: 1 }}>×</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <div style={{ background: 'var(--bg-subtle)', border: '1.5px solid var(--border)', borderRadius: '24px', padding: '1.75rem', display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1.5rem' }}>
+                  <div className="input-group">
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>Fecha de Cita</label>
+                    <input type="date" className="input-field" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required style={{ borderRadius: '16px', height: '52px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }} />
+                  </div>
+                  <div className="input-group">
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>Hora</label>
+                    <input type="time" className="input-field" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} required style={{ borderRadius: '16px', height: '52px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }} />
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1.25rem', background: 'var(--surface)' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '16px', height: '54px' }} onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '16px', height: '54px', fontSize: '1.1rem', fontWeight: 800, boxShadow: '0 8px 24px var(--primary-light)' }} disabled={saving}>
+                  {saving ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div className="spinner" style={{ width: '1.2rem', height: '1.2rem' }}></div>
+                      Procesando...
+                    </div>
+                  ) : (editId ? 'Guardar Cambios' : 'Agendar Cita')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Snackbar */}
+      {snackbar.show && (
+        <div style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideIn 0.3s ease-out' }}>
+          <style>{`
+            @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          `}</style>
+          {snackbar.message}
         </div>
       )}
 
       {detailAppt && (() => {
         const client = clients.find(c => c.idcliente === detailAppt.clientId);
         const apptDate = detailAppt.date ? new Date(detailAppt.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
+        
         return (
           <div className="modal-overlay" onClick={closeDetail}>
-            <div className="modal-box animate-scale-in" style={{ maxWidth: 440, padding: 0, overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-              <div style={{ background: 'var(--primary)', padding: '1.5rem 1.75rem 1rem', color: '#fff' }}>
-                <h2 style={{ margin: 0, fontSize: '1.4rem' }}>{client?.nombre || 'Paciente'}</h2>
-                <p style={{ opacity: 0.8, fontSize: '0.85rem' }}>CC {client?.cedula || '—'}</p>
-              </div>
-              <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <p><strong>Fecha:</strong> {apptDate}</p>
-                <p><strong>Hora:</strong> {detailAppt.time}</p>
+            <div className="modal-box" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+              {/* Premium Header */}
+              <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%)', padding: '2.5rem 2rem 2rem', color: '#fff', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
+                  <button className="btn btn-ghost btn-icon" onClick={closeDetail} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '12px', width: '36px', height: '36px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                </div>
                 
-                <div className="input-group">
-                  <label>Estado</label>
-                  <select className="input-field" value={editStatus} onChange={e => setEditStatus(e.target.value)}>
-                    {['Confirmada', 'En Espera', 'Pendiente', 'Cancelada'].map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ background: 'rgba(255,255,255,0.25)', padding: '0.3rem 0.8rem', borderRadius: '10px', fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      Expediente de Cita
+                    </span>
+                    <span style={{ 
+                      padding: '0.3rem 0.8rem', 
+                      borderRadius: '10px', 
+                      fontSize: '0.65rem', 
+                      fontWeight: 800, 
+                      textTransform: 'uppercase',
+                      background: detailAppt.status === 'Confirmada' ? 'rgba(16, 185, 129, 0.3)' : detailAppt.status === 'Cancelada' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)',
+                      color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.2)'
+                    }}>
+                      {detailAppt.status}
+                    </span>
+                  </div>
+                  <h2 style={{ margin: 0, fontSize: '1.85rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+                    {client?.nombre || 'Paciente'} {client?.apellido || ''}
+                  </h2>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.9, fontSize: '0.85rem', fontWeight: 600 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Cédula: {client?.cedula || 'N/A'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Body Content */}
+              <div className="modal-scroll-area" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.75rem', background: 'var(--surface)' }}>
+                {/* Horizontal Info Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Fecha Programada</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      {apptDate}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                    <label style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Bloque Horario</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      {detailAppt.time} — {getEndTime(detailAppt)}
+                    </div>
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button className="btn btn-success flex-1" onClick={saveStatus}>Guardar Estado</button>
-                  <button className="btn btn-danger flex-1" onClick={handleDeleteFromDetail}>Eliminar Cita</button>
+                {/* Professional Info */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.5rem' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>👨‍⚕️</div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', marginBottom: '0.15rem' }}>Profesional Asignado</label>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text)' }}>{detailAppt.doctor}</div>
+                  </div>
                 </div>
+
+                {/* Services List Card */}
+                <div style={{ border: '1px solid var(--border)', borderRadius: '20px', overflow: 'hidden' }}>
+                  <div style={{ background: 'var(--bg-subtle)', padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-3)', textTransform: 'uppercase' }}>Servicios Contratados</span>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '0.2rem 0.6rem', borderRadius: '8px' }}>
+                      {detailAppt.services?.length || 0} ITEMS
+                    </span>
+                  </div>
+                  <div style={{ padding: '0.75rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '180px', overflowY: 'auto' }}>
+                    {detailAppt.services?.map((s, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: i === (detailAppt.services.length - 1) ? 0 : '0.75rem', borderBottom: i === (detailAppt.services.length - 1) ? 'none' : '1px dashed var(--border)' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.925rem', color: 'var(--text-2)' }}>{s.nombre}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-4)', fontWeight: 600 }}>{s.duracion} min</div>
+                      </div>
+                    ))}
+                    {(!detailAppt.services || detailAppt.services.length === 0) && (
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-4)', textAlign: 'center', padding: '1rem' }}>No hay servicios específicos</div>
+                    )}
+                  </div>
+                  <div style={{ background: 'var(--bg-subtle)', padding: '1rem 1.25rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-2)' }}>DURACIÓN TOTAL</span>
+                    <span style={{ fontWeight: 900, color: 'var(--primary)', fontSize: '1rem' }}>{detailAppt.duration} MINUTOS</span>
+                  </div>
+                </div>
+
+                {/* Status Selection with SearchableSelect consistency */}
+                <SearchableSelect 
+                  label="Cambiar Estado de la Cita"
+                  placeholder="Elige un estado..."
+                  icon="🏷️"
+                  options={[
+                    { value: 'Confirmada', label: '✅ Confirmada' },
+                    { value: 'En Espera', label: '⏳ En Espera' },
+                    { value: 'Pendiente', label: '🕒 Pendiente' },
+                    { value: 'Cancelada', label: '❌ Cancelada' }
+                  ]}
+                  value={editStatus}
+                  onChange={val => setEditStatus(val)}
+                />
+              </div>
+
+              <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1.25rem', background: 'var(--surface)' }}>
+                <button className="btn btn-outline" style={{ flex: 1, borderRadius: '16px', border: '1.5px solid var(--danger)', color: 'var(--danger)', height: '52px' }} onClick={handleDeleteFromDetail}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  Eliminar
+                </button>
+                <button className="btn btn-primary" style={{ flex: 2, borderRadius: '16px', height: '52px', fontSize: '1rem', fontWeight: 800, boxShadow: '0 8px 24px var(--primary-light)' }} onClick={saveStatus}>
+                  Actualizar Cita
+                </button>
               </div>
             </div>
           </div>
         );
       })()}
+      {/* Service Selection Overlay */}
+      {showServiceMenu && (
+        <div className="modal-overlay" onClick={() => setShowServiceMenu(false)}>
+          <div className="modal-box" style={{ maxWidth: 620 }} onClick={e => e.stopPropagation()}>
+            {/* Professional Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '2rem 2rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.75rem', borderRadius: '14px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em' }}>Catálogo de Servicios</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>Selecciona todos los tratamientos para esta cita.</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowServiceMenu(false)} style={{ borderRadius: '12px', width: '38px', height: '38px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            
+            <div style={{ padding: '1.5rem 2rem', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ position: 'relative' }}>
+                <input 
+                  className="input-field" 
+                  placeholder="¿Qué servicio buscas?" 
+                  value={serviceSearch}
+                  onChange={e => setServiceSearch(e.target.value)}
+                  style={{ borderRadius: '16px', height: '52px', paddingLeft: '3rem', border: '1.5px solid var(--border-strong)', background: 'var(--surface)', fontWeight: 600 }}
+                />
+                <svg style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              </div>
+            </div>
+
+            <div style={{ padding: '1.75rem 2rem', maxHeight: '420px', overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', background: 'var(--surface)' }}>
+              {services.filter(s => s.nombre.toLowerCase().includes(serviceSearch.toLowerCase())).map(s => {
+                const isSelected = form.serviceIds.includes(s.idservicios);
+                return (
+                  <div 
+                    key={s.idservicios}
+                    onClick={() => {
+                      const newIds = isSelected 
+                        ? form.serviceIds.filter(id => id !== s.idservicios)
+                        : [...form.serviceIds, s.idservicios];
+                      setForm({ ...form, serviceIds: newIds });
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      padding: '1.15rem',
+                      borderRadius: '20px',
+                      background: isSelected ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                      border: `2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: isSelected ? '0 8px 16px rgba(37, 99, 235, 0.12)' : 'none',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {isSelected && <div style={{ position: 'absolute', top: 0, right: 0, width: '32px', height: '32px', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '0 0 0 12px' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg></div>}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.925rem', fontWeight: 900, color: isSelected ? 'var(--primary-deep)' : 'var(--text)', marginBottom: '0.2rem' }}>{s.nombre}</div>
+                      <div style={{ fontSize: '0.75rem', color: isSelected ? 'var(--primary)' : 'var(--text-4)', fontWeight: 700 }}>{s.duracion} min — ${parseFloat(s.precio).toLocaleString()}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ padding: '1.5rem 2rem', background: 'var(--surface-2)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '0 0 28px 28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 8px var(--primary)' }}></div>
+                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-2)' }}>{form.serviceIds.length} SERVICIOS ELEGIDOS</span>
+              </div>
+              <button className="btn btn-primary" onClick={() => setShowServiceMenu(false)} style={{ borderRadius: '16px', padding: '0.75rem 2rem', fontWeight: 800, boxShadow: '0 8px 20px var(--primary-light)' }}>
+                Listo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

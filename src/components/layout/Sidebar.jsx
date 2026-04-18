@@ -26,7 +26,7 @@ const BUSINESS_NAV = [
 
 const ADMIN_NAV = [
   { id: 'users', label: 'Gestión de Usuarios' },
-  { id: 'logs',  label: 'Movimientos' },
+  { id: 'logs', label: 'Movimientos' },
 ];
 
 export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogout }) {
@@ -40,21 +40,21 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
         style={{
           display: 'flex', alignItems: 'center', gap: '0.75rem',
           width: '100%', padding: '0.7rem 0.85rem',
-          borderRadius: 'var(--radius)', 
+          borderRadius: 'var(--radius)',
           border: 'none',
           cursor: 'pointer', textAlign: 'left',
           background: active ? `${activeColor}15` : 'transparent',
           color: active ? activeColor : 'var(--text-3)',
-          transition: 'var(--transition)', 
+          transition: 'var(--transition)',
           fontFamily: 'var(--font-main)',
           position: 'relative',
           fontWeight: active ? 700 : 500,
         }}
       >
-        <div style={{ 
-          width: 32, height: 32, borderRadius: 10, 
-          background: active ? `${activeColor}15` : 'var(--surface-3)', 
-          display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        <div style={{
+          width: 32, height: 32, borderRadius: 10,
+          background: active ? `${activeColor}15` : 'var(--surface-3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'var(--transition)',
           color: active ? activeColor : 'var(--text-4)'
         }}>
@@ -67,10 +67,10 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
   };
 
   const SectionLabel = ({ label }) => (
-    <p style={{ 
-      fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.12em', 
-      textTransform: 'uppercase', color: 'var(--text-4)', 
-      padding: '1.5rem 0.85rem 0.5rem' 
+    <p style={{
+      fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.12em',
+      textTransform: 'uppercase', color: 'var(--text-4)',
+      padding: '1.5rem 0.85rem 0.5rem'
     }}>
       {label}
     </p>
@@ -100,17 +100,17 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
       {/* ── Brand ── */}
       <div style={{ padding: '1.5rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          <div style={{ 
-            width: 40, height: 40, borderRadius: 12, 
-            background: 'var(--primary)', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', 
-            overflow: 'hidden', boxShadow: '0 4px 12px var(--primary-light)' 
+          <div style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: 'var(--primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden', boxShadow: '0 4px 12px var(--primary-light)'
           }}>
-            <img 
-              src={isDark ? '/logodark.jpeg' : '/logoclaro.jpeg'} 
-              alt="Logo" 
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-              onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = 'NA'; }} 
+            <img
+              src={isDark ? '/logodark.jpeg' : '/logoclaro.jpeg'}
+              alt="Logo"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = 'NA'; }}
             />
           </div>
           <div>
@@ -158,17 +158,17 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
 
       {/* ── User profile card ── */}
       <div style={{ padding: '1rem 0.75rem', borderTop: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
-        <div style={{ 
-          padding: '0.75rem', borderRadius: 'var(--radius)', 
+        <div style={{
+          padding: '0.75rem', borderRadius: 'var(--radius)',
           background: 'var(--surface)', border: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', gap: '0.75rem',
           boxShadow: 'var(--shadow-sm)'
         }}>
-          <div style={{ 
-            width: 36, height: 36, borderRadius: 10, 
-            background: 'linear-gradient(135deg, var(--primary), var(--secondary))', 
-            display: 'flex', alignItems: 'center', justifyContent: 'center', 
-            color: '#fff', fontWeight: 800, fontSize: '0.85rem' 
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800, fontSize: '0.85rem'
           }}>
             {uInitials}
           </div>
@@ -176,11 +176,11 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
             <p style={{ margin: 0, fontWeight: 700, color: 'var(--text)', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{uName}</p>
             <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-4)', fontWeight: 600, textTransform: 'uppercase' }}>{uRole}</p>
           </div>
-          <button 
+          <button
             onClick={onLogout}
             title="Cerrar Sesión"
-            style={{ 
-              width: 32, height: 32, borderRadius: 8, border: 'none', 
+            style={{
+              width: 32, height: 32, borderRadius: 8, border: 'none',
               background: 'var(--danger-light)', color: 'var(--danger)',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'var(--transition)'

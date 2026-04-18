@@ -190,9 +190,9 @@ export default function Payments({ user, tenant }) {
       </div>
       
       {methods.length === 0 && !loading && (
-        <div className="alert alert-danger animate-fade-in" style={{ padding: '1.25rem', borderRadius: 'var(--radius)', background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', marginBottom: '1rem' }}>
-          <h4 style={{ margin: 0, color: 'var(--danger)', fontSize: '0.95rem' }}>Faltan métodos de pago</h4>
-          <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--danger)' }}>No se han encontrado opciones como Efectivo o Tarjeta. Corre el script de Mock Data en tu base de datos.</p>
+        <div className="alert alert-warning animate-fade-in" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Métodos de pago no configurados</h4>
+          <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>Por favor póngase en contacto con soporte para la configuración de sus métodos de pago.</p>
         </div>
       )}
       <div style={{ display: 'flex', gap: '0.4rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.3rem', width: 'fit-content' }}>
@@ -277,60 +277,70 @@ export default function Payments({ user, tenant }) {
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal-box animate-scale-in" style={{ maxWidth: 480 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem' }}>
-              <div>
-                <h3 style={{ margin: 0 }}>Registrar Pago</h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-4)' }}>Ingresa los datos de la transacción.</p>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Registrar Pago</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>Ingresa los detalles del ingreso.</p>
+                </div>
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}>✕</button>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
-                <label>Paciente</label>
-                 <select className="input-field" value={form.clientId} onChange={e => update('clientId', e.target.value)} required>
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Paciente / Cliente</label>
+                 <select className="input-field" value={form.clientId} onChange={e => update('clientId', e.target.value)} required style={{ borderRadius: '12px' }}>
                     <option value="" disabled>Selecciona paciente...</option>
                     {clients.map(c => <option key={c.idcliente} value={c.idcliente}>{c.nombre} {c.apellido} (CC {c.cedula})</option>)}
                   </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <div className="input-group" style={{ flex: 1 }}>
-                  <label>Servicio Prestado</label>
-                  <select className="input-field" value={form.serviceId} onChange={e => handleServiceChange(e.target.value)}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Servicio Prestado</label>
+                  <select className="input-field" value={form.serviceId} onChange={e => handleServiceChange(e.target.value)} style={{ borderRadius: '12px' }}>
                     <option value="">Sin especificar</option>
                      {services.map(s => <option key={s.idservicios} value={s.idservicios}>{s.nombre}</option>)}
                   </select>
                 </div>
-                <div className="input-group" style={{ flex: 1 }}>
-                  <label>Método de Pago</label>
-                   <select className="input-field" value={form.method} onChange={e => update('method', e.target.value)}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Método de Pago</label>
+                   <select className="input-field" value={form.method} onChange={e => update('method', e.target.value)} style={{ borderRadius: '12px' }}>
                     {methods.map(m => <option key={m.idmetodopago} value={m.tipo}>{m.tipo}</option>)}
                   </select>
                 </div>
               </div>
 
-              <div className="input-group">
-                <label>Monto Cobrado (COP)</label>
-                <input type="number" className="input-field" placeholder="Ej. 850000" value={form.amount} onChange={e => update('amount', e.target.value)} required min="0" />
+              <div className="input-group" style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Monto Cobrado (COP)</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 800, color: 'var(--text-3)' }}>$</span>
+                  <input type="number" className="input-field" placeholder="0" value={form.amount} onChange={e => update('amount', e.target.value)} required min="0" style={{ borderRadius: '12px', paddingLeft: '2.5rem', fontSize: '1.25rem', fontWeight: 900 }} />
+                </div>
               </div>
 
               <div className="input-group">
-                <label>Nota u Observación (Opcional)</label>
-                <input className="input-field" placeholder="Ej. Descuento aplicado por cortesía..." value={form.note} onChange={e => update('note', e.target.value)} />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nota u Observación (Opcional)</label>
+                <input className="input-field" placeholder="Ej. Descuento aplicado..." value={form.note} onChange={e => update('note', e.target.value)} style={{ borderRadius: '12px' }} />
               </div>
 
-              {/* Preview */}
               {form.amount && (
-                <div className="alert alert-success animate-fade-in">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
-                  Se registrará <strong>{fmt(parseInt(form.amount))}</strong> vía <strong>{form.method}</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--success-light)', color: 'var(--success)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.15)', fontSize: '0.85rem', fontWeight: 600 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                  Se registrará {fmt(parseInt(form.amount))} vía {form.method}
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                <button type="button" className="btn btn-outline w-full" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary w-full">Confirmar Pago</button>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setShowModal(false)}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', padding: '0.8rem', fontSize: '1rem', boxShadow: '0 8px 24px var(--primary-light)' }}>Confirmar Pago</button>
               </div>
             </form>
           </div>
@@ -339,16 +349,19 @@ export default function Payments({ user, tenant }) {
 
       {/* ── Delete Confirm Modal ── */}
       {deleteTarget && (
-        <div className="modal-overlay">
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 360, textAlign: 'center' }}>
-            <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--danger-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </div>
-            <h3 style={{ margin: '0 0 0.5rem' }}>¿Eliminar transacción?</h3>
-            <p style={{ margin: '0 0 1.5rem', fontSize: '0.875rem' }}>Esta acción es irreversible.</p>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-               <button className="btn btn-outline w-full" onClick={() => setDeleteTarget(null)}>Cancelar</button>
-              <button className="btn btn-danger w-full" onClick={() => handleDelete(deleteTarget)}>Eliminar</button>
+        <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
+              <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </div>
+              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', fontWeight: 800 }}>¿Eliminar pago?</h3>
+              <p style={{ margin: '0 0 2rem', fontSize: '1rem', color: 'var(--text-4)', lineHeight: 1.5 }}>Esta acción es irreversible y afectará los reportes financieros.</p>
+              
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setDeleteTarget(null)}>Cancelar</button>
+                <button className="btn btn-danger" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem', background: 'var(--danger)', boxShadow: '0 8px 20px var(--danger-light)' }} onClick={() => handleDelete(deleteTarget)}>Sí, eliminar</button>
+              </div>
             </div>
           </div>
         </div>
