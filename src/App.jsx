@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { GlobalProvider } from './context/GlobalState';
 import './index.css';
-import Login     from './features/auth/Login';
-import Layout    from './components/layout/Layout';
+import Login from './features/auth/Login';
+import Layout from './components/layout/Layout';
 import Dashboard from './features/dashboard/Dashboard';
-import Agenda    from './features/agenda/Agenda';
-import Clients   from './features/clients/Clients';
-import Services  from './features/services/Services';
-import Payments  from './features/payments/Payments';
+import Agenda from './features/agenda/Agenda';
+import Clients from './features/clients/Clients';
+import Services from './features/services/Services';
+import Payments from './features/payments/Payments';
 import Inventory from './features/inventory/Inventory';
-import Users     from './features/users/Users';
+import Users from './features/users/Users';
+import Profile from './features/users/Profile';
 import AuditLogs from './features/audit/AuditLogs.jsx';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
-import LandingPage      from './features/landing/LandingPage';
+import LandingPage from './features/landing/LandingPage';
 import { supabase } from './Supabase/supabaseClient';
 
 function TenantApp({ tenant }) {
@@ -24,15 +25,15 @@ function TenantApp({ tenant }) {
         const parsed = JSON.parse(saved);
         if (new Date().getTime() < parsed.exp) return parsed.user;
         else localStorage.removeItem('novagendas_user');
-      } catch (e) {}
+      } catch (e) { }
     }
     return null;
   });
   const [currentRoute, setCurrentRoute] = useState('dashboard');
 
   const renderRoute = () => {
-    if (user.role === 'especialista' && currentRoute !== 'agenda' && currentRoute !== 'clients') {
-      return <Agenda user={user} />;
+    if (user.role === 'especialista' && currentRoute !== 'agenda' && currentRoute !== 'clients' && currentRoute !== 'profile') {
+      return <Agenda user={user} tenant={tenant} />;
     }
     if (user.role === 'recepcion' && (currentRoute === 'payments' || currentRoute === 'users')) {
       return <Dashboard user={user} onNavigate={setCurrentRoute} />;
@@ -40,14 +41,15 @@ function TenantApp({ tenant }) {
 
     switch (currentRoute) {
       case 'dashboard': return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
-      case 'agenda':    return <Agenda user={user} tenant={tenant} />;
-      case 'clients':   return <Clients user={user} tenant={tenant} />;
-      case 'services':  return <Services user={user} tenant={tenant} />;
-      case 'payments':  return <Payments user={user} tenant={tenant} />;
+      case 'agenda': return <Agenda user={user} tenant={tenant} />;
+      case 'clients': return <Clients user={user} tenant={tenant} />;
+      case 'services': return <Services user={user} tenant={tenant} />;
+      case 'payments': return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
-      case 'users':     return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
-      case 'logs':      return <AuditLogs tenant={tenant} />;
-      default:          return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
+      case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
+      case 'profile': return <Profile user={user} />;
+      case 'logs': return <AuditLogs tenant={tenant} />;
+      default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
   };
 
@@ -113,13 +115,13 @@ export default function App() {
           .select('*')
           .eq('dominio', subdomain)
           .single();
-          
+
         if (error) {
-           console.warn("Tenant no encontrado en DB, verificando fallback MOCK.");
-           throw error;
+          console.warn("Tenant no encontrado en DB, verificando fallback MOCK.");
+          throw error;
         }
 
-        if (data && data.idestadoapp === 1) { 
+        if (data && data.idestadoapp === 1) {
           setTenant({
             id: data.idnegocios,
             name: data.nombre,
@@ -131,13 +133,8 @@ export default function App() {
           setView('not_found');
         }
       } catch (e) {
-        // Fallback para pruebas locales si la BD no se ha conectado
-        if (subdomain === 'soleil' || subdomain === 'drfabiola') {
-          setTenant({ id: subdomain, name: 'Centro de Prueba (MOCK)', subdomain, active: true });
-          setView('tenant');
-        } else {
-          setView('not_found');
-        }
+        console.error("Error verificando tenant:", e);
+        setView('not_found');
       }
     };
 
@@ -146,12 +143,12 @@ export default function App() {
 
   if (view === 'loading') return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando Plataforma...</div>;
   if (view === 'landing') return <LandingPage />;
-  
+
   if (view === 'not_found') return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <div className="card flex-col items-center gap-4" style={{ padding: '3rem', textAlign: 'center', maxWidth: 400 }}>
         <div style={{ background: 'var(--danger-light)', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
         </div>
         <h2 style={{ margin: 0 }}>Tienda No Encontrada</h2>
         <p style={{ color: 'var(--text-3)', margin: 0, fontSize: '0.9rem' }}>El subdominio al que intentas acceder no se encuentra registrado o ha sido suspendido.</p>

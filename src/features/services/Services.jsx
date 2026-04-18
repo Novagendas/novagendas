@@ -110,6 +110,7 @@ export default function Services({ user, tenant }) {
 
     if (editCatId) {
       // Editar
+      const oldCat = categories.find(c => c.idcategoriaservicio === editCatId);
       const { error } = await supabase.from('categoriaservicio').update({ descripcion: catName }).eq('idcategoriaservicio', editCatId);
       if (!error) {
         await insertLog({
@@ -122,7 +123,6 @@ export default function Services({ user, tenant }) {
         setCategories(prev => prev.map(c => c.idcategoriaservicio === editCatId ? { ...c, descripcion: catName } : c));
         if (oldCat?.descripcion) setServices(prev => prev.map(s => s.category === oldCat.descripcion ? { ...s, category: catName } : s));
         showSnack('Categoría editada');
-        setCategories(prev => prev.map(c => c.idcategoriaservicio === editCatId ? { ...c, descripcion: catName } : c));
       } else showAlert('Fallo en la Edición', "Error al editar categoría: " + error.message);
     } else {
       // Crear
@@ -419,50 +419,67 @@ export default function Services({ user, tenant }) {
 
       {showModal && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 460, opacity: saving ? 0.7 : 1, pointerEvents: saving ? 'none' : 'auto' }}>
-            <div style={{ margin: '-2.25rem -2.25rem 1.75rem', background: `linear-gradient(135deg, ${form.color}25, ${form.color}08)`, borderBottom: `1px solid ${form.color}20`, borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0', padding: '1.4rem 2.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{editId ? 'Editar Tratamiento' : 'Nuevo Tratamiento'}</h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-4)' }}>{saving ? 'Guardando...' : 'Configura nombre, duración y tarifa.'}</p>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 480 }}>
+            {/* Header */}
+            <div style={{ background: `linear-gradient(135deg, ${form.color} 0%, ${form.color}cc 100%)`, padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{editId ? 'Editar Tratamiento' : 'Nuevo Tratamiento'}</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{saving ? 'Procesando cambios...' : 'Define nombre, duración y tarifa.'}</p>
+                </div>
               </div>
               {!saving && (
-                <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}>
+                <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               )}
             </div>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+
+            <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
-                <label>Nombre del servicio</label>
-                <input className="input-field capitalize-text" placeholder="Ej. Depilación Láser Axilas" value={form.name} onChange={e => update('name', e.target.value)} required />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre del servicio</label>
+                <input className="input-field capitalize-text" placeholder="Ej. Depilación Láser Axilas" value={form.name} onChange={e => update('name', e.target.value)} required style={{ borderRadius: '12px' }} />
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <div className="input-group" style={{ flex: 1 }}>
-                  <label>Categoría</label>
-                  <select className="input-field" value={form.category} onChange={e => update('category', e.target.value)}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Categoría</label>
+                  <select className="input-field" value={form.category} onChange={e => update('category', e.target.value)} style={{ borderRadius: '12px' }}>
                     {uniqueOptions.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div className="input-group" style={{ flex: 1 }}>
-                  <label>Duración</label>
-                  <select className="input-field" value={form.duration} onChange={e => update('duration', e.target.value)}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Duración</label>
+                  <select className="input-field" value={form.duration} onChange={e => update('duration', e.target.value)} style={{ borderRadius: '12px' }}>
                     {[15, 30, 45, 60, 90, 120].map(d => <option key={d} value={d}>{d < 60 ? `${d} min` : `${d / 60} hora${d / 60 > 1 ? 's' : ''}`}</option>)}
                   </select>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-                <div className="input-group" style={{ flex: 1 }}>
-                  <label>Precio Base (COP)</label>
-                  <input type="number" className="input-field" placeholder="Ej. 150000" value={form.price} onChange={e => update('price', e.target.value)} required min="0" />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.5fr', gap: '1.25rem', background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Precio Base (COP)</label>
+                  <input type="number" className="input-field" placeholder="Ej. 150000" value={form.price} onChange={e => update('price', e.target.value)} required min="0" style={{ borderRadius: '12px' }} />
                 </div>
-                <div className="input-group" style={{ width: 76 }}>
-                  <label>Color</label>
-                  <input type="color" className="input-field" style={{ padding: '0.2rem', height: 44, cursor: 'pointer', borderRadius: 'var(--radius-sm)' }} value={form.color} onChange={e => update('color', e.target.value)} />
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Color</label>
+                  <input type="color" className="input-field" style={{ padding: '0.2rem', height: 46, cursor: 'pointer', borderRadius: '12px' }} value={form.color} onChange={e => update('color', e.target.value)} />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
-                <button type="button" className="btn btn-outline w-full" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
-                <button type="submit" className="btn btn-primary w-full" disabled={saving}>{saving ? 'Procesando...' : (editId ? 'Guardar Cambios' : 'Guardar Servicio')}</button>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', padding: '0.8rem', fontSize: '1rem', background: `linear-gradient(135deg, ${form.color}, ${form.color}cc)`, boxShadow: `0 8px 24px ${form.color}33` }} disabled={saving}>
+                  {saving ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div className="spinner" style={{ width: '1.1rem', height: '1.1rem' }}></div>
+                      Guardando...
+                    </div>
+                  ) : (editId ? 'Guardar Cambios' : 'Registrar Tratamiento')}
+                </button>
               </div>
             </form>
           </div>
@@ -471,75 +488,110 @@ export default function Services({ user, tenant }) {
 
       {showCatModal && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && setShowCatModal(false)}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 440, opacity: saving ? 0.7 : 1, pointerEvents: saving ? 'none' : 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Gestión de Categorías</h3>
-                <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--text-4)' }}>Añade, edita o elimina familias de procedimientos.</p>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 460 }}>
+            {/* Header */}
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.6rem', borderRadius: '14px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Categorías</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>Gestiona las familias de tratamientos.</p>
+                </div>
               </div>
               {!saving && (
-                <button className="btn btn-ghost btn-icon" onClick={() => setShowCatModal(false)}>
+                <button className="btn btn-ghost btn-icon" onClick={() => setShowCatModal(false)} style={{ borderRadius: '12px' }}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
               )}
             </div>
             
-            <div style={{ maxHeight: '40vh', overflowY: 'auto', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.5rem' }}>
-              {categories.map(c => (
-                <div key={c.idcategoriaservicio} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.8rem', background: 'var(--surface-2)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                  <div className="capitalize-text" style={{ fontWeight: 600, fontSize: '0.88rem' }}>{c.descripcion}</div>
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
-                    <button onClick={() => { setEditCatId(c.idcategoriaservicio); setCatName(c.descripcion); }} title="Editar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: '0.2rem' }}>✏️</button>
-                    <button onClick={() => handleDeleteCategory(c.idcategoriaservicio)} title="Borrar" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.2rem' }}>🗑️</button>
+            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--surface)' }}>
+              <div style={{ maxHeight: '40vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingRight: '0.5rem' }}>
+                {categories.map(c => (
+                  <div key={c.idcategoriaservicio} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.25rem', background: 'var(--bg-subtle)', borderRadius: '16px', border: '1px solid var(--border)', transition: 'all 0.2s ease' }}>
+                    <div className="capitalize-text" style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>{c.descripcion}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button className="btn btn-ghost btn-icon" onClick={() => { setEditCatId(c.idcategoriaservicio); setCatName(c.descripcion); }} title="Editar" style={{ width: 32, height: 32, padding: 0 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
+                      <button className="btn btn-ghost btn-icon" onClick={() => handleDeleteCategory(c.idcategoriaservicio)} title="Borrar" style={{ width: 32, height: 32, padding: 0, color: 'var(--danger)' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {categories.length === 0 && <div style={{ fontSize: '0.8rem', color: 'var(--text-4)', textAlign: 'center', padding: '1rem' }}>No has creado categorías todavía.</div>}
-            </div>
-
-            <form onSubmit={handleSaveCategory} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--surface-2)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{editCatId ? 'Editando Categoría' : 'Nueva Categoría'}</div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input className="input-field capitalize-text" placeholder="Ej. Depilación" value={catName} onChange={e => setCatName(e.target.value)} required style={{ flex: 1 }} />
-                <button type="submit" className="btn btn-primary" disabled={saving}>{editCatId ? 'Guardar' : 'Añadir'}</button>
-                {editCatId && <button type="button" className="btn btn-outline" onClick={() => { setEditCatId(null); setCatName(''); }} disabled={saving}>X</button>}
+                ))}
+                {categories.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-4)', background: 'var(--bg-subtle)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600 }}>No hay categorías todavía.</p>
+                  </div>
+                )}
               </div>
-            </form>
+
+              <form onSubmit={handleSaveCategory} style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <label style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>
+                  {editCatId ? 'Editando Categoría' : 'Añadir Nueva Categoría'}
+                </label>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <input className="input-field capitalize-text" placeholder="Ej. Depilación" value={catName} onChange={e => setCatName(e.target.value)} required style={{ flex: 1, borderRadius: '12px' }} />
+                  <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: '12px', padding: '0 1.5rem' }}>
+                    {editCatId ? 'Guardar' : 'Añadir'}
+                  </button>
+                  {editCatId && (
+                    <button type="button" className="btn btn-outline" onClick={() => { setEditCatId(null); setCatName(''); }} disabled={saving} style={{ borderRadius: '12px', padding: '0 0.75rem' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* ── Custom Alert / Confirm Modal ── */}
       {alertConfig.show && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 360, padding: '2rem', textAlign: 'center' }}>
-            {alertConfig.type === 'confirm' ? (
-              <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: '50%', marginBottom: '1rem' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={closeAlert}>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
+              <div style={{ 
+                background: alertConfig.type === 'confirm' ? 'var(--danger-light)' : 'var(--primary-light)', 
+                color: alertConfig.type === 'confirm' ? 'var(--danger)' : 'var(--primary)', 
+                width: '72px', height: '72px', borderRadius: '50%', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                margin: '0 auto 1.5rem',
+                boxShadow: `0 0 0 8px ${alertConfig.type === 'confirm' ? 'var(--danger-light)' : 'var(--primary-light)'}80`
+              }}>
+                {alertConfig.type === 'confirm' ? (
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                ) : (
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                )}
               </div>
-            ) : (
-              <div style={{ display: 'inline-flex', padding: '1rem', background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', marginBottom: '1rem' }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              
+              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>{alertConfig.title}</h3>
+              <p style={{ margin: '0 0 2rem', fontSize: '1rem', color: 'var(--text-4)', lineHeight: 1.5, fontWeight: 500 }}>{alertConfig.message}</p>
+              
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                {alertConfig.type === 'confirm' ? (
+                  <>
+                    <button className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={closeAlert}>Cancelar</button>
+                    <button className="btn btn-danger" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem', background: 'var(--danger)', boxShadow: '0 8px 20px var(--danger-light)' }} 
+                      onClick={() => {
+                        closeAlert();
+                        if (alertConfig.onConfirm) alertConfig.onConfirm();
+                      }}
+                    >
+                      Sí, eliminar
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn btn-primary" style={{ width: '100%', borderRadius: '14px', padding: '0.8rem', boxShadow: '0 8px 24px var(--primary-light)' }} onClick={closeAlert}>
+                    Entendido
+                  </button>
+                )}
               </div>
-            )}
-            
-            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem' }}>{alertConfig.title}</h3>
-            <p style={{ margin: '0 0 1.5rem', fontSize: '0.9rem', color: 'var(--text-3)', lineHeight: 1.4 }}>{alertConfig.message}</p>
-            
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              {alertConfig.type === 'confirm' && (
-                <button className="btn btn-outline" style={{ flex: 1 }} onClick={closeAlert}>Cancelar</button>
-              )}
-              <button 
-                className={alertConfig.type === 'confirm' ? 'btn' : 'btn btn-primary'} 
-                style={alertConfig.type === 'confirm' ? { flex: 1, background: 'var(--danger)', color: '#fff' } : { width: '100%' }} 
-                onClick={() => {
-                  closeAlert();
-                  if (alertConfig.onConfirm) alertConfig.onConfirm();
-                }}
-              >
-                {alertConfig.type === 'confirm' ? 'Eliminar' : 'Entendido'}
-              </button>
             </div>
           </div>
         </div>

@@ -217,6 +217,7 @@ CREATE TABLE Cita (
     IdCita SERIAL PRIMARY KEY,
     IdCliente INT REFERENCES Cliente(IdCliente),
     IdUsuario INT REFERENCES Usuario(IdUsuario),
+    IdServicio INT REFERENCES Servicios(IdServicios), -- Singular for FK
     FechaHoraInicio TIMESTAMP NOT NULL,
     FechaHoraFin TIMESTAMP NOT NULL,
     IdEstadoCita INT REFERENCES EstadoCita(IdEstadoCita),
@@ -270,3 +271,37 @@ CREATE TABLE LogsNegocio (
 -- Actualizar tabla Pagos para soportar los nuevos campos
 ALTER TABLE Pagos ADD COLUMN IF NOT EXISTS IdCliente INT REFERENCES Cliente(IdCliente);
 ALTER TABLE Pagos ADD COLUMN IF NOT EXISTS IdServicios INT REFERENCES Servicios(IdServicios);
+
+
+-- Función para validar y cambiar la contraseña de forma segura
+CREATE OR REPLACE FUNCTION validar_cambio_password(
+    p_idusuario INT,
+    p_password_actual TEXT,
+    p_password_nuevo TEXT
+)
+RETURNS JSON AS $$
+DECLARE
+    v_password_db TEXT;
+    v_resultado JSON;
+BEGIN
+    -- 1. Obtener el hash actual almacenado en la tabla usuario
+    SELECT password INTO v_password_db FROM usuario WHERE idusuario = p_idusuario;
+
+    -- 2. Verificar si la contraseña proporcionada coincide con el hash almacenado
+    -- Utilizamos la función crypt de pgcrypto que ya tienes instalada
+    IF v_password_db = crypt(p_password_actual, v_password_db) THEN
+        -- 3. Si coincide, actualizamos con la nueva (el trigger trg_hash_password se encargará de hashearla)
+        UPDATE usuario 
+        SET password = p_password_nuevo,
+            fechaactualizacion = CURRENT_TIMESTAMP
+        WHERE idusuario = p_idusuario;
+        
+        v_resultado := json_build_object('success', true, 'message', 'Contraseña actualizada correctamente.');
+    ELSE
+        -- 4. Si no coincide, retornamos un mensaje de error
+        v_resultado := json_build_object('success', false, 'message', 'La contraseña actual no es correcta.');
+    END IF;
+
+    RETURN v_resultado;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
