@@ -70,7 +70,8 @@ export default function Dashboard({ user, tenant, onNavigate }) {
 
   const fetchData = async () => {
     if (!tenant?.id) return;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
     try {
       const { count: cCount } = await supabase.from('cliente').select('*', { count: 'exact', head: true }).eq('idnegocios', tenant.id);

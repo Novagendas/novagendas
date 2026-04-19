@@ -15,7 +15,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filtered = options.filter(opt => 
+  const filtered = options.filter(opt =>
     opt.label.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -24,7 +24,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }
   return (
     <div className="input-group" ref={wrapperRef} style={{ position: 'relative' }}>
       <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>{label}</label>
-      <div 
+      <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
           background: 'var(--surface)',
@@ -62,7 +62,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }
         }}>
           <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
             <div style={{ position: 'relative' }}>
-              <input 
+              <input
                 autoFocus
                 className="input-field"
                 placeholder="Escribe para buscar..."
@@ -71,12 +71,12 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }
                 onClick={e => e.stopPropagation()}
                 style={{ padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.9rem', borderRadius: '12px', border: '1.5px solid var(--border-strong)', background: 'var(--surface)' }}
               />
-              <svg style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <svg style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             </div>
           </div>
           <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
             {filtered.length > 0 ? filtered.map(opt => (
-              <div 
+              <div
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setIsOpen(false); setSearch(''); }}
                 style={{
@@ -156,8 +156,8 @@ const PermissionGrid = ({ permissions = [], onToggle }) => {
       {Object.entries(MODULE_LABELS).map(([key, { id, label, icon }]) => {
         const allowed = permissions.includes(key);
         return (
-          <div 
-            key={key} 
+          <div
+            key={key}
             onClick={() => onToggle && onToggle(key)}
             style={{
               display: 'flex',
@@ -177,10 +177,10 @@ const PermissionGrid = ({ permissions = [], onToggle }) => {
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: allowed ? 'var(--text)' : 'var(--text-4)', lineHeight: 1.2 }}>{label}</span>
             </div>
-            <div style={{ 
-              width: '18px', 
-              height: '18px', 
-              borderRadius: '6px', 
+            <div style={{
+              width: '18px',
+              height: '18px',
+              borderRadius: '6px',
               border: `2px solid ${allowed ? 'var(--success)' : 'var(--border-strong)'}`,
               display: 'flex',
               alignItems: 'center',
@@ -205,10 +205,16 @@ export default function Users({ user, tenant }) {
 
   const [form, setForm] = useState({ name: '', email: '', role: 'recepcion', permissions: ROLES.recepcion.permissions, password: '', confirm: '' });
   const [formError, setFormError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
   const [deleteId, setDeleteId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  const showSnack = (message, type = 'success') => {
+    setSnackbar({ show: true, message, type });
+    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const fetchData = async () => {
     if (!tenant?.id) return;
@@ -225,9 +231,9 @@ export default function Users({ user, tenant }) {
       setUsers(rawUsers.map(u => {
         const roles = u.rolpermisos?.map(rp => rp.idrol) || [];
         const permsIds = u.rolpermisos?.map(rp => rp.idpermiso) || [];
-        
+
         // Reverse map permission IDs to string keys
-        const permissions = permsIds.map(id => 
+        const permissions = permsIds.map(id =>
           Object.keys(MODULE_LABELS).find(key => MODULE_LABELS[key].id === id)
         ).filter(Boolean);
 
@@ -242,9 +248,9 @@ export default function Users({ user, tenant }) {
           role: role,
           permissions: permissions,
           active: u.idestado === 1,
-          created: new Date(u.fecharegistro).toLocaleDateString()
+          created: u.fecharegistro ? new Date(u.fecharegistro).toLocaleDateString() : 'Desconocido'
         };
-      }));
+      }).sort((a, b) => (a.role === 'admin' ? -1 : b.role === 'admin' ? 1 : 0)));
     }
     setLoading(false);
   };
@@ -253,7 +259,7 @@ export default function Users({ user, tenant }) {
     fetchData();
   }, [tenant]);
 
-  const update = (k, v) => { 
+  const update = (k, v) => {
     setForm(f => {
       const newForm = { ...f, [k]: v };
       // If role changes, reset permissions to defaults
@@ -261,9 +267,8 @@ export default function Users({ user, tenant }) {
         newForm.permissions = ROLES[v]?.permissions || [];
       }
       return newForm;
-    }); 
-    setFormError(''); 
-    setSuccess(''); 
+    });
+    setFormError('');
   };
 
   const togglePermission = (perm) => {
@@ -279,7 +284,6 @@ export default function Users({ user, tenant }) {
     setForm({ name: u.name, email: u.email, role: u.role, permissions: u.permissions || [], password: '', confirm: '' });
     setEditId(u.id);
     setFormError('');
-    setSuccess('');
     setModalOpen(true);
   };
 
@@ -288,56 +292,71 @@ export default function Users({ user, tenant }) {
     setForm({ name: '', email: '', role: 'recepcion', permissions: ROLES.recepcion.permissions, password: '', confirm: '' });
     setEditId(null);
     setFormError('');
-    setSuccess('');
     setModalOpen(false);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email) return setFormError('Nombre y correo son obligatorios.');
-    if (!editId && (!form.password || form.password !== form.confirm)) return setFormError('Las contraseñas no coinciden.');
+    if (!form.name || !form.email) {
+      showSnack('⚠️ Nombre y correo son obligatorios', 'error');
+      return;
+    }
+
+    if (!editId && (!form.password || form.password !== form.confirm)) {
+      showSnack('⚠️ Las contraseñas no coinciden', 'error');
+      return;
+    }
+
+    // Validar un solo administrador
+    if (form.role === 'admin') {
+      const existingAdmin = users.find(u => u.role === 'admin' && u.id !== editId);
+      if (existingAdmin) {
+        showSnack('⚠️ Solo se permite un administrador por negocio', 'error');
+        return;
+      }
+    }
+
     setSaving(true);
 
-    const parts = form.name.split(' ');
+    const parts = form.name.trim().split(' ');
     const firstName = parts[0];
     const lastName = parts.slice(1).join(' ') || '.';
     const roleId = form.role === 'admin' ? 1 : form.role === 'recepcion' ? 2 : 3;
 
+    // Build Clean Payload
     const payload = {
       nombre: firstName,
       apellido: lastName,
       email: form.email,
-      'password': form.password || undefined,
-      idnegocios: tenant.id,
-      idestado: 1
+      idnegocios: tenant.id
     };
+    if (form.password) payload.password = form.password;
 
     try {
       let userId = editId;
       if (editId) {
-        const { error } = await supabase.from('usuario').update(payload).eq('idusuario', editId);
-        if (error) throw error;
+        const { error: updateErr } = await supabase.from('usuario').update(payload).eq('idusuario', editId);
+        if (updateErr) throw updateErr;
       } else {
-        const { data: newUser, error } = await supabase.from('usuario').insert([payload]).select().single();
-        if (error) throw error;
+        const { data: newUser, error: insertErr } = await supabase.from('usuario').insert([{ ...payload, idestado: 1 }]).select().single();
+        if (insertErr) throw insertErr;
         userId = newUser.idusuario;
       }
 
       // Sync Role and Permissions
-      // 1. Delete existing permissions
+      // 1. Delete existing permissions for this user
       await supabase.from('rolpermisos').delete().eq('idusuario', userId);
 
-      // 2. Insert new ones
+      // 2. Prepare new permission entries
       const permissionEntries = form.permissions.map(permKey => ({
         idusuario: userId,
         idrol: roleId,
         idpermiso: MODULE_LABELS[permKey].id
       }));
 
-      // If no permissions selected, at least keep the role record? 
-      // Actually, standard practice is to have at least one entry for the role.
+      // Default permission if none selected (e.g. at least see Agenda)
       if (permissionEntries.length === 0) {
-        permissionEntries.push({ idusuario: userId, idrol: roleId, idpermiso: 2 }); // Default to Agenda if nothing else
+        permissionEntries.push({ idusuario: userId, idrol: roleId, idpermiso: 2 });
       }
 
       const { error: relErr } = await supabase.from('rolpermisos').insert(permissionEntries);
@@ -350,12 +369,13 @@ export default function Users({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      
-      setSuccess(editId ? '✓ Usuario actualizado.' : '✓ Usuario creado correctamente.');
+
+      showSnack(editId ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
       fetchData();
       cancelEdit();
     } catch (err) {
-      setFormError('Error: ' + err.message);
+      console.error("Error in User handleSubmit:", err);
+      showSnack('Error: ' + (err.message || 'No se pudo procesar la solicitud'), 'error');
     } finally {
       setSaving(false);
     }
@@ -367,7 +387,14 @@ export default function Users({ user, tenant }) {
     if (!error) fetchData();
   };
 
-  const confirmDelete = (id) => setDeleteId(id);
+  const confirmDelete = (id) => {
+    const u = users.find(user => user.id === id);
+    if (u && u.role === 'admin') {
+      alert('⚠️ Seguridad: No es posible eliminar al administrador del sistema.');
+      return;
+    }
+    setDeleteId(id);
+  };
   const doDelete = async () => {
     const { error } = await supabase.from('usuario').delete().eq('idusuario', deleteId);
     if (!error) {
@@ -378,6 +405,7 @@ export default function Users({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
+      showSnack('Usuario eliminado');
       fetchData();
     }
     setDeleteId(null);
@@ -406,72 +434,110 @@ export default function Users({ user, tenant }) {
             </div>
           ) : users.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {users.map((u, idx) => (
-                <div key={u.id} className="animate-fade-in" style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1.25rem',
-                  padding: '1.25rem',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '20px',
-                  transition: 'all 0.3s ease',
-                  animationDelay: `${idx * 50}ms`
-                }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '14px',
-                    background: 'var(--bg-subtle)',
+              {users.map((u, idx) => {
+                const isAdmin = u.role === 'admin';
+                return (
+                  <div key={u.id} className="animate-fade-in" style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
-                    color: 'var(--primary)',
-                    border: '1px solid var(--border)'
-                  }}>
-                    {u.name.charAt(0).toUpperCase()}
-                  </div>
+                    gap: '1.25rem',
+                    padding: '1.25rem',
+                    background: isAdmin ? 'var(--primary-light)' : 'var(--surface)',
+                    border: isAdmin ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    borderRadius: '24px',
+                    transition: 'all-delay 0.3s ease',
+                    animationDelay: `${idx * 50}ms`,
+                    position: 'relative',
+                    boxShadow: isAdmin ? '0 10px 25px -5px var(--primary-light)' : 'none'
+                  }}
+                    onMouseEnter={e => { 
+                      if (!isAdmin) e.currentTarget.style.borderColor = 'var(--primary)'; 
+                      e.currentTarget.style.transform = 'translateY(-2px)'; 
+                      e.currentTarget.style.boxShadow = isAdmin ? '0 15px 30px -5px var(--primary-light)' : 'var(--shadow-md)'; 
+                    }}
+                    onMouseLeave={e => { 
+                      if (!isAdmin) e.currentTarget.style.borderColor = 'var(--border)'; 
+                      e.currentTarget.style.transform = 'none'; 
+                      e.currentTarget.style.boxShadow = isAdmin ? '0 10px 25px -5px var(--primary-light)' : 'none'; 
+                    }}
+                  >
+                    {isAdmin && (
+                      <div style={{ 
+                        position: 'absolute', 
+                        top: '-12px', 
+                        right: '24px', 
+                        background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))', 
+                        color: '#fff', 
+                        padding: '4px 14px', 
+                        borderRadius: '12px', 
+                        fontSize: '0.65rem', 
+                        fontWeight: 900, 
+                        boxShadow: '0 4px 12px var(--primary-light)',
+                        letterSpacing: '0.05em'
+                      }}>
+                        👑 CUENTA PRINCIPAL
+                      </div>
+                    )}
 
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-                      <span style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.05rem' }}>{u.name}</span>
-                      <RoleBadge role={u.role} />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-4)', fontWeight: 500 }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
-                        {u.email}
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                        Desde {u.created}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div onClick={() => toggleActive(u)} style={{ cursor: 'pointer' }}>
-                      <span className={`badge ${u.active ? 'badge-success' : 'badge-danger'}`} style={{ borderRadius: '10px', padding: '0.4rem 0.8rem' }}>
-                        {u.active ? 'Activo' : 'Inactivo'}
-                      </span>
+                    <div style={{
+                      width: '52px',
+                      height: '52px',
+                      borderRadius: '16px',
+                      background: isAdmin ? 'var(--primary)' : 'var(--bg-subtle)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.4rem',
+                      fontWeight: 800,
+                      color: isAdmin ? '#fff' : 'var(--primary)',
+                      border: isAdmin ? 'none' : '1px solid var(--border)',
+                      boxShadow: isAdmin ? '0 4px 12px var(--primary-light)' : 'none'
+                    }}>
+                      {u.name.charAt(0).toUpperCase()}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={() => startEdit(u)} className="btn btn-ghost btn-icon" style={{ width: '40px', height: '40px', borderRadius: '12px' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                      </button>
-                      <button onClick={() => confirmDelete(u.id)} className="btn btn-ghost btn-icon" style={{ width: '40px', height: '40px', borderRadius: '12px', color: 'var(--danger)' }}>
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                      </button>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
+                        <span style={{ fontWeight: 800, color: 'var(--text)', fontSize: '1.1rem' }}>{u.name}</span>
+                        <RoleBadge role={u.role} />
+                        {isAdmin && <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>• Propietario</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-4)', fontWeight: 500 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg>
+                          {u.email}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                          Registrado el {u.created}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                      <div onClick={() => !isAdmin && toggleActive(u)} style={{ cursor: isAdmin ? 'default' : 'pointer' }}>
+                        <span className={`badge ${u.active ? 'badge-success' : 'badge-danger'}`} style={{ borderRadius: '12px', padding: '0.5rem 1rem', fontSize: '0.8rem' }}>
+                          {u.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {/* Edit button removed for all users as requested */}
+                        {!isAdmin && (
+                          <button onClick={() => confirmDelete(u.id)} className="btn btn-ghost btn-icon" style={{ width: '42px', height: '42px', borderRadius: '14px', color: 'var(--danger)', background: 'var(--danger-light)' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <div title="Cuenta maestra protegida" style={{ width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', opacity: 0.5 }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div style={{ padding: '6rem 2rem', textAlign: 'center', background: 'var(--bg-subtle)', borderRadius: '24px', border: '2px dashed var(--border)' }}>
@@ -535,17 +601,17 @@ export default function Users({ user, tenant }) {
 
                 <div className="input-group">
                   <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>Nombre Completo</label>
-                  <input 
-                    className="input-field" 
-                    placeholder="Ej. Juan Pérez" 
-                    value={form.name} 
-                    onChange={e => update('name', e.target.value)} 
-                    style={{ borderRadius: '16px', height: '54px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }} 
+                  <input
+                    className="input-field"
+                    placeholder="Ej. Juan Pérez"
+                    value={form.name}
+                    onChange={e => update('name', e.target.value)}
+                    style={{ borderRadius: '16px', height: '54px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }}
                   />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                  <SearchableSelect 
+                  <SearchableSelect
                     label="Rol / Cargo"
                     placeholder="Busca un rol..."
                     icon="🛡️"
@@ -553,28 +619,22 @@ export default function Users({ user, tenant }) {
                     value={form.role}
                     onChange={val => update('role', val)}
                   />
-                  
+
                   <div className="input-group">
                     <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>Email de Acceso</label>
-                    <input 
-                      className="input-field" 
-                      type="email" 
-                      placeholder="email@ejemplo.com" 
-                      value={form.email} 
-                      onChange={e => update('email', e.target.value)} 
-                      required 
-                      style={{ borderRadius: '16px', height: '54px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }} 
+                    <input
+                      className="input-field"
+                      type="email"
+                      placeholder="email@ejemplo.com"
+                      value={form.email}
+                      onChange={e => update('email', e.target.value)}
+                      required
+                      style={{ borderRadius: '16px', height: '54px', border: '1.5px solid var(--border-strong)', fontWeight: 600 }}
                     />
                   </div>
                 </div>
 
-                <div style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '24px', border: '1.5px solid var(--border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Módulos Habilitados</label>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--primary)', background: 'var(--primary-light)', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>PERMISOS DINÁMICOS</span>
-                  </div>
-                  <PermissionGrid permissions={form.permissions} onToggle={togglePermission} />
-                </div>
+
 
                 {!editId && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
@@ -598,6 +658,15 @@ export default function Users({ user, tenant }) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {/* Snackbar */}
+      {snackbar.show && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideInBottom 0.3s ease-out' }}>
+          <style>{`
+            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          `}</style>
+          {snackbar.message}
         </div>
       )}
     </div>

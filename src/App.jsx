@@ -29,7 +29,13 @@ function TenantApp({ tenant }) {
     }
     return null;
   });
-  const [currentRoute, setCurrentRoute] = useState('dashboard');
+  const [currentRoute, setCurrentRoute] = useState(() => {
+    return localStorage.getItem('novagendas_route') || 'dashboard';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('novagendas_route', currentRoute);
+  }, [currentRoute]);
 
   const renderRoute = () => {
     if (user.role === 'especialista' && currentRoute !== 'agenda' && currentRoute !== 'clients' && currentRoute !== 'profile') {
@@ -48,7 +54,7 @@ function TenantApp({ tenant }) {
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
       case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
       case 'profile': return <Profile user={user} />;
-      case 'logs': return <AuditLogs tenant={tenant} />;
+      case 'logs': return <AuditLogs tenant={tenant} user={user} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
   };

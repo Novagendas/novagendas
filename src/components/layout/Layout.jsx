@@ -67,22 +67,22 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
             <button
               className="mobile-only-btn btn-icon btn-ghost"
               onClick={() => setMobileOpen(true)}
-              style={{ display: 'none', marginRight: '-0.5rem' }}
+              style={{ display: 'none', minWidth: '44px', minHeight: '44px', marginRight: '-0.25rem', alignItems: 'center', justifyContent: 'center' }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
             </button>
 
             <div className="hide-on-mobile" style={{
-              width: 42, height: 42,
+              width: 44, height: 44,
               background: 'var(--primary-light)',
-              borderRadius: '12px',
+              borderRadius: '14px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.25rem',
+              fontSize: '1.35rem',
               boxShadow: 'inset 0 0 0 1px rgba(59, 130, 246, 0.1)'
             }}>
               {meta.emoji}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', marginLeft: '0.25rem' }}>
               <h1 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>
                 {meta.label}
               </h1>
@@ -103,17 +103,18 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
             <div style={{ height: 24, width: 1, background: 'var(--border)', margin: '0 0.5rem' }} />
 
             {/* Profile Summary */}
-            <div className="flex items-center gap-3" onClick={() => onNavigate('profile')} style={{ cursor: 'pointer' }}>
-              <div style={{ textAlign: 'right', display: 'none', md: 'block' }}>
+            <div className="flex items-center gap-3" onClick={() => onNavigate('profile')} style={{ cursor: 'pointer', marginLeft: '0.25rem' }}>
+              <div className="hide-on-mobile" style={{ textAlign: 'right' }}>
                 <p style={{ fontSize: '0.85rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>{user?.name?.split(' ')[0]}</p>
                 <p style={{ fontSize: '0.65rem', fontWeight: 600, margin: 0, color: 'var(--text-4)', textTransform: 'uppercase' }}>{user?.role}</p>
               </div>
               <div style={{
-                width: 42, height: 42, borderRadius: 12,
+                width: 44, height: 44, borderRadius: 14,
                 background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 800, fontSize: '0.9rem',
-                boxShadow: '0 4px 12px var(--primary-light)'
+                color: '#fff', fontWeight: 800, fontSize: '0.95rem',
+                boxShadow: '0 4px 12px var(--primary-light)',
+                flexShrink: 0
               }}>
                 {user?.name?.substring(0, 2).toUpperCase()}
               </div>

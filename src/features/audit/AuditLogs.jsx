@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../Supabase/supabaseClient';
 
-export default function LogsView({ tenant }) {
+export default function LogsView({ tenant, user }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchLogs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('logsnegocio')
       .select(`
         *,
@@ -15,6 +15,14 @@ export default function LogsView({ tenant }) {
       `)
       .eq('idnegocios', tenant.id)
       .order('fecha', { ascending: false });
+
+    if (user?.role === 'especialista') {
+      const myName = user.name || '';
+      const first = myName.split(' ')[0].replace('Dra.', '').replace('Dr.', '').trim();
+      query = query.or(`idusuario.eq.${user.idusuario || user.id},descripcion.ilike.%${first}%`);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Error fetching logs:", error);
