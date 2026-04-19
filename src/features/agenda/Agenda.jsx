@@ -13,13 +13,16 @@ const startOf = (date, unit) => {
   d.setHours(0, 0, 0, 0);
   return d;
 };
-const toDateStr = (d) => d.toISOString().split('T')[0];
+const toDateStr = (d) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
 const toTimeStr = (h, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 const timeToDec = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
 const SLOT_H = 72; // px per hour
 const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
-const statusColor = { 'Confirmada': 'var(--success)', 'En Espera': 'var(--warning)', 'Pendiente': 'var(--text-3)', 'Cancelada': 'var(--danger)' };
+const statusColor = { 'Confirmada': 'var(--success)', 'En Espera': 'var(--warning)', 'Pendiente': 'var(--text-3)', 'Cancelada': 'var(--danger)', 'Completada': 'var(--primary)' };
 
 /* ─── Month mini calendar helper ─────────────────────────── */
 function buildMonthGrid(pivot) {
@@ -166,6 +169,9 @@ export default function Agenda({ user, tenant }) {
   const [view, setView] = useState('week'); // 'day' | 'week' | 'month'
   const [pivot, setPivot] = useState(new Date());
 
+  const [hoveredAppt, setHoveredAppt] = useState(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
   /* ------ Modal state ------ */
   const [showModal, setShowModal] = useState(false);
   const [showHoursModal, setShowHoursModal] = useState(false);
@@ -260,8 +266,8 @@ export default function Agenda({ user, tenant }) {
     fetchData();
   }, [tenant]);
 
-  const openDetail = (appt, e) => { e.stopPropagation(); setDetailAppt(appt); setEditStatus(appt.status); };
-  const closeDetail = () => setDetailAppt(null);
+  const openDetail = (appt, e) => { e.stopPropagation(); setDetailAppt(appt); setEditStatus(appt.status); setHoveredAppt(null); };
+  const closeDetail = () => { setDetailAppt(null); setHoveredAppt(null); };
 
   const saveStatus = async () => {
     const statusMap = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4 };
@@ -277,13 +283,23 @@ export default function Agenda({ user, tenant }) {
         idNegocios: tenant.id
       });
       fetchData();
-      setDetailAppt(a => ({ ...a, status: editStatus }));
+      
+      if (editStatus === 'Cancelada') {
+        closeDetail();
+        showSnack('Cita cancelada', 'error');
+      } else {
+        setDetailAppt(a => ({ ...a, status: editStatus }));
+        showSnack(`Estado actualizado a ${editStatus}`);
+      }
     }
   };
 
   const handleDeleteFromDetail = async () => {
-    const { error } = await supabase.from('cita').delete().eq('idcita', detailAppt.id);
-    if (!error) {
+    try {
+      await supabase.from('citaservicios').delete().eq('idcita', detailAppt.id);
+      const { error } = await supabase.from('cita').delete().eq('idcita', detailAppt.id);
+      if (error) throw error;
+      
       await insertLog({
         accion: 'DELETE',
         entidad: 'Cita',
@@ -293,6 +309,9 @@ export default function Agenda({ user, tenant }) {
       });
       fetchData();
       closeDetail();
+      showSnack('Cita eliminada correctamente');
+    } catch (err) {
+      alert("Error al eliminar la cita: " + (err.message || "Error desconocido"));
     }
   };
 
@@ -352,7 +371,21 @@ export default function Agenda({ user, tenant }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.clientId || !form.date || !form.time) return;
+    
+    // Explicit Validations
+    if (!form.clientId) {
+      showSnack('⚠️ Por favor selecciona un paciente', 'error');
+      return;
+    }
+    if (form.serviceIds.length === 0) {
+      showSnack('⚠️ Debes elegir al menos un servicio', 'error');
+      return;
+    }
+    if (!form.date || !form.time) {
+      showSnack('⚠️ Define fecha y hora para la cita', 'error');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -378,6 +411,41 @@ export default function Agenda({ user, tenant }) {
         idtipocita: 1,   // Valoracion default
         idnegocios: tenant.id
       };
+
+      // ── Overlap Validation ──
+      const newStartMs = startDate.getTime();
+      const newEndMs = endDate.getTime();
+      
+      const conflict = appointments.find(appt => {
+        // Ignorar la cita actual si estamos editando
+        if (editId && appt.id === editId) return false;
+        // Solo importa si es el mismo especialista
+        if (appt.specialistId !== form.specialistId) return false;
+        // Solo importa si es el mismo día
+        if (appt.date !== form.date) return false;
+        // No comparar con citas canceladas
+        if (appt.status === 'Cancelada') return false;
+
+        const apptStartMs = new Date(`${appt.date}T${appt.time}:00`).getTime();
+        const apptEndMs = apptStartMs + (appt.duration * 60000);
+
+        // Algoritmo de traslape: (StartA < EndB) && (EndA > StartB)
+        return (newStartMs < apptEndMs) && (newEndMs > apptStartMs);
+      });
+
+      if (conflict) {
+        const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
+        const startTime = conflict.time;
+        const endTime = getEndTime(conflict);
+        
+        // Mostrar mensaje descriptivo
+        setSaving(false);
+        alert(`⚠️ Conflicto de Horario:
+No es posible agendar en este momento porque ya existe una cita de ${conflictClient?.nombre || 'otro paciente'} programada desde las ${startTime} hasta las ${endTime}. 
+
+Por favor, elige un horario diferente o cambia de profesional.`);
+        return;
+      }
 
       let appointmentId = editId;
 
@@ -490,6 +558,7 @@ export default function Agenda({ user, tenant }) {
     // Exact Service Color (from first service)
     const service = appt.services?.[0] || services.find(s => s.idservicios === appt.serviceIds?.[0]);
     const baseColor = service?.color || 'var(--primary)';
+    const borderColor = statusColor[appt.status] || 'rgba(255,255,255,0.4)';
 
     return {
       position: 'absolute', top: top + 1, left: 4, right: 4,
@@ -499,7 +568,7 @@ export default function Agenda({ user, tenant }) {
       color: '#fff', fontSize: '0.82rem', cursor: 'pointer',
       boxShadow: `0 4px 12px ${baseColor}33`,
       overflow: 'hidden', zIndex: 10,
-      borderLeft: `4px solid rgba(255,255,255,0.4)`,
+      borderLeft: `5px solid ${borderColor}`,
       transition: 'box-shadow 0.2s, transform 0.2s',
       display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
     };
@@ -513,7 +582,7 @@ export default function Agenda({ user, tenant }) {
 
 
   const DayColumn = ({ dateStr }) => {
-    const dayAppts = appointments.filter(a => a.date === dateStr);
+    const dayAppts = appointments.filter(a => a.date === dateStr && a.status !== 'Cancelada');
     return (
       <div style={{ position: 'relative', flex: 1, height: '100%' }}>
         {HOURS.map(h => (
@@ -541,22 +610,32 @@ export default function Agenda({ user, tenant }) {
               onDragStart={e => onDragStart(e, appt)}
               onDragEnd={onDragEnd}
               onClick={e => openDetail(appt, e)}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.boxShadow = '0 6px 18px var(--primary-glow)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 3px 10px var(--primary-glow-sm)'; }}
+              onMouseEnter={e => { 
+                const rect = e.currentTarget.getBoundingClientRect();
+                setHoveredAppt({ ...appt, client, serviceNames, endTime: getEndTime(appt) });
+                setMousePos({ x: rect.left + rect.width / 2, y: rect.top });
+                e.currentTarget.style.transform = 'scale(1.02)'; 
+                e.currentTarget.style.boxShadow = '0 6px 18px var(--primary-glow)'; 
+              }}
+              onMouseLeave={e => { 
+                setHoveredAppt(null);
+                e.currentTarget.style.transform = 'none'; 
+                e.currentTarget.style.boxShadow = '0 3px 10px var(--primary-glow-sm)'; 
+              }}
             >
-              <div style={{ fontWeight: 800, fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.3, letterSpacing: '-0.02em', textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}>
-                {client?.nombre || 'Paciente'} {client?.apellido || ''}
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'center', position: 'relative' }}>
+                <div style={{ fontWeight: 800, fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textShadow: '0 1px 2px rgba(0,0,0,0.2)', lineHeight: 1.2, paddingRight: '20px' }}>
+                  {client?.nombre || 'Paciente'} {client?.apellido || ''}
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
+                  style={{ position: 'absolute', right: '-2px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.25)', border: 'none', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer', transition: 'background 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.4)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
               </div>
-              {showService && (
-                <div style={{ fontSize: '0.72rem', opacity: 0.95, fontWeight: 600, marginTop: 1, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-                  {serviceNames}
-                </div>
-              )}
-              {showTime && (
-                <div style={{ fontSize: '0.67rem', opacity: 1, fontWeight: 700, marginTop: 'auto', background: 'rgba(0,0,0,0.15)', display: 'inline-flex', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>
-                  {appt.time} - {getEndTime(appt)} • {appt.status}
-                </div>
-              )}
             </div>
           );
         })}
@@ -567,15 +646,21 @@ export default function Agenda({ user, tenant }) {
   const ViewDay = () => (
     <div style={{ display: 'flex', flex: 1, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)' }}>
       <div style={{ display: 'flex', flex: 1 }}>
-        <div style={{ width: 60, flexShrink: 0, position: 'relative' }}>
+        <div style={{ width: 75, flexShrink: 0, position: 'relative' }}>
           {HOURS.map(h => (
-            <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 10, paddingTop: 4, fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-4)', borderBottom: '1px solid var(--border)' }}>
-              {h === 12 ? '12:00 PM' : h > 12 ? `${String(h - 12).padStart(2, '0')}:00 PM` : `${String(h).padStart(2, '0')}:00 AM`}
+            <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-2)', borderBottom: '1px solid var(--border)' }}>
+              {h === 12 ? (
+                <>12:00 <span style={{ fontSize: '0.6rem', fontWeight: 600, marginLeft: 2, opacity: 0.8 }}>PM</span></>
+              ) : h > 12 ? (
+                <>{String(h - 12).padStart(2, '0')}:00 <span style={{ fontSize: '0.6rem', fontWeight: 600, marginLeft: 2, opacity: 0.8 }}>PM</span></>
+              ) : (
+                <>{String(h).padStart(2, '0')}:00 <span style={{ fontSize: '0.6rem', fontWeight: 600, marginLeft: 2, opacity: 0.8 }}>AM</span></>
+              )}
             </div>
           ))}
         </div>
         <div style={{ flex: 1, borderLeft: '1px solid var(--border)', position: 'relative' }}>
-          <DayColumn dateStr={toDateStr(pivot)} />
+          {DayColumn({ dateStr: toDateStr(pivot) })}
         </div>
       </div>
     </div>
@@ -584,7 +669,7 @@ export default function Agenda({ user, tenant }) {
   const ViewWeek = () => (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)', background: 'var(--surface)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', borderBottom: '2px solid var(--border)', background: 'var(--surface)', position: 'sticky', top: 0, zIndex: 20 }}>
-        <div style={{ width: 60, flexShrink: 0 }} />
+        <div style={{ width: 75, flexShrink: 0 }} />
         {weekDays.map((d, i) => {
           const ds = toDateStr(d);
           const isToday = ds === todayStr;
@@ -599,16 +684,22 @@ export default function Agenda({ user, tenant }) {
         })}
       </div>
       <div style={{ flex: 1, display: 'flex' }}>
-        <div style={{ width: 60, flexShrink: 0 }}>
+        <div style={{ width: 75, flexShrink: 0 }}>
           {HOURS.map(h => (
-            <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 8, paddingTop: 4, fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-4)', borderBottom: '1px solid var(--border)' }}>
-              {h === 12 ? '12:00 PM' : h > 12 ? `${String(h - 12).padStart(2, '0')}:00 PM` : `${String(h).padStart(2, '0')}:00 AM`}
+            <div key={h} style={{ height: SLOT_H, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-2)', borderBottom: '1px solid var(--border)' }}>
+              {h === 12 ? (
+                <>12:00 <span style={{ fontSize: '0.6rem', fontWeight: 600, marginLeft: 2, opacity: 0.8 }}>PM</span></>
+              ) : h > 12 ? (
+                <>{String(h - 12).padStart(2, '0')}:00 <span style={{ fontSize: '0.6rem', fontWeight: 600, marginLeft: 2, opacity: 0.8 }}>PM</span></>
+              ) : (
+                <>{String(h).padStart(2, '0')}:00 <span style={{ fontSize: '0.6rem', fontWeight: 600, marginLeft: 2, opacity: 0.8 }}>AM</span></>
+              )}
             </div>
           ))}
         </div>
         {weekDays.map((d, i) => (
           <div key={i} style={{ flex: 1, borderLeft: '1px solid var(--border)', position: 'relative' }}>
-            <DayColumn dateStr={toDateStr(d)} />
+            {DayColumn({ dateStr: toDateStr(d) })}
           </div>
         ))}
       </div>
@@ -630,7 +721,7 @@ export default function Agenda({ user, tenant }) {
             if (!day) return <div key={idx} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }} />;
             const ds = toDateStr(day);
             const isToday = ds === todayStr;
-            const dayAppts = appointments.filter(a => a.date === ds);
+            const dayAppts = appointments.filter(a => a.date === ds && a.status !== 'Cancelada');
             const isCurrentMonth = day.getMonth() === pivotMonth;
             return (
               <div
@@ -645,9 +736,42 @@ export default function Agenda({ user, tenant }) {
                 </div>
                 {dayAppts.slice(0, 3).map(a => {
                   const client = clients.find(c => c.idcliente === a.clientId);
+                  const serviceNames = a.services?.map(s => s.nombre).join(', ') || 'Consulta General';
                   return (
-                    <div key={a.id} style={{ background: 'var(--primary)', borderRadius: 4, color: '#fff', fontSize: '0.65rem', fontWeight: 600, padding: '2px 5px', marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {a.time} {client?.nombre || 'Cita'}
+                    <div 
+                      key={a.id} 
+                      style={{ 
+                        background: a.services?.[0]?.color || 'var(--primary)', 
+                        borderRadius: 4, 
+                        color: '#fff', 
+                        fontSize: '0.65rem', 
+                        fontWeight: 600, 
+                        padding: '2px 5px', 
+                        marginBottom: 2, 
+                        overflow: 'hidden', 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                      onMouseEnter={e => { 
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setHoveredAppt({ ...a, client, serviceNames, endTime: getEndTime(a) });
+                        setMousePos({ x: rect.left + rect.width / 2, y: rect.top });
+                      }}
+                      onMouseLeave={() => setHoveredAppt(null)}
+                    >
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {client?.nombre || 'Paciente'} {client?.apellido || ''}
+                      </span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); startEdit(a); }}
+                        style={{ background: 'none', border: 'none', padding: '0 2px', cursor: 'pointer', color: '#fff', opacity: 0.8 }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </button>
                     </div>
                   );
                 })}
@@ -703,11 +827,23 @@ export default function Agenda({ user, tenant }) {
         </div>
 
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {loading ? <div style={{ padding: '4rem', textAlign: 'center' }}>Cargando agenda...</div> : (
+          {loading ? (
+            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%' }}>
+              <div className="skeleton skeleton-button" style={{ width: '200px', height: '2rem' }}></div>
+              <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                <div className="skeleton" style={{ width: '75px', height: '100%' }}></div>
+                <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                  {[1, 2, 3, 4, 5, 6, 7].map(i => (
+                    <div key={i} className="skeleton" style={{ flex: 1, height: '100%', opacity: 0.7 - (i * 0.05) }}></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
             <>
-              {view === 'day' && <ViewDay />}
-              {view === 'week' && <ViewWeek />}
-              {view === 'month' && <ViewMonth />}
+              {view === 'day' && ViewDay()}
+              {view === 'week' && ViewWeek()}
+              {view === 'month' && ViewMonth()}
             </>
           )}
         </div>
@@ -788,6 +924,48 @@ export default function Agenda({ user, tenant }) {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {hoveredAppt && !detailAppt && !showModal && (
+        <div style={{
+          position: 'fixed',
+          left: mousePos.x,
+          top: mousePos.y,
+          transform: 'translate(-50%, -100%)',
+          marginTop: -8,
+          background: 'var(--surface-glass)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          padding: '1rem',
+          borderRadius: '16px',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+          zIndex: 99999,
+          pointerEvents: 'none',
+          minWidth: 260,
+          color: 'var(--text)',
+          animation: 'fadeInOpacity 0.15s ease-out',
+        }}>
+          <style>{`@keyframes fadeInOpacity { from { opacity: 0; } to { opacity: 1; } }`}</style>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 8px', borderRadius: 6 }}>
+                {hoveredAppt.time} - {hoveredAppt.endTime}
+              </span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-4)' }}>{hoveredAppt.status}</span>
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)', lineHeight: 1.2 }}>
+              {hoveredAppt.client?.nombre || 'Desconocido'} {hoveredAppt.client?.apellido || ''}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', fontWeight: 600 }}>
+              <strong style={{ color: 'var(--text-2)' }}>Servicio(s):</strong> {hoveredAppt.serviceNames}
+            </div>
+            {hoveredAppt.doctor && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                <strong style={{ color: 'var(--text-2)' }}>Especialista:</strong> {hoveredAppt.doctor}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -904,9 +1082,9 @@ export default function Agenda({ user, tenant }) {
 
       {/* Snackbar */}
       {snackbar.show && (
-        <div style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideIn 0.3s ease-out' }}>
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideInBottom 0.3s ease-out' }}>
           <style>{`
-            @keyframes slideIn { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
           `}</style>
           {snackbar.message}
         </div>
@@ -921,11 +1099,9 @@ export default function Agenda({ user, tenant }) {
             <div className="modal-box" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
               {/* Premium Header */}
               <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-deep) 100%)', padding: '2.5rem 2rem 2rem', color: '#fff', position: 'relative' }}>
-                <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem' }}>
-                  <button className="btn btn-ghost btn-icon" onClick={closeDetail} style={{ background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '12px', width: '36px', height: '36px' }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                  </button>
-                </div>
+                <button onClick={closeDetail} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.15)', color: '#fff', border: 'none', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, padding: 0 }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" style={{ pointerEvents: 'none' }}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

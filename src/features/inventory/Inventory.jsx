@@ -134,20 +134,22 @@ export default function Inventory({ user, tenant }) {
       precio: parseFloat(form.price) || 0,
       descripcion: form.description
     };
+    setShowModal(false);
+    
     if (editId) {
-      const { error } = await supabase.from('producto').update(payload).eq('idproducto', editId);
-      if (!error) {
-        showSnack('Producto actualizado con éxito');
-        fetchData();
-        setShowModal(false);
-      }
+      supabase.from('producto').update(payload).eq('idproducto', editId).then(({ error }) => {
+        if (!error) {
+          showSnack('Producto actualizado con éxito');
+          fetchData();
+        }
+      });
     } else {
-      const { error } = await supabase.from('producto').insert([payload]);
-      if (!error) {
-        showSnack('Producto creado con éxito');
-        fetchData();
-        setShowModal(false);
-      }
+      supabase.from('producto').insert([payload]).then(({ error }) => {
+        if (!error) {
+          showSnack('Producto creado con éxito');
+          fetchData();
+        }
+      });
     }
     setSaving(false);
   };
@@ -202,7 +204,7 @@ export default function Inventory({ user, tenant }) {
       </div>
 
       {/* ── Main Inventory Table ── */}
-      <div className="card w-full" style={{ padding: 0, overflow: 'hidden', flex: 1, display: 'flex', flexDirection: 'column', minHeight: '65vh' }}>
+      <div className="card w-full" style={{ padding: 0, overflow: 'hidden', marginBottom: '4rem' }}>
         <div style={{ padding: '1.25rem 1.5rem', background: 'var(--surface-2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-2)' }}>Existencias actuales</span>
           <span className={`badge ${alertas > 0 ? 'badge-danger' : 'badge-success'}`}>
@@ -210,9 +212,13 @@ export default function Inventory({ user, tenant }) {
           </span>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div>
           {loading ? (
-            <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--primary)', fontWeight: 600 }}>Cargando almacén...</div>
+            <div style={{ padding: '2rem' }}>
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="skeleton" style={{ height: '60px', marginBottom: '1rem', opacity: 1 - (i * 0.15) }} />
+              ))}
+            </div>
           ) : products.length > 0 ? (
             <table className="data-table">
               <thead>
@@ -365,7 +371,7 @@ export default function Inventory({ user, tenant }) {
             </div>
 
             <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--surface)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: 300, overflowY: 'auto', paddingRight: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {categories.map(c => (
                   <div key={c.idcategoriaproducto} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', background: 'var(--bg-subtle)', borderRadius: '16px', border: '1px solid var(--border)' }}>
                     <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>{c.descripcion}</span>
@@ -447,7 +453,10 @@ export default function Inventory({ user, tenant }) {
 
       {/* ── Snackbar ── */}
       {snackbar.show && (
-        <div style={{ position: 'fixed', top: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideIn 0.3s ease-out' }}>
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideInBottom 0.3s ease-out' }}>
+          <style>{`
+            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          `}</style>
           {snackbar.message}
         </div>
       )}

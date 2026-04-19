@@ -9,13 +9,26 @@ export default function Clients({ user, tenant }) {
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
 
-  const [form, setForm] = useState({ doc: '', name: '', phone: '' });
+  const [form, setForm] = useState({ doc: '', name: '', email: '', phone: '' });
   const [noteForm, setNoteForm] = useState({ title: '', notas: '' });
+  const [emailError, setEmailError] = useState('');
+
+  const isValidEmail = (email) => {
+    if (!email) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  // Snackbar
+  const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+  const showSnack = (message, type = 'success') => {
+    setSnackbar({ show: true, message, type });
+    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+  };
 
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
-  const [editForm, setEditForm] = useState({ doc: '', name: '', phone: '' });
+  const [editForm, setEditForm] = useState({ doc: '', name: '', email: '', phone: '' });
   const [habeas, setHabeas] = useState(false);
 
   // Fetch Data from Supabase
@@ -40,6 +53,7 @@ export default function Clients({ user, tenant }) {
         id: c.idcliente,
         doc: c.cedula || '',
         name: `${c.nombre} ${c.apellido}`,
+        email: c.email || '',
         phone: c.telefono || '',
         totalVisits: c.historialclinico ? c.historialclinico.length : 0,
         history: (c.historialclinico || []).map(h => ({
@@ -59,17 +73,39 @@ export default function Clients({ user, tenant }) {
     fetchData();
   }, [tenant]);
 
-  // Especialista filter: Solo ver clientes a los que ha atendido
+  const [assignedClientIds, setAssignedClientIds] = useState([]);
+
+  useEffect(() => {
+    if (user?.role === 'especialista' && tenant?.id) {
+      const fetchAssigned = async () => {
+        const { data } = await supabase.from('cita').select('idcliente').eq('idusuario', user.idusuario || user.id);
+        if (data) setAssignedClientIds([...new Set(data.map(d => d.idcliente))]);
+      };
+      fetchAssigned();
+    }
+  }, [user, tenant]);
+
+  // Especialista filter: Solo ver clientes asignados en citas o con historial previo
   const visibleClients = user?.role === 'especialista'
-    ? clients.filter(c => c.history.some(h => h.doctor === user?.name))
+    ? clients.filter(c => assignedClientIds.includes(c.id) || c.history.some(h => h.doctor === user?.name))
     : clients;
 
   const activeClient = clients.find(c => c.id === selectedId) || null;
-  const filtered = visibleClients.filter(c => search === '' || c.name.toLowerCase().includes(search.toLowerCase()) || (c.doc && c.doc.includes(search)));
+  const filtered = visibleClients.filter(c => 
+    search === '' || 
+    c.name.toLowerCase().includes(search.toLowerCase()) || 
+    (c.doc && c.doc.includes(search)) ||
+    (c.email && c.email.toLowerCase().includes(search.toLowerCase())) ||
+    (c.phone && c.phone.includes(search))
+  );
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!form.doc || !form.name || !habeas) return;
+    if (!isValidEmail(form.email)) {
+      setEmailError('Por favor ingresa un correo electrónico válido');
+      return;
+    }
+    if (!form.doc || !form.name || !form.phone || !habeas) return;
     setSaving(true);
 
     const parts = form.name.trim().split(' ');
@@ -80,24 +116,28 @@ export default function Clients({ user, tenant }) {
       nombre,
       apellido,
       cedula: form.doc,
+      email: form.email,
       telefono: form.phone,
       idnegocios: tenant.id
     }]);
 
-    setSaving(false);
     if (!error) {
-      await insertLog({
+      setForm({ doc: '', name: '', email: '', phone: '' });
+      setHabeas(false);
+      setShowRegisterModal(false);
+      setSaving(false);
+
+      insertLog({
         accion: 'CREATE',
         entidad: 'Paciente',
         descripcion: `Se registró al paciente '${form.name}'`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      setForm({ doc: '', name: '', phone: '' });
-      setHabeas(false);
-      setShowRegisterModal(false);
+      showSnack('Paciente registrado correctamente');
       fetchData();
     } else {
+      setSaving(false);
       alert("Error registrando paciente: " + error.message);
     }
   };
@@ -117,26 +157,33 @@ export default function Clients({ user, tenant }) {
       idnegocios: tenant.id
     }]);
 
-    setSaving(false);
     if (!error) {
-      await insertLog({
+      setShowNoteModal(false);
+      setNoteForm({ title: '', notas: '' });
+      setSaving(false);
+
+      insertLog({
         accion: 'CREATE',
         entidad: 'Evolución Clínica',
         descripcion: `Se añadió una evolución para ${activeClient?.name}: '${noteForm.title}'`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      setShowNoteModal(false);
-      setNoteForm({ title: '', notas: '' });
+      showSnack('Evolución clínica guardada');
       fetchData(); // Reload history
     } else {
+      setSaving(false);
       alert("Error insertando evolución médica: " + error.message);
     }
   };
 
   const handleEditClient = async (e) => {
     e.preventDefault();
-    if (!editForm.doc || !editForm.name || !selectedId) return;
+    if (!isValidEmail(editForm.email)) {
+      setEmailError('Por favor ingresa un correo electrónico válido');
+      return;
+    }
+    if (!editForm.doc || !editForm.name || !editForm.phone || !selectedId) return;
     setSaving(true);
 
     const parts = editForm.name.trim().split(' ');
@@ -147,21 +194,25 @@ export default function Clients({ user, tenant }) {
       nombre,
       apellido,
       cedula: editForm.doc,
+      email: editForm.email,
       telefono: editForm.phone
     }).eq('idcliente', selectedId);
 
-    setSaving(false);
     if (!error) {
-      await insertLog({
+      setShowEditModal(false);
+      setSaving(false);
+
+      insertLog({
         accion: 'UPDATE',
         entidad: 'Paciente',
         descripcion: `Se actualizaron los datos de '${activeClient?.name}'`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      setShowEditModal(false);
+      showSnack('Datos actualizados correctamente');
       fetchData();
     } else {
+      setSaving(false);
       alert("Error actualizando paciente: " + error.message);
     }
   };
@@ -184,17 +235,19 @@ export default function Clients({ user, tenant }) {
         </div>
 
         {/* Action Button */}
-        <button className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', position: 'sticky', top: 0, zIndex: 10 }} onClick={() => setShowRegisterModal(true)}>
-          + Nuevo Paciente
-        </button>
+        {user?.role !== 'especialista' && (
+          <button className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', position: 'sticky', top: 0, zIndex: 10 }} onClick={() => setShowRegisterModal(true)}>
+            + Nuevo Paciente
+          </button>
+        )}
 
         {/* Patient List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '3rem 0', color: 'var(--primary)' }}>
-              <svg width="32" height="32" viewBox="0 0 50 50" style={{ animation: 'spinner 0.8s linear infinite' }}>
-                <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="5" strokeDasharray="30 100" strokeLinecap="round" />
-              </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="skeleton" style={{ height: '74px', borderRadius: 'var(--radius)' }} />
+              ))}
             </div>
           ) : filtered.length === 0 ? (
             <div className="card animate-fade-in" style={{ textAlign: 'center', padding: '2.5rem 1rem', background: 'transparent', border: '1px dashed var(--border)' }}>
@@ -279,16 +332,19 @@ export default function Clients({ user, tenant }) {
                     </h2>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.85rem', fontSize: '0.85rem', color: 'var(--text-3)', fontWeight: 600 }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid var(--border)' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> C.C. {activeClient.doc}</span>
-                      {activeClient.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid var(--border)' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg> {activeClient.phone}</span>}
+                      {activeClient.phone && <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid var(--border)' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" /></svg> {activeClient.phone}</span>}
+                      {activeClient.email && <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'var(--surface)', padding: '0.2rem 0.6rem', borderRadius: 6, border: '1px solid var(--border)' }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></svg> {activeClient.email}</span>}
                     </div>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                   {/* Edit Button */}
-                  <button className="btn btn-ghost btn-icon" onClick={() => { setEditForm({ doc: activeClient.doc, name: activeClient.name, phone: activeClient.phone }); setShowEditModal(true); }} style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }} title="Editar Paciente">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                  </button>
+                  {user?.role !== 'especialista' && (
+                    <button className="btn btn-ghost btn-icon" onClick={() => { setEditForm({ doc: activeClient.doc, name: activeClient.name, email: activeClient.email, phone: activeClient.phone }); setShowEditModal(true); }} style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }} title="Editar Paciente">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                    </button>
+                  )}
                   {/* Stats Pill */}
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '1rem 1.5rem', textAlign: 'center', flexShrink: 0, boxShadow: 'var(--shadow-sm)' }}>
                     <p style={{ margin: 0, fontSize: '0.65rem', color: 'var(--text-4)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Registros</p>
@@ -461,7 +517,7 @@ export default function Clients({ user, tenant }) {
               </button>
             </div>
 
-            <form onSubmit={handleEditClient} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
+            <form onSubmit={handleEditClient} noValidate style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Documento de Identidad</label>
                 <input className="input-field" required value={editForm.doc} onChange={e => setEditForm({ ...editForm, doc: e.target.value })} style={{ borderRadius: '12px' }} />
@@ -470,9 +526,36 @@ export default function Clients({ user, tenant }) {
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre Completo</label>
                 <input className="input-field capitalize-text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ borderRadius: '12px' }} />
               </div>
-              <div className="input-group">
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Teléfono / WhatsApp</label>
-                <input className="input-field" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ borderRadius: '12px' }} />
+               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Teléfono / WhatsApp *</label>
+                  <input className="input-field" required value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} style={{ borderRadius: '12px' }} />
+                </div>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: emailError ? 'var(--danger)' : 'var(--text-4)' }}>Correo Electrónico</label>
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      type="email" 
+                      className="input-field" 
+                      value={editForm.email} 
+                      onChange={e => { 
+                        setEditForm({ ...editForm, email: e.target.value }); 
+                        if (emailError) setEmailError('');
+                      }} 
+                      style={{ 
+                        borderRadius: '12px',
+                        borderColor: emailError ? 'var(--danger)' : 'var(--border-strong)',
+                        background: emailError ? 'rgba(239, 68, 68, 0.02)' : 'var(--surface)'
+                      }} 
+                    />
+                    {emailError && (
+                      <div className="animate-fade-in" style={{ color: 'var(--danger)', fontSize: '0.7rem', fontWeight: 600, marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {emailError}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
@@ -494,7 +577,7 @@ export default function Clients({ user, tenant }) {
             <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.6rem', borderRadius: '14px' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Nuevo Paciente</h3>
@@ -506,7 +589,7 @@ export default function Clients({ user, tenant }) {
               </button>
             </div>
 
-            <form onSubmit={handleRegister} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
+            <form onSubmit={handleRegister} noValidate style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Documento de Identidad *</label>
                 <input className="input-field" required value={form.doc} onChange={e => setForm({ ...form, doc: e.target.value })} style={{ borderRadius: '12px' }} />
@@ -515,9 +598,36 @@ export default function Clients({ user, tenant }) {
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre Completo *</label>
                 <input className="input-field capitalize-text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ borderRadius: '12px' }} />
               </div>
-              <div className="input-group">
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Teléfono / WhatsApp</label>
-                <input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={{ borderRadius: '12px' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Teléfono / WhatsApp *</label>
+                  <input className="input-field" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={{ borderRadius: '12px' }} />
+                </div>
+                <div className="input-group">
+                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: emailError ? 'var(--danger)' : 'var(--text-4)' }}>Correo Electrónico</label>
+                  <div style={{ position: 'relative' }}>
+                    <input 
+                      type="email" 
+                      className="input-field" 
+                      value={form.email} 
+                      onChange={e => { 
+                        setForm({ ...form, email: e.target.value }); 
+                        if (emailError) setEmailError('');
+                      }} 
+                      style={{ 
+                        borderRadius: '12px',
+                        borderColor: emailError ? 'var(--danger)' : 'var(--border-strong)',
+                        background: emailError ? 'rgba(239, 68, 68, 0.02)' : 'var(--surface)'
+                      }} 
+                    />
+                    {emailError && (
+                      <div className="animate-fade-in" style={{ color: 'var(--danger)', fontSize: '0.7rem', fontWeight: 600, marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        {emailError}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div style={{ background: habeas ? 'var(--success-light)' : 'var(--bg-subtle)', border: `1px solid ${habeas ? 'rgba(16,185,129,0.2)' : 'var(--border)'}`, padding: '1.25rem', borderRadius: '16px', display: 'flex', gap: '0.85rem', alignItems: 'flex-start', transition: 'all 0.2s ease' }}>
@@ -535,6 +645,15 @@ export default function Clients({ user, tenant }) {
               </div>
             </form>
           </div>
+        </div>
+      )}
+      {/* Snackbar */}
+      {snackbar.show && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideInBottom 0.3s ease-out' }}>
+          <style>{`
+            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          `}</style>
+          {snackbar.message}
         </div>
       )}
     </div>

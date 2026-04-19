@@ -175,26 +175,27 @@ export default function Services({ user, tenant }) {
       idestado: 1
     };
 
-    if (editId) {
-      const { error } = await supabase.from('servicios').update(payload).eq('idservicios', editId);
-      if (error) showAlert('Fallo de Edición', "Error actualizando: " + error.message);
-      else {
-        showSnack('Servicio actualizado');
-        fetchData();
-      }
-    } else {
-      const { error } = await supabase.from('servicios').insert([payload]);
-      if (error) showAlert('Fallo de Creación', "Error insertando: " + error.message);
-      else {
-        showSnack('Servicio creado');
-        fetchData();
-      }
-    }
-
     setShowModal(false);
     setEditId(null);
     setSaving(false);
-    fetchData(); 
+    
+    if (editId) {
+      supabase.from('servicios').update(payload).eq('idservicios', editId).then(({ error }) => {
+        if (error) showAlert('Fallo de Edición', "Error actualizando: " + error.message);
+        else {
+          showSnack('Servicio actualizado');
+          fetchData();
+        }
+      });
+    } else {
+      supabase.from('servicios').insert([payload]).then(({ error }) => {
+        if (error) showAlert('Fallo de Creación', "Error insertando: " + error.message);
+        else {
+          showSnack('Servicio creado');
+          fetchData();
+        }
+      });
+    }
   };
 
   const handleDelete = (id, e) => {
@@ -248,12 +249,10 @@ export default function Services({ user, tenant }) {
       </div>
 
       {loading && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4rem', color: 'var(--primary)' }}>
-          <svg width="40" height="40" viewBox="0 0 50 50" style={{ animation: 'spinner 0.8s linear infinite' }}>
-            <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeWidth="4.5" strokeDasharray="30 100" strokeLinecap="round" />
-            <circle cx="25" cy="25" r="20" fill="none" stroke="var(--border)" strokeWidth="4.5" style={{ opacity: 0.3 }} />
-          </svg>
-          <span style={{ fontWeight: 700, fontSize: '0.88rem', marginTop: '1rem', color: 'var(--text-4)' }}>Sincronizando...</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="skeleton" style={{ height: '180px', borderRadius: 'var(--radius-lg)' }} />
+          ))}
         </div>
       )}
 
@@ -597,6 +596,15 @@ export default function Services({ user, tenant }) {
         </div>
       )}
 
+      {/* Snackbar */}
+      {snackbar.show && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideInBottom 0.3s ease-out' }}>
+          <style>{`
+            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+          `}</style>
+          {snackbar.message}
+        </div>
+      )}
     </div>
   );
 }

@@ -178,7 +178,7 @@ export default function SuperAdminPortal() {
 
   /* Negocios */
   const [tenants, setTenants] = useState([]);
-  const [tenantLoad, setTenantLoad] = useState(true);
+  const [tenantLoad, setTenantLoad] = useState(false);
   const [tenantSearch, setTenantSearch] = useState('');
   const [tenantSort, setTenantSort] = useState('newest');
   const [tenantModal, setTenantModal] = useState(null);
@@ -222,15 +222,16 @@ export default function SuperAdminPortal() {
   useEffect(() => { if (adminLogged) { fetchTenants(); fetchUsers(); } }, [adminLogged]);
 
   /* ── Login ── */
-  const [email, setEmail] = useState('sanabria3210@gmail.com');
+  const [email, setEmail] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [masterPass, setMasterPass] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setTenantLoad(true);
+    setIsAuthLoading(true);
     let { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
-    setTenantLoad(false);
+    setIsAuthLoading(false);
     if (error) {
       if (error.message.includes('Email not confirmed')) {
         alert('Error: Correo no confirmado. Debes confirmar el email en Supabase Auth o desactivar "Confirm Email" en Authentication -> Settings.');
@@ -244,7 +245,7 @@ export default function SuperAdminPortal() {
   const handleRegisterSuper = async (e) => {
     e.preventDefault();
     if (masterPass !== 'super123') return alert('Contraseña maestra incorrecta.');
-    setTenantLoad(true);
+    setIsAuthLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password: pass,
@@ -274,7 +275,7 @@ export default function SuperAdminPortal() {
     } else {
       alert('Error al crear SuperAdmin: ' + error.message);
     }
-    setTenantLoad(false);
+    setIsAuthLoading(false);
   };
 
   /* ── Negocios CRUD ── */
@@ -427,8 +428,8 @@ export default function SuperAdminPortal() {
             <input type="password" className="input-field" placeholder="Confirmación Maestra" value={masterPass} onChange={e => setMasterPass(e.target.value)} style={{ marginBottom: '1rem', border: '1px solid var(--accent)' }} />
           )}
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>
-            {tenantLoad ? 'Procesando...' : (isRegistering ? 'Registrar SuperAdmin' : 'Ingresar')}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }} disabled={isAuthLoading}>
+            {isAuthLoading ? 'Procesando...' : (isRegistering ? 'Registrar SuperAdmin' : 'Ingresar')}
           </button>
         </form>
 
