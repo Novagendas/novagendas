@@ -71,8 +71,12 @@ export default function Dashboard({ user, tenant, onNavigate }) {
   const fetchData = async () => {
     if (!tenant?.id) return;
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
     
+    const startISO = startOfDay.toISOString();
+    const endISO = endOfDay.toISOString();
+
     try {
       const { count: cCount } = await supabase.from('cliente').select('*', { count: 'exact', head: true }).eq('idnegocios', tenant.id);
       const { data: allProds } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id);
@@ -82,14 +86,15 @@ export default function Dashboard({ user, tenant, onNavigate }) {
         .from('cita')
         .select(`*, estadocita(descripcion), cliente(nombre, cedula), usuario(nombre, apellido)`)
         .eq('idnegocios', tenant.id)
-        .gte('fechahorainicio', `${todayStr}T00:00:00`)
-        .lte('fechahorainicio', `${todayStr}T23:59:59`);
+        .gte('fechahorainicio', startISO)
+        .lte('fechahorainicio', endISO);
       
       const { data: payData } = await supabase
         .from('pagos')
         .select('monto')
         .eq('idnegocios', tenant.id)
-        .gte('fecha', `${todayStr}T00:00:00`);
+        .gte('fecha', startISO)
+        .lte('fecha', endISO);
       
       const revenue = payData?.reduce((s, p) => s + Number(p.monto), 0) || 0;
 

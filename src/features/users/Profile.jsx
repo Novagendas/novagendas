@@ -22,7 +22,7 @@ const CustomAlert = ({ message, type, onClose }) => {
   );
 };
 
-export default function Profile({ user }) {
+export default function Profile({ user, onUserUpdate }) {
   const [profileData, setProfileData] = useState({
     nombre: '',
     apellido: '',
@@ -91,6 +91,12 @@ export default function Profile({ user }) {
       setAlert({ type: 'error', message: 'Error al actualizar base de datos: ' + error.message });
     } else {
       setAlert({ type: 'success', message: '¡Información de perfil actualizada!' });
+      if (onUserUpdate) {
+        onUserUpdate({
+          name: profileData.nombre + ' ' + profileData.apellido,
+          email: profileData.email
+        });
+      }
     }
   };
 
