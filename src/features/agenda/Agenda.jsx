@@ -181,6 +181,29 @@ export default function Agenda({ user, tenant }) {
   const [showServiceMenu, setShowServiceMenu] = useState(false);
   const [serviceSearch, setServiceSearch] = useState('');
 
+  /* ------ Filter state ------ */
+  const [selectedSpecialistId, setSelectedSpecialistId] = useState(user.role === 'especialista' ? (user.idusuario || user.id) : null);
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [conflictModal, setConflictModal] = useState({ show: false, message: '', details: null });
+
+  /* ------ Conflict Helper ------ */
+  const checkConflict = (newDate, newTime, duration, specialistId, excludeId = null) => {
+    const newStartMs = new Date(`${newDate}T${newTime}:00`).getTime();
+    const newEndMs = newStartMs + (duration * 60000);
+
+    return appointments.find(appt => {
+      if (excludeId && appt.id === excludeId) return false;
+      if (appt.specialistId !== specialistId) return false;
+      if (appt.date !== newDate) return false;
+      if (appt.status === 'Cancelada') return false;
+
+      const apptStartMs = new Date(`${appt.date}T${appt.time}:00`).getTime();
+      const apptEndMs = apptStartMs + (appt.duration * 60000);
+
+      return (newStartMs < apptEndMs) && (newEndMs > apptStartMs);
+    });
+  };
+
   /* ------ Detail popover ------ */
   const [detailAppt, setDetailAppt] = useState(null);
   const [editStatus, setEditStatus] = useState(null);
@@ -311,7 +334,7 @@ export default function Agenda({ user, tenant }) {
       closeDetail();
       showSnack('Cita eliminada correctamente');
     } catch (err) {
-      alert("Error al eliminar la cita: " + (err.message || "Error desconocido"));
+      showSnack("Error al eliminar la cita: " + (err.message || "Error desconocido"), 'error');
     }
   };
 
@@ -413,37 +436,23 @@ export default function Agenda({ user, tenant }) {
       };
 
       // ── Overlap Validation ──
-      const newStartMs = startDate.getTime();
-      const newEndMs = endDate.getTime();
-      
-      const conflict = appointments.find(appt => {
-        // Ignorar la cita actual si estamos editando
-        if (editId && appt.id === editId) return false;
-        // Solo importa si es el mismo especialista
-        if (appt.specialistId !== form.specialistId) return false;
-        // Solo importa si es el mismo día
-        if (appt.date !== form.date) return false;
-        // No comparar con citas canceladas
-        if (appt.status === 'Cancelada') return false;
-
-        const apptStartMs = new Date(`${appt.date}T${appt.time}:00`).getTime();
-        const apptEndMs = apptStartMs + (appt.duration * 60000);
-
-        // Algoritmo de traslape: (StartA < EndB) && (EndA > StartB)
-        return (newStartMs < apptEndMs) && (newEndMs > apptStartMs);
-      });
+      const conflict = checkConflict(form.date, form.time, duration, form.specialistId, editId);
 
       if (conflict) {
         const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
         const startTime = conflict.time;
         const endTime = getEndTime(conflict);
         
-        // Mostrar mensaje descriptivo
         setSaving(false);
-        alert(`⚠️ Conflicto de Horario:
-No es posible agendar en este momento porque ya existe una cita de ${conflictClient?.nombre || 'otro paciente'} programada desde las ${startTime} hasta las ${endTime}. 
-
-Por favor, elige un horario diferente o cambia de profesional.`);
+        setConflictModal({
+          show: true,
+          message: `Conflicto de Horario`,
+          details: {
+            clientName: `${conflictClient?.nombre || 'otro paciente'} ${conflictClient?.apellido || ''}`,
+            startTime,
+            endTime
+          }
+        });
         return;
       }
 
@@ -484,7 +493,7 @@ Por favor, elige un horario diferente o cambia de profesional.`);
       setEditId(null);
     } catch (err) {
       console.error("Error saving appointment:", err);
-      alert("Error al guardar la cita: " + (err.message || "Error desconocido"));
+      showSnack("Error al guardar la cita: " + (err.message || "Error desconocido"), 'error');
     } finally {
       setSaving(false);
     }
@@ -529,7 +538,26 @@ Por favor, elige un horario diferente o cambia de profesional.`);
     const appt = appointments.find(a => a.id === apptId);
     if (!appt) return;
 
-    const startStr = `${dateStr}T${toTimeStr(hour)}:00`;
+    // Calculate initial drop time
+    let dropTime = toTimeStr(hour);
+    
+    // Smart Adjust: If there's a conflict, push it to the end of the conflicting appointment
+    let conflict = checkConflict(dateStr, dropTime, appt.duration, appt.specialistId, apptId);
+    let attempts = 0;
+    while (conflict && attempts < 5) {
+      dropTime = getEndTime(conflict);
+      conflict = checkConflict(dateStr, dropTime, appt.duration, appt.specialistId, apptId);
+      attempts++;
+    }
+
+    if (conflict) {
+      const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
+      showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
+      dragging.current = null;
+      return;
+    }
+
+    const startStr = `${dateStr}T${dropTime}:00`;
     const end = new Date(new Date(startStr).getTime() + appt.duration * 60000);
     const endStr = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}T${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}:00`;
 
@@ -542,7 +570,7 @@ Por favor, elige un horario diferente o cambia de profesional.`);
       await insertLog({
         accion: 'UPDATE',
         entidad: 'Cita',
-        descripcion: `Cita de paciente ${clients.find(c => c.idcliente === appt.clientId)?.nombre || ''} movida al ${dateStr} ${toTimeStr(hour)}`,
+        descripcion: `Cita de paciente ${clients.find(c => c.idcliente === appt.clientId)?.nombre || ''} movida al ${dateStr} ${dropTime}`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
@@ -582,7 +610,11 @@ Por favor, elige un horario diferente o cambia de profesional.`);
 
 
   const DayColumn = ({ dateStr }) => {
-    const dayAppts = appointments.filter(a => a.date === dateStr && a.status !== 'Cancelada');
+    const dayAppts = appointments.filter(a => {
+      const isCorrectDate = a.date === dateStr && a.status !== 'Cancelada';
+      const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
+      return isCorrectDate && isCorrectSpec;
+    });
     return (
       <div style={{ position: 'relative', flex: 1, height: '100%' }}>
         {HOURS.map(h => (
@@ -721,7 +753,11 @@ Por favor, elige un horario diferente o cambia de profesional.`);
             if (!day) return <div key={idx} style={{ borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }} />;
             const ds = toDateStr(day);
             const isToday = ds === todayStr;
-            const dayAppts = appointments.filter(a => a.date === ds && a.status !== 'Cancelada');
+            const dayAppts = appointments.filter(a => {
+              const isCorrectDate = a.date === ds && a.status !== 'Cancelada';
+              const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
+              return isCorrectDate && isCorrectSpec;
+            });
             const isCurrentMonth = day.getMonth() === pivotMonth;
             return (
               <div
@@ -819,6 +855,28 @@ Por favor, elige un horario diferente o cambia de profesional.`);
                 </button>
               ))}
             </div>
+
+            {user.role !== 'especialista' && (
+              <button 
+                className="btn btn-outline" 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.4rem', 
+                  padding: '0.45rem 0.9rem', 
+                  fontSize: '0.82rem', 
+                  fontWeight: 700,
+                  background: selectedSpecialistId ? 'var(--primary-light)' : 'var(--surface)',
+                  color: selectedSpecialistId ? 'var(--primary)' : 'var(--text)',
+                  borderColor: selectedSpecialistId ? 'var(--primary)' : 'var(--border-strong)'
+                }}
+                onClick={() => setShowFilterModal(true)}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                {selectedSpecialistId ? specialists.find(s => String(s.idusuario) === String(selectedSpecialistId))?.nombre || 'Filtrado' : 'Todos los Especialistas'}
+              </button>
+            )}
+
             <button className="btn btn-primary" style={{ padding: '0.55rem 1.1rem', fontSize: '0.875rem' }} onClick={() => openCreate()}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               Agendar Cita
@@ -923,6 +981,111 @@ Por favor, elige un horario diferente o cambia de profesional.`);
                   Guardar Jornada
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Specialist Filter Modal */}
+      {showFilterModal && (
+        <div className="modal-overlay" onClick={() => setShowFilterModal(false)}>
+          <div className="modal-box" style={{ maxWidth: 440 }} onClick={e => e.stopPropagation()}>
+            <div style={{ background: 'linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '0.65rem', borderRadius: '14px' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em' }}>Filtrar Especialista</h3>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>Visualiza solo las citas de un profesional.</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon" onClick={() => setShowFilterModal(false)} style={{ borderRadius: '12px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--surface)' }}>
+              <div className="modal-scroll-area" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <SearchableSelect 
+                  label="Seleccionar Profesional"
+                  placeholder="Busca por nombre..."
+                  icon="👨‍⚕️"
+                  options={[
+                    { value: 'all', label: '👥 Todos los Especialistas' },
+                    ...specialists.map(u => ({ value: u.idusuario, label: `${u.nombre} ${u.apellido}` }))
+                  ]}
+                  value={selectedSpecialistId || 'all'}
+                  onChange={val => {
+                    setSelectedSpecialistId(val === 'all' ? null : val);
+                    setShowFilterModal(false);
+                  }}
+                />
+
+                <div style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '18px', border: '1px solid var(--border)', display: 'flex', gap: '0.85rem', alignItems: 'flex-start' }}>
+                  <div style={{ marginTop: '0.15rem' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-3)', fontWeight: 600, lineHeight: 1.5 }}>
+                    Al seleccionar un profesional, la agenda solo mostrará sus compromisos asignados para evitar confusiones visuales.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '1.25rem', background: 'var(--surface)' }}>
+                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '16px', height: '52px' }} onClick={() => setShowFilterModal(false)}>Cerrar</button>
+                {selectedSpecialistId && (
+                  <button type="button" className="btn btn-primary" style={{ flex: 1, borderRadius: '16px', height: '52px', fontWeight: 800 }} onClick={() => { setSelectedSpecialistId(null); setShowFilterModal(false); }}>
+                    Ver Todos
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conflict Modal */}
+      {conflictModal.show && (
+        <div className="modal-overlay" style={{ zIndex: 100001 }} onClick={() => setConflictModal({ show: false, message: '', details: null })}>
+          <div className="modal-box animate-scale-in" style={{ maxWidth: 440, border: '2px solid var(--danger)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ background: 'linear-gradient(135deg, var(--danger-light) 0%, var(--surface) 100%)', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1.25rem' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--danger)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', boxShadow: '0 8px 20px rgba(239, 68, 68, 0.3)' }}>
+                ⚠️
+              </div>
+              <div>
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem', fontWeight: 900, color: 'var(--danger-deep)' }}>{conflictModal.message}</h3>
+                <p style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-2)', fontWeight: 600, lineHeight: 1.5 }}>
+                  No es posible agendar en este momento. Ya existe una cita programada:
+                </p>
+              </div>
+
+              {conflictModal.details && (
+                <div style={{ width: '100%', background: 'var(--surface)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase' }}>Paciente</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text)' }}>{conflictModal.details.clientName}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase' }}>Horario</span>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--primary)', background: 'var(--primary-light)', padding: '2px 8px', borderRadius: '8px' }}>
+                      {conflictModal.details.startTime} — {conflictModal.details.endTime}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-4)', fontWeight: 600 }}>
+                Por favor, elige un horario diferente o cambia de profesional asignado.
+              </p>
+
+              <button 
+                className="btn btn-primary" 
+                style={{ width: '100%', height: '52px', borderRadius: '16px', background: 'var(--danger)', borderColor: 'var(--danger)', boxShadow: '0 8px 24px rgba(239, 68, 68, 0.2)', fontSize: '1.1rem', fontWeight: 800 }}
+                onClick={() => setConflictModal({ show: false, message: '', details: null })}
+              >
+                Entendido
+              </button>
             </div>
           </div>
         </div>
