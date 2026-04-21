@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { GlobalProvider } from './context/GlobalState';
 import './index.css';
 import Login from './features/auth/Login';
+import ForgotPassword from './features/auth/ForgotPassword';
+import ResetPassword from './features/auth/ResetPassword';
 import Layout from './components/layout/Layout';
 import Dashboard from './features/dashboard/Dashboard';
 import Agenda from './features/agenda/Agenda';
@@ -17,7 +19,80 @@ import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import LandingPage from './features/landing/LandingPage';
 import { supabase } from './Supabase/supabaseClient';
 
-function TenantApp({ tenant }) {
+function LoadingScreen() {
+  return (
+    <div style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg-subtle)', gap: '1.75rem'
+    }}>
+      <style>{`
+        @keyframes ng-pulse {
+          0%, 100% { box-shadow: 0 16px 48px var(--primary-light, rgba(37,99,235,0.25)); transform: scale(1); }
+          50% { box-shadow: 0 24px 72px var(--primary, #2563eb); transform: scale(1.04); }
+        }
+        @keyframes ng-bar {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(20%); }
+          100% { transform: translateX(120%); }
+        }
+        @keyframes ng-dot {
+          0%, 100% { transform: translateY(0); opacity: 0.35; }
+          50% { transform: translateY(-10px); opacity: 1; }
+        }
+      `}</style>
+
+      {/* Logo animado */}
+      <div style={{
+        width: 76, height: 76, borderRadius: 22,
+        background: 'var(--primary)', overflow: 'hidden',
+        animation: 'ng-pulse 2.2s ease-in-out infinite'
+      }}>
+        <img src="/logoclaro.jpeg" alt="NovaAgendas"
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          onError={e => {
+            e.target.parentElement.style.display = 'flex';
+            e.target.parentElement.style.alignItems = 'center';
+            e.target.parentElement.style.justifyContent = 'center';
+            e.target.parentElement.innerHTML = '<span style="color:#fff;font-weight:900;font-size:1.4rem;letter-spacing:-0.04em">NA</span>';
+          }} />
+      </div>
+
+      {/* Nombre */}
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: '0.25rem' }}>
+          NovaAgendas
+        </div>
+        <div style={{ fontSize: '0.8rem', color: 'var(--text-4)', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          Preparando tu plataforma
+        </div>
+      </div>
+
+      {/* Barra de progreso deslizante */}
+      <div style={{ width: 220, height: 3, borderRadius: 999, background: 'var(--border)', overflow: 'hidden' }}>
+        <div style={{
+          height: '100%', width: '45%',
+          background: 'linear-gradient(90deg, transparent, var(--primary), var(--accent, #7c3aed), transparent)',
+          borderRadius: 999,
+          animation: 'ng-bar 1.6s ease-in-out infinite'
+        }} />
+      </div>
+
+      {/* Puntos saltarines */}
+      <div style={{ display: 'flex', gap: '0.55rem' }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: 'var(--primary)',
+            animation: `ng-dot 1.3s ${i * 0.22}s ease-in-out infinite`
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TenantApp({ tenant, initialView = 'login' }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('novagendas_user');
     if (saved) {
@@ -29,6 +104,7 @@ function TenantApp({ tenant }) {
     }
     return null;
   });
+  const [authView, setAuthView] = useState(initialView); // 'login' | 'forgot' | 'reset'
   const [currentRoute, setCurrentRoute] = useState(() => {
     return localStorage.getItem('novagendas_route') || 'dashboard';
   });
@@ -68,15 +144,29 @@ function TenantApp({ tenant }) {
     }
   };
 
-  if (!user) return <Login tenant={tenant} onLogin={(userObj) => {
-    const loggedUser = { ...userObj, tenant_id: tenant.id };
-    setUser(loggedUser);
-    localStorage.setItem('novagendas_user', JSON.stringify({
-      user: loggedUser,
-      exp: new Date().getTime() + 24 * 60 * 60 * 1000 // 24 hours
-    }));
-    setCurrentRoute(userObj.role === 'especialista' ? 'agenda' : 'dashboard');
-  }} />;
+  if (!user) {
+    if (authView === 'forgot') {
+      return <ForgotPassword tenant={tenant} onBack={() => setAuthView('login')} />;
+    }
+    if (authView === 'reset') {
+      return <ResetPassword onSuccess={() => setAuthView('login')} />;
+    }
+    return (
+      <Login
+        tenant={tenant}
+        onForgotPassword={() => setAuthView('forgot')}
+        onLogin={(userObj) => {
+          const loggedUser = { ...userObj, tenant_id: tenant.id };
+          setUser(loggedUser);
+          localStorage.setItem('novagendas_user', JSON.stringify({
+            user: loggedUser,
+            exp: new Date().getTime() + 24 * 60 * 60 * 1000
+          }));
+          setCurrentRoute(userObj.role === 'especialista' ? 'agenda' : 'dashboard');
+        }}
+      />
+    );
+  }
 
   return (
     <GlobalProvider tenantId={tenant.id}>
@@ -90,8 +180,17 @@ function TenantApp({ tenant }) {
 export default function App() {
   const [view, setView] = useState('loading');
   const [tenant, setTenant] = useState(null);
+  const [resetTrigger, setResetTrigger] = useState(false);
 
   useEffect(() => {
+    // Detectar URL de recuperación de contraseña (Supabase PKCE o implicit flow)
+    const params = new URLSearchParams(window.location.search);
+    const hasCode = params.has('code');
+    const hasRecoveryHash = window.location.hash.includes('type=recovery');
+    if (hasCode || hasRecoveryHash) {
+      setResetTrigger(true);
+    }
+
     const host = window.location.hostname;
     const parts = host.split('.');
     let subdomain = null;
@@ -156,7 +255,7 @@ export default function App() {
     fetchTenant();
   }, []);
 
-  if (view === 'loading') return <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando Plataforma...</div>;
+  if (view === 'loading') return <LoadingScreen />;
   if (view === 'landing') return <LandingPage />;
 
   if (view === 'not_found') return (
@@ -183,5 +282,5 @@ export default function App() {
     );
   }
 
-  return <TenantApp tenant={tenant} />;
+  return <TenantApp tenant={tenant} initialView={resetTrigger ? 'reset' : 'login'} />;
 }

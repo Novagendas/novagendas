@@ -1,5 +1,5 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / Daviplata'];
 
@@ -21,6 +21,93 @@ const parseDate = (dateStr) => {
     normalized = normalized.replace(' ', 'T') + 'Z';
   }
   return new Date(normalized);
+};
+
+/* ─── Buscador de pacientes ─────────────────────────────────── */
+const ClientSearchSelect = ({ clients, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setIsOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const filtered = clients.filter(c =>
+    `${c.nombre} ${c.apellido} ${c.cedula}`.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selected = clients.find(c => String(c.idcliente) === String(value));
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative' }}>
+      <div
+        onClick={() => setIsOpen(o => !o)}
+        style={{
+          background: 'var(--surface)', border: `1.5px solid ${isOpen ? 'var(--primary)' : 'var(--border-strong)'}`,
+          borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center',
+          gap: '0.75rem', cursor: 'pointer', transition: 'all 0.2s',
+          boxShadow: isOpen ? '0 0 0 4px var(--primary-light)' : 'var(--shadow-sm)'
+        }}
+      >
+        <span style={{ fontSize: '1.1rem' }}>👤</span>
+        <div style={{ flex: 1, color: selected ? 'var(--text)' : 'var(--text-5)', fontWeight: selected ? 700 : 500, fontSize: '0.92rem' }}>
+          {selected ? `${selected.nombre} ${selected.apellido}` : 'Busca un paciente...'}
+        </div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="3" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}><polyline points="6 9 12 15 18 9" /></svg>
+      </div>
+
+      {isOpen && (
+        <div className="animate-scale-in" style={{
+          position: 'absolute', top: '100%', left: 0, right: 0,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: '16px', marginTop: '0.5rem', boxShadow: 'var(--shadow-xl)',
+          zIndex: 3000, overflow: 'hidden'
+        }}>
+          <div style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                autoFocus
+                type="text"
+                placeholder="Escribe nombre o cédula..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="input-field"
+                style={{ padding: '0.55rem 1rem 0.55rem 2.25rem', fontSize: '0.87rem', borderRadius: '10px', border: '1.5px solid var(--border-strong)' }}
+              />
+              <svg style={{ position: 'absolute', left: '0.7rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+            </div>
+          </div>
+          <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+            {filtered.length > 0 ? filtered.map(c => (
+              <div
+                key={c.idcliente}
+                onClick={() => { onChange(String(c.idcliente)); setIsOpen(false); setSearch(''); }}
+                style={{
+                  padding: '0.8rem 1.1rem', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
+                  background: String(value) === String(c.idcliente) ? 'var(--primary-light)' : 'transparent',
+                  color: String(value) === String(c.idcliente) ? 'var(--primary)' : 'var(--text-2)',
+                  transition: 'all 0.15s ease', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }}
+                onMouseEnter={e => { if (String(value) !== String(c.idcliente)) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
+                onMouseLeave={e => { if (String(value) !== String(c.idcliente)) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <span>{c.nombre} {c.apellido}</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>CC {c.cedula}</span>
+              </div>
+            )) : (
+              <div style={{ padding: '1.75rem', textAlign: 'center', color: 'var(--text-4)', fontSize: '0.87rem' }}>
+                <div style={{ fontSize: '1.3rem', marginBottom: '0.4rem' }}>🔍</div>
+                No se encontraron resultados
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default function Payments({ user, tenant }) {
@@ -302,10 +389,7 @@ export default function Payments({ user, tenant }) {
               <div className="modal-scroll-area" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                 <div className="input-group">
                   <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)', fontWeight: 700 }}>Paciente / Cliente</label>
-                  <select className="input-field" value={form.clientId} onChange={e => update('clientId', e.target.value)} required style={{ borderRadius: '12px' }}>
-                    <option value="" disabled>Selecciona paciente...</option>
-                    {clients.map(c => <option key={c.idcliente} value={c.idcliente}>{c.nombre} {c.apellido} (CC {c.cedula})</option>)}
-                  </select>
+                  <ClientSearchSelect clients={clients} value={form.clientId} onChange={v => update('clientId', v)} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>

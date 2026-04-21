@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
+import { createCalendarEvent } from '../../services/googleCalendar';
 
 /* ─── Helpers ──────────────────────────────────────────── */
 const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
@@ -490,6 +491,31 @@ export default function Agenda({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
+
+      // Sincronizar con Google Calendar (fire & forget — no bloquea el flujo)
+      if (!editId) {
+        try {
+          const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
+          const serviceNames = services
+            .filter(s => form.serviceIds.includes(s.idservicios))
+            .map(s => s.nombre)
+            .join(', ');
+
+          const attendees = [];
+          if (client?.email) attendees.push(client.email);
+          if (specialist?.email) attendees.push(specialist.email);
+
+          await createCalendarEvent({
+            summary: `Cita: ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`,
+            description: `Paciente: ${client?.nombre} ${client?.apellido}\nServicios: ${serviceNames}\nEspecialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Sin asignar'}`,
+            startDateTime: startStr,
+            endDateTime: formattedEnd,
+            attendeeEmails: attendees,
+          });
+        } catch (calErr) {
+          console.warn('Google Calendar no sincronizado:', calErr.message);
+        }
+      }
 
       fetchData();
       setShowModal(false);

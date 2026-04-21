@@ -3,7 +3,7 @@ import { supabase } from '../../Supabase/supabaseClient';
 import ParticleBackground from '../../components/ParticleBackground';
 import ThemeToggle from '../../components/ThemeToggle';
 
-export default function Login({ tenant, onLogin }) {
+export default function Login({ tenant, onLogin, onForgotPassword }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
@@ -127,7 +127,7 @@ export default function Login({ tenant, onLogin }) {
           <div className="input-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <label>Contraseña</label>
-              <a href="#" style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>¿Olvidaste tu contraseña?</a>
+              <button type="button" onClick={onForgotPassword} style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>¿Olvidaste tu contraseña?</button>
             </div>
             <div style={{ position: 'relative' }}>
               <input
