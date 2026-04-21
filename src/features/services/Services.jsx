@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
+import { commonTerms } from '../../components/SuggestionDatalist';
 
 export default function Services({ user, tenant }) {
   const [services, setServices] = useState([]);
@@ -449,7 +450,7 @@ export default function Services({ user, tenant }) {
                   style={{ borderRadius: '12px' }} 
                   spellCheck={true} 
                   lang="es" 
-                  suggestions={services.map(s => s.name)} 
+                  suggestions={[...new Set([...services.map(s => s.name), ...commonTerms])]} 
                 />
               </div>
 
@@ -551,7 +552,7 @@ export default function Services({ user, tenant }) {
                     style={{ flex: 1, borderRadius: '12px' }} 
                     spellCheck={true} 
                     lang="es" 
-                    suggestions={categories.map(c => c.descripcion)} 
+                    suggestions={[...new Set([...categories.map(c => c.descripcion), ...commonTerms])]} 
                   />
                   <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: '12px', padding: '0 1.5rem' }}>
                     {editCatId ? 'Guardar' : 'Añadir'}

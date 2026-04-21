@@ -80,6 +80,7 @@ export default function SuggestionInput({
         value={value}
         onChange={onChange}
         onFocus={() => setIsOpen(true)}
+        onMouseDown={() => setIsOpen(true)}
         onKeyDown={handleKeyDown}
         required={required}
         spellCheck={spellCheck}
@@ -95,8 +96,8 @@ export default function SuggestionInput({
           background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: '12px',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 1000,
+          boxShadow: 'var(--shadow-xl)',
+          zIndex: 9999,
           listStyle: 'none',
           padding: '4px',
           margin: 0,

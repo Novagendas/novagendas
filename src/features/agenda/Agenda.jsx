@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
+import { commonTerms } from '../../components/SuggestionDatalist';
 
 /* ─── Helpers ──────────────────────────────────────────── */
 const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
@@ -107,7 +108,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }
                   style={{ padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.9rem', borderRadius: '12px', border: '1.5px solid var(--border-strong)', background: 'var(--surface)' }}
                   spellCheck={true} 
                   lang="es" 
-                  suggestions={options.map(o => o.label)} 
+                  suggestions={[...new Set([...options.map(o => o.label), ...commonTerms])]} 
                 />
               <svg style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </div>
@@ -1408,7 +1409,7 @@ export default function Agenda({ user, tenant }) {
                   style={{ borderRadius: '16px', height: '52px', paddingLeft: '3rem', border: '1.5px solid var(--border-strong)', background: 'var(--surface)', fontWeight: 600 }}
                   spellCheck={true} 
                   lang="es" 
-                  suggestions={services.map(s => s.nombre)} 
+                  suggestions={[...new Set([...services.map(s => s.nombre), ...commonTerms])]} 
                 />
                 <svg style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>
