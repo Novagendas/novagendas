@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import SuggestionInput from '../../components/SuggestionInput';
 
 export default function Services({ user, tenant }) {
   const [services, setServices] = useState([]);
@@ -83,7 +84,7 @@ export default function Services({ user, tenant }) {
 
   const openCreate = () => {
     if (categories.length === 0) {
-      showAlert('No hay categorías', 'Debes crear al menos una categoría de servicio antes de agregar tratamientos.');
+      showAlert('No hay categorías', 'Debes crear al menos una categoría de servicio antes de agregar servicios.');
       return;
     }
     setEditId(null);
@@ -200,7 +201,7 @@ export default function Services({ user, tenant }) {
 
   const handleDelete = (id, e) => {
     e.stopPropagation(); 
-    showConfirm('Eliminar Servicio', '¿Seguro que deseas eliminar este tratamiento permanentemente?', async () => {
+    showConfirm('Eliminar Servicio', '¿Seguro que deseas eliminar este servicio permanentemente?', async () => {
       setLoading(true);
       const { error } = await supabase.from('servicios').delete().eq('idservicios', id);
       if (error) showAlert('Eliminación Rechazada', "Este servicio probablemente está siendo usado en Citas activas.\nError: " + error.message);
@@ -233,7 +234,7 @@ export default function Services({ user, tenant }) {
         <div>
           <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Catálogo de Procedimientos</h2>
           <p style={{ margin: '0.25rem 0 0', fontSize: '0.82rem', color: 'var(--text-4)', fontWeight: 500 }}>
-            {services.length} tratamiento{services.length !== 1 ? 's' : ''} registrado{services.length !== 1 ? 's' : ''}
+            {services.length} servicio{services.length !== 1 ? 's' : ''} registrado{services.length !== 1 ? 's' : ''}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -243,7 +244,7 @@ export default function Services({ user, tenant }) {
           </button>
           <button className="btn btn-primary" onClick={openCreate} disabled={loading}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-            Registrar Tratamiento
+            Registrar Servicio
           </button>
         </div>
       </div>
@@ -263,7 +264,7 @@ export default function Services({ user, tenant }) {
           </div>
           <div>
             <h4 style={{ margin: 0, color: '#991b1b', fontSize: '0.95rem' }}>No hay categorías configuradas</h4>
-            <p style={{ margin: '0.1rem 0 0', color: '#b91c1c', fontSize: '0.8rem', fontWeight: 500 }}>Debes crear al menos una categoría arriba en "Editar Categorías" para poder registrar tratamientos.</p>
+            <p style={{ margin: '0.1rem 0 0', color: '#b91c1c', fontSize: '0.8rem', fontWeight: 500 }}>Debes crear al menos una categoría arriba en "Editar Categorías" para poder registrar servicios.</p>
           </div>
         </div>
       )}
@@ -410,7 +411,7 @@ export default function Services({ user, tenant }) {
             <div className="empty-state animate-fade-in">
               <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
               <h4 style={{ color: 'var(--text-3)', fontWeight: 700, margin: 0 }}>Catálogo vacío</h4>
-              <p style={{ margin: 0, color: 'var(--text-4)', fontSize: '0.875rem' }}>Registra el primer tratamiento para comenzar a agendar citas.</p>
+              <p style={{ margin: 0, color: 'var(--text-4)', fontSize: '0.875rem' }}>Registra el primer servicio para comenzar a agendar citas.</p>
             </div>
           )}
         </>
@@ -426,7 +427,7 @@ export default function Services({ user, tenant }) {
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{editId ? 'Editar Tratamiento' : 'Nuevo Tratamiento'}</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{editId ? 'Editar Servicio' : 'Nuevo Servicio'}</h3>
                   <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{saving ? 'Procesando cambios...' : 'Define nombre, duración y tarifa.'}</p>
                 </div>
               </div>
@@ -440,7 +441,16 @@ export default function Services({ user, tenant }) {
             <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre del servicio</label>
-                <input className="input-field capitalize-text" placeholder="Ej. Depilación Láser Axilas" value={form.name} onChange={e => update('name', e.target.value)} required style={{ borderRadius: '12px' }} />
+                <SuggestionInput 
+                  placeholder="Ej. Depilación Láser Axilas" 
+                  value={form.name} 
+                  onChange={e => update('name', e.target.value)} 
+                  required 
+                  style={{ borderRadius: '12px' }} 
+                  spellCheck={true} 
+                  lang="es" 
+                  suggestions={services.map(s => s.name)} 
+                />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
@@ -477,7 +487,7 @@ export default function Services({ user, tenant }) {
                       <div className="spinner" style={{ width: '1.1rem', height: '1.1rem' }}></div>
                       Guardando...
                     </div>
-                  ) : (editId ? 'Guardar Cambios' : 'Registrar Tratamiento')}
+                  ) : (editId ? 'Guardar Cambios' : 'Registrar Servicio')}
                 </button>
               </div>
             </form>
@@ -496,7 +506,7 @@ export default function Services({ user, tenant }) {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Categorías</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>Gestiona las familias de tratamientos.</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>Gestiona las familias de servicios.</p>
                 </div>
               </div>
               {!saving && (
@@ -533,7 +543,16 @@ export default function Services({ user, tenant }) {
                   {editCatId ? 'Editando Categoría' : 'Añadir Nueva Categoría'}
                 </label>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <input className="input-field capitalize-text" placeholder="Ej. Depilación" value={catName} onChange={e => setCatName(e.target.value)} required style={{ flex: 1, borderRadius: '12px' }} />
+                  <SuggestionInput 
+                    placeholder="Ej. Depilación" 
+                    value={catName} 
+                    onChange={e => setCatName(e.target.value)} 
+                    required 
+                    style={{ flex: 1, borderRadius: '12px' }} 
+                    spellCheck={true} 
+                    lang="es" 
+                    suggestions={categories.map(c => c.descripcion)} 
+                  />
                   <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: '12px', padding: '0 1.5rem' }}>
                     {editCatId ? 'Guardar' : 'Añadir'}
                   </button>

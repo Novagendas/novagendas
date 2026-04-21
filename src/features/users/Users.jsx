@@ -133,7 +133,7 @@ const ROLES = {
 };
 
 const MODULE_LABELS = {
-  dashboard: { id: 1, label: 'Dashboard General', icon: '📊' },
+  dashboard: { id: 1, label: 'Vista General', icon: '📊' },
   agenda: { id: 2, label: 'Agenda de Citas', icon: '📅' },
   clients: { id: 3, label: 'Pacientes', icon: '👥' },
   services: { id: 4, label: 'Catálogo y Pagos', icon: '💰' },

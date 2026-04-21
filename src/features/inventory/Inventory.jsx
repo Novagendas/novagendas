@@ -1,5 +1,7 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import { useState, useEffect } from 'react';
+import SuggestionInput from '../../components/SuggestionInput';
+import { commonTerms } from '../../components/SuggestionDatalist';
 
 export default function Inventory({ user, tenant }) {
   const [products, setProducts] = useState([]);
@@ -302,7 +304,16 @@ export default function Inventory({ user, tenant }) {
             <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre del Producto</label>
-                <input className="input-field" placeholder="Ej. Agujas 30G" value={form.name} onChange={e => update('name', e.target.value)} required style={{ borderRadius: '12px' }} />
+                <SuggestionInput 
+                  placeholder="Ej. Agujas 30G" 
+                  value={form.name} 
+                  onChange={e => update('name', e.target.value)} 
+                  required 
+                  style={{ borderRadius: '12px' }} 
+                  spellCheck={true} 
+                  lang="es" 
+                  suggestions={commonTerms} 
+                />
               </div>
 
               <div className="input-group">
@@ -392,7 +403,16 @@ export default function Inventory({ user, tenant }) {
                   {editCatId ? 'Editando Categoría' : 'Añadir Nueva Categoría'}
                 </label>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <input className="input-field" placeholder="Nombre..." value={catName} onChange={e => setCatName(e.target.value)} required style={{ flex: 1, borderRadius: '12px' }} />
+                  <SuggestionInput 
+                    placeholder="Nombre..." 
+                    value={catName} 
+                    onChange={e => setCatName(e.target.value)} 
+                    required 
+                    style={{ flex: 1, borderRadius: '12px' }} 
+                    spellCheck={true} 
+                    lang="es" 
+                    suggestions={commonTerms.filter(t => products.map(p => p.nombre).includes(t) === false)} 
+                  />
                   <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: '12px', padding: '0 1.5rem' }}>
                     {editCatId ? 'Guardar' : 'Añadir'}
                   </button>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import SuggestionInput from '../../components/SuggestionInput';
+import { commonTerms } from '../../components/SuggestionDatalist';
 
 export default function Clients({ user, tenant }) {
   const [clients, setClients] = useState([]);
@@ -463,12 +465,21 @@ export default function Clients({ user, tenant }) {
 
             <form onSubmit={handleSaveNote} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
               <div className="input-group">
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Tratamiento o Servicio</label>
-                <input className="input-field capitalize-text" placeholder="Ej. Aplicación de Toxina Botulínica" value={noteForm.title} onChange={e => setNoteForm({ ...noteForm, title: e.target.value })} required style={{ borderRadius: '12px' }} />
+                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Servicio Realizado</label>
+                <SuggestionInput 
+                  placeholder="Ej. Aplicación de Toxina Botulínica" 
+                  value={noteForm.title} 
+                  onChange={e => setNoteForm({ ...noteForm, title: e.target.value })} 
+                  required 
+                  style={{ borderRadius: '12px' }} 
+                  spellCheck={true} 
+                  lang="es" 
+                  suggestions={commonTerms} 
+                />
               </div>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Observaciones de la Evolución</label>
-                <textarea className="input-field" rows="5" placeholder="Describe los detalles clínicos..." value={noteForm.notas} onChange={e => setNoteForm({ ...noteForm, notas: e.target.value })} required style={{ borderRadius: '16px', resize: 'none', padding: '1rem', lineHeight: 1.6 }} />
+                <textarea className="input-field" rows="5" placeholder="Describe los detalles clínicos..." value={noteForm.notas} onChange={e => setNoteForm({ ...noteForm, notas: e.target.value })} required style={{ borderRadius: '16px', resize: 'none', padding: '1rem', lineHeight: 1.6 }} spellCheck="true" lang="es" />
               </div>
 
               <div style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -524,7 +535,7 @@ export default function Clients({ user, tenant }) {
               </div>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre Completo</label>
-                <input className="input-field capitalize-text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ borderRadius: '12px' }} />
+                <input className="input-field capitalize-text" required value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} style={{ borderRadius: '12px' }} spellCheck="true" lang="es" />
               </div>
                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                 <div className="input-group">
@@ -596,7 +607,7 @@ export default function Clients({ user, tenant }) {
               </div>
               <div className="input-group">
                 <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre Completo *</label>
-                <input className="input-field capitalize-text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ borderRadius: '12px' }} />
+                <input className="input-field capitalize-text" required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ borderRadius: '12px' }} spellCheck="true" lang="es" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                 <div className="input-group">
