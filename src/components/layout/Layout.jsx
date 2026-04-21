@@ -5,7 +5,7 @@ import NotificationsPopover from '../NotificationsPopover';
 
 /* ── Route label map ────────────────────────────────────── */
 const ROUTE_META = {
-  dashboard: { label: 'Dashboard', emoji: '📊' },
+  dashboard: { label: 'Vista General', emoji: '📊' },
   agenda: { label: 'Agenda de Citas', emoji: '📅' },
   clients: { label: 'Pacientes', emoji: '👥' },
   services: { label: 'Catálogo de Servicios', emoji: '💉' },

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import SuggestionInput from '../../components/SuggestionInput';
+import { commonTerms } from '../../components/SuggestionDatalist';
 
 /* ─── Helpers ──────────────────────────────────────────── */
 const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
@@ -98,15 +100,16 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }
         }}>
           <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
             <div style={{ position: 'relative' }}>
-              <input 
-                autoFocus
-                className="input-field"
-                placeholder="Escribe para buscar..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                onClick={e => e.stopPropagation()}
-                style={{ padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.9rem', borderRadius: '12px', border: '1.5px solid var(--border-strong)', background: 'var(--surface)' }}
-              />
+                <SuggestionInput 
+                  autoFocus
+                  placeholder="Escribe para buscar..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  style={{ padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.9rem', borderRadius: '12px', border: '1.5px solid var(--border-strong)', background: 'var(--surface)' }}
+                  spellCheck={true} 
+                  lang="es" 
+                  suggestions={[...new Set([...options.map(o => o.label), ...commonTerms])]} 
+                />
               <svg style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </div>
           </div>
@@ -1165,7 +1168,7 @@ export default function Agenda({ user, tenant }) {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                   <div className="input-group">
-                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Servicios & Tratamientos</label>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>Selección de Servicios</label>
                     <button 
                       type="button" 
                       className="btn btn-outline"
@@ -1389,7 +1392,7 @@ export default function Agenda({ user, tenant }) {
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--text)', letterSpacing: '-0.02em' }}>Catálogo de Servicios</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>Selecciona todos los tratamientos para esta cita.</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>Selecciona todos los servicios para esta cita.</p>
                 </div>
               </div>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowServiceMenu(false)} style={{ borderRadius: '12px', width: '38px', height: '38px' }}>
@@ -1399,12 +1402,14 @@ export default function Agenda({ user, tenant }) {
             
             <div style={{ padding: '1.5rem 2rem', background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border)' }}>
               <div style={{ position: 'relative' }}>
-                <input 
-                  className="input-field" 
+                <SuggestionInput 
                   placeholder="¿Qué servicio buscas?" 
                   value={serviceSearch}
                   onChange={e => setServiceSearch(e.target.value)}
                   style={{ borderRadius: '16px', height: '52px', paddingLeft: '3rem', border: '1.5px solid var(--border-strong)', background: 'var(--surface)', fontWeight: 600 }}
+                  spellCheck={true} 
+                  lang="es" 
+                  suggestions={[...new Set([...services.map(s => s.nombre), ...commonTerms])]} 
                 />
                 <svg style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary)' }} width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
               </div>

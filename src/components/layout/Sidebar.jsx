@@ -13,7 +13,7 @@ const ICONS = {
 };
 
 const MAIN_NAV = [
-  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'dashboard', label: 'Vista General' },
   { id: 'agenda', label: 'Agenda de Citas' },
   { id: 'clients', label: 'Pacientes' },
 ];
