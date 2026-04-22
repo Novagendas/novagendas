@@ -225,7 +225,7 @@ export default function Agenda({ user, tenant }) {
         .from('rolpermisos')
         .select(`
           idusuario,
-          usuario:idusuario (idusuario, nombre, apellido, idnegocios)
+          usuario:idusuario (idusuario, nombre, apellido, email, idnegocios)
         `)
         .eq('idrol', 3);
 
