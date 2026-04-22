@@ -178,6 +178,15 @@ export default function LandingPage() {
       
       {/* ── Footer ── */}
       <footer style={{ padding: '2rem', textAlign: 'center', borderTop: '1px solid var(--border)', color: 'var(--text-4)', fontSize: '0.9rem' }}>
+        <div style={{ marginBottom: '0.75rem', display: 'flex', justifyContent: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <a href="/terminos" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}>
+            Términos y Privacidad
+          </a>
+          <span style={{ color: 'var(--border)' }}>·</span>
+          <a href="/condiciones" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600, fontSize: '0.85rem' }}>
+            Condiciones de Servicio
+          </a>
+        </div>
         © {new Date().getFullYear()} NovaAgendas. Todos los derechos reservados.
       </footer>
     </div>
