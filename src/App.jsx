@@ -17,6 +17,8 @@ import AuditLogs from './features/audit/AuditLogs.jsx';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import LandingPage from './features/landing/LandingPage';
+import TermsPage from './features/legal/TermsPage';
+import ConditionsPage from './features/legal/ConditionsPage';
 import { supabase } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
@@ -183,6 +185,17 @@ export default function App() {
   const [resetTrigger, setResetTrigger] = useState(false);
 
   useEffect(() => {
+    // Detectar rutas legales (/terminos y /condiciones) — aplican en cualquier host
+    const pathname = window.location.pathname;
+    if (pathname === '/terminos' || pathname.startsWith('/terminos')) {
+      setView('terminos');
+      return;
+    }
+    if (pathname === '/condiciones' || pathname.startsWith('/condiciones')) {
+      setView('condiciones');
+      return;
+    }
+
     // Detectar URL de recuperación de contraseña (Supabase PKCE o implicit flow)
     const params = new URLSearchParams(window.location.search);
     const hasCode = params.has('code');
@@ -256,6 +269,8 @@ export default function App() {
   }, []);
 
   if (view === 'loading') return <LoadingScreen />;
+  if (view === 'terminos') return <TermsPage />;
+  if (view === 'condiciones') return <ConditionsPage />;
   if (view === 'landing') return <LandingPage />;
 
   if (view === 'not_found') return (

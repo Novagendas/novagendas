@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
-import { createCalendarEvent } from '../../services/googleCalendar';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '../../services/googleCalendar';
 
 /* ─── Helpers ──────────────────────────────────────────── */
 const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
@@ -181,7 +181,7 @@ export default function Agenda({ user, tenant }) {
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [tempWorkHours, setTempWorkHours] = useState({ start: 6, end: 21 });
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ clientId: '', serviceIds: [], specialistId: '', date: '', time: '09:00' });
+  const [form, setForm] = useState({ clientId: '', serviceIds: [], specialistId: '', date: '', time: '09:00', gcalEventId: null });
   const [showServiceMenu, setShowServiceMenu] = useState(false);
   const [serviceSearch, setServiceSearch] = useState('');
 
@@ -277,7 +277,8 @@ export default function Agenda({ user, tenant }) {
             time: toTimeStr(startD.getHours(), startD.getMinutes()),
             duration: totalDuration,
             status: a.estadocita?.descripcion || 'Pendiente',
-            doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : 'Pendiente'
+            doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : 'Pendiente',
+            gcalEventId: a.gcal_event_id || null,
           };
         }).filter(Boolean);
         setAppointments(mapped);
@@ -323,17 +324,30 @@ export default function Agenda({ user, tenant }) {
 
   const handleDeleteFromDetail = async () => {
     try {
+      const gcalEventId = detailAppt.gcalEventId;
+      const clientName = clients.find(c => c.idcliente === detailAppt.clientId)?.nombre || 'Paciente';
+
       await supabase.from('citaservicios').delete().eq('idcita', detailAppt.id);
       const { error } = await supabase.from('cita').delete().eq('idcita', detailAppt.id);
       if (error) throw error;
-      
+
       await insertLog({
         accion: 'DELETE',
         entidad: 'Cita',
-        descripcion: `Se eliminó la cita de ${clients.find(c => c.idcliente === detailAppt.clientId)?.nombre || 'Paciente'}`,
+        descripcion: `Se eliminó la cita de ${clientName}`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
+
+      // Eliminar evento de Google Calendar y notificar a los invitados
+      if (gcalEventId) {
+        try {
+          await deleteCalendarEvent(gcalEventId);
+        } catch (calErr) {
+          console.warn('No se pudo eliminar el evento de Google Calendar:', calErr.message);
+        }
+      }
+
       fetchData();
       closeDetail();
       showSnack('Cita eliminada correctamente');
@@ -390,7 +404,8 @@ export default function Agenda({ user, tenant }) {
       serviceIds: appt.serviceIds || [],
       specialistId: appt.specialistId || '',
       date: appt.date,
-      time: appt.time
+      time: appt.time,
+      gcalEventId: appt.gcalEventId || null,
     });
     closeDetail();
     setShowModal(true);
@@ -492,29 +507,58 @@ export default function Agenda({ user, tenant }) {
         idNegocios: tenant.id
       });
 
-      // Sincronizar con Google Calendar (fire & forget — no bloquea el flujo)
-      if (!editId) {
-        try {
-          const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
-          const serviceNames = services
-            .filter(s => form.serviceIds.includes(s.idservicios))
-            .map(s => s.nombre)
-            .join(', ');
+      // ── Sincronizar con Google Calendar (fire & forget) ──
+      try {
+        const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
+        const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
+        const serviceNames = selectedServices.map(s => s.nombre).join(', ');
+        const totalPrice = selectedServices.reduce((sum, s) => sum + (s.precio || 0), 0);
+        const totalDurMin = selectedServices.reduce((sum, s) => sum + (s.duracion || 0), 0);
 
-          const attendees = [];
-          if (client?.email) attendees.push(client.email);
-          if (specialist?.email) attendees.push(specialist.email);
+        const attendees = [];
+        if (client?.email) attendees.push(client.email);
+        if (specialist?.email) attendees.push(specialist.email);
 
-          await createCalendarEvent({
-            summary: `Cita: ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`,
-            description: `Paciente: ${client?.nombre} ${client?.apellido}\nServicios: ${serviceNames}\nEspecialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Sin asignar'}`,
-            startDateTime: startStr,
-            endDateTime: formattedEnd,
-            attendeeEmails: attendees,
-          });
-        } catch (calErr) {
-          console.warn('Google Calendar no sincronizado:', calErr.message);
+        const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const timeLabel = form.time;
+
+        const description = [
+          `📅 CITA MÉDICA — ${tenant?.name || 'NovaAgendas'}`,
+          '',
+          `📋 Servicios: ${serviceNames}`,
+          totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
+          totalPrice ? `💰 Precio estimado: $${totalPrice.toLocaleString('es-CO')} COP` : null,
+          '',
+          `👤 Paciente: ${client?.nombre || ''} ${client?.apellido || ''}`,
+          client?.telefono ? `📞 Teléfono: ${client.telefono}` : null,
+          client?.email ? `📧 Email: ${client.email}` : null,
+          client?.cedula ? `🪪 Documento: ${client.cedula}` : null,
+          '',
+          `👨‍⚕️ Especialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Por asignar'}`,
+          specialist?.profesion ? `   Especialidad: ${specialist.profesion}` : null,
+          '',
+          `📆 Fecha: ${dateLabel}`,
+          `🕐 Hora: ${timeLabel}`,
+          '',
+          `━━━━━━━━━━━━━━━━━━━━━━`,
+          `Cita gestionada por NovaAgendas`,
+          `Favor llegar 10 minutos antes de la cita.`,
+        ].filter(l => l !== null).join('\n');
+
+        const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
+
+        if (editId && form.gcalEventId) {
+          // Actualizar evento existente
+          await updateCalendarEvent(form.gcalEventId, calArgs);
+        } else if (!editId) {
+          // Crear nuevo evento y guardar su ID en la cita
+          const newEventId = await createCalendarEvent(calArgs);
+          if (newEventId) {
+            await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
+          }
         }
+      } catch (calErr) {
+        console.warn('Google Calendar no sincronizado:', calErr.message);
       }
 
       fetchData();
