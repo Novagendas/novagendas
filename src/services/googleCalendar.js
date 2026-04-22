@@ -2,7 +2,7 @@
 // Requires: VITE_CALENDAR_API = OAuth2 Client ID en .env
 // Primera autorización: popup OAuth — el admin debe autorizarse con novagendamiento@gmail.com
 
-const CLIENT_ID = import.meta.env.VITE_CALENDAR_API;
+const CLIENT_ID = import.meta.env.VITE_CALENDAR_API || '932063321082-ape53frieamcjjcm6flthd0saccfa2bd.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 const STORAGE_KEY = 'ng_gcal_token';
 const BASE_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
