@@ -1,47 +1,106 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
   <title>Restablecer contraseña — NovaAgendas</title>
+  <!--[if mso]>
+  <noscript>
+    <xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    /* Prevent blue links on iOS */
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+    #MessageViewBody a { color: inherit; text-decoration: none; }
+  </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
-  <!-- Wrapper -->
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#edeae3;font-family:Helvetica,Arial,sans-serif;">
+
+  <!-- Outer wrapper -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background-color:#edeae3;padding:40px 16px 56px;">
     <tr>
       <td align="center">
 
-        <!-- Card -->
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.08);">
+        <!-- Pre-header invisible (preview text in inbox) -->
+        <div style="display:none;max-height:0;overflow:hidden;color:#edeae3;">
+          Restablece tu contraseña de NovaAgendas — Este enlace expira en 1 hora.&nbsp;&#8204;&nbsp;&#8204;&nbsp;&#8204;
+        </div>
 
-          <!-- Header con gradiente -->
+        <!-- Top label -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:580px;margin-bottom:18px;">
           <tr>
-            <td style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);padding:40px 40px 36px;text-align:center;">
+            <td align="center">
+              <span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#7a7265;text-transform:uppercase;letter-spacing:0.12em;">
+                NovaAgendas &nbsp;·&nbsp; Plataforma de Agendamiento
+              </span>
+            </td>
+          </tr>
+        </table>
 
-              <!-- Logo circular -->
-              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 20px;">
+        <!-- ══════════════ MAIN CARD ══════════════ -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,40,30,0.13),0 2px 8px rgba(15,40,30,0.06);">
+
+          <!-- ── HEADER (teal gradient) ── -->
+          <tr>
+            <td style="background:linear-gradient(145deg,#1a5c4a 0%,#0f3d2e 60%,#0a2d22 100%);padding:48px 40px 56px;text-align:center;">
+
+              <!-- Logo badge -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;">
                 <tr>
-                  <td style="width:64px;height:64px;background:rgba(255,255,255,0.2);border-radius:16px;border:2px solid rgba(255,255,255,0.3);text-align:center;vertical-align:middle;">
-                    <span style="font-size:26px;font-weight:900;color:#ffffff;letter-spacing:-0.04em;line-height:64px;">NA</span>
+                  <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+                    <!--
+                      Reemplaza la URL con la ruta pública del logo en tu CDN o Supabase Storage.
+                      Si no tienes URL pública todavía, el fallback muestra "NA" con los colores de marca.
+                    -->
+                    <img
+                      src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg"
+                      alt="NovaAgendas"
+                      width="62"
+                      style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
                   </td>
                 </tr>
               </table>
 
-              <h1 style="margin:0 0 6px;font-size:26px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.2;">NovaAgendas</h1>
-              <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.8);font-weight:500;letter-spacing:0.04em;text-transform:uppercase;">Plataforma de Agendamiento</p>
+              <!-- Brand name -->
+              <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">
+                NovaAgendas
+              </h1>
+              <p style="margin:0 0 0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">
+                Plataforma Profesional de Agendamiento
+              </p>
+
+              <!-- Gold decorative divider -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;">
+                <tr>
+                  <td style="width:36px;height:2px;background:rgba(201,163,75,0.35);border-radius:1px;"></td>
+                  <td style="width:8px;"></td>
+                  <td style="width:10px;height:6px;background:#c9a34b;border-radius:3px;"></td>
+                  <td style="width:8px;"></td>
+                  <td style="width:36px;height:2px;background:rgba(201,163,75,0.35);border-radius:1px;"></td>
+                </tr>
+              </table>
 
             </td>
           </tr>
 
-          <!-- Separador con icono -->
+          <!-- ── FLOATING ICON ── -->
           <tr>
-            <td style="padding:0;text-align:center;background:#ffffff;">
-              <table cellpadding="0" cellspacing="0" border="0" style="margin:-24px auto 0;position:relative;z-index:1;">
+            <td style="background:#ffffff;text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                style="margin:-30px auto 0;">
                 <tr>
-                  <td style="width:48px;height:48px;background:#ffffff;border:3px solid #e2e8f0;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 2px 12px rgba(0,0,0,0.08);">
-                    <!-- Lock icon inline SVG  -->
-                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                  <td style="width:58px;height:58px;background:#ffffff;border:3px solid #e5dfd6;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,40,30,0.12);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                      fill="none" stroke="#1a5c4a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                      style="display:block;margin:0 auto;">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                       <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
@@ -51,28 +110,68 @@
             </td>
           </tr>
 
-          <!-- Contenido principal -->
+          <!-- ── BODY ── -->
           <tr>
-            <td style="padding:36px 40px 8px;">
-              <h2 style="margin:0 0 12px;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Restablece tu contraseña</h2>
-              <p style="margin:0 0 10px;font-size:15px;color:#475569;line-height:1.7;">
-                Recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong style="color:#0f172a;">NovaAgendas</strong>.
+            <td style="padding:40px 44px 16px;">
+              <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">
+                Restablece tu contraseña
+              </h2>
+              <p style="margin:0 0 12px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">
+                Recibimos una solicitud para restablecer la contraseña de tu cuenta en
+                <strong style="color:#1a5c4a;font-weight:700;">NovaAgendas</strong>.
               </p>
-              <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.7;">
-                Haz clic en el botón de abajo para crear una nueva contraseña. Este enlace estará activo durante <strong style="color:#0f172a;">1 hora</strong>.
+              <p style="margin:0 0 32px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">
+                Haz clic en el botón de abajo para crear una nueva contraseña segura.
+                Este enlace estará activo durante <strong style="color:#0f172a;font-weight:700;">1 hora</strong>.
               </p>
             </td>
           </tr>
 
-          <!-- CTA Button -->
+          <!-- ── CTA BUTTON ── -->
           <tr>
-            <td style="padding:0 40px 32px;text-align:center;">
-              <table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+            <td style="padding:0 44px 36px;text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
                 <tr>
-                  <td style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);border-radius:14px;box-shadow:0 8px 24px rgba(37,99,235,0.35);">
+                  <td style="border-radius:14px;background:linear-gradient(135deg,#c9a34b 0%,#a97c28 100%);box-shadow:0 8px 30px rgba(168,124,40,0.4);">
                     <a href="{{ .ConfirmationURL }}"
-                      style="display:inline-block;padding:16px 40px;font-size:16px;font-weight:800;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;border-radius:14px;">
-                      Restablecer contraseña
+                      style="display:inline-block;padding:16px 46px;font-family:Helvetica,Arial,sans-serif;font-size:15.5px;font-weight:800;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;border-radius:14px;white-space:nowrap;">
+                      Restablecer mi contraseña
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:14px 0 0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;line-height:1.5;">
+                Al hacer clic serás redirigido a una página segura de NovaAgendas
+              </p>
+            </td>
+          </tr>
+
+          <!-- ── DIVIDER ── -->
+          <tr>
+            <td style="padding:0 44px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="height:1px;background:#e8e2d6;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ── ALTERNATIVE LINK ── -->
+          <tr>
+            <td style="padding:28px 44px 24px;">
+              <p style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;">
+                ¿El botón no funciona?
+              </p>
+              <p style="margin:0 0 10px;font-family:Helvetica,Arial,sans-serif;font-size:13px;color:#64748b;line-height:1.6;">
+                Copia y pega este enlace directamente en tu navegador:
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background:#f8f7f4;border:1px solid #e8e2d6;border-radius:10px;padding:11px 16px;word-break:break-all;">
+                    <a href="{{ .ConfirmationURL }}"
+                      style="font-family:'Courier New',Courier,monospace;font-size:11.5px;color:#1a5c4a;text-decoration:none;font-weight:600;line-height:1.7;">
+                      {{ .ConfirmationURL }}
                     </a>
                   </td>
                 </tr>
@@ -80,42 +179,28 @@
             </td>
           </tr>
 
-          <!-- Divider -->
+          <!-- ── SECURITY NOTICE ── -->
           <tr>
-            <td style="padding:0 40px;">
-              <hr style="border:none;border-top:1px solid #e2e8f0;margin:0;" />
-            </td>
-          </tr>
-
-          <!-- Enlace alternativo -->
-          <tr>
-            <td style="padding:24px 40px;">
-              <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">¿El botón no funciona?</p>
-              <p style="margin:0 0 10px;font-size:13px;color:#64748b;line-height:1.6;">Copia y pega este enlace en tu navegador:</p>
-              <p style="margin:0;word-break:break-all;">
-                <a href="{{ .ConfirmationURL }}" style="font-size:12px;color:#2563eb;text-decoration:none;font-weight:600;line-height:1.7;">{{ .ConfirmationURL }}</a>
-              </p>
-            </td>
-          </tr>
-
-          <!-- Aviso de seguridad -->
-          <tr>
-            <td style="padding:0 40px 32px;">
-              <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#fef3c7;border-radius:12px;border:1px solid #fde68a;">
+            <td style="padding:0 44px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="background:#f0f9f5;border-radius:14px;border:1px solid #b7d9c8;">
                 <tr>
-                  <td style="padding:14px 18px;">
-                    <table cellpadding="0" cellspacing="0" border="0">
+                  <td style="padding:16px 20px;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <td style="vertical-align:top;padding-right:10px;padding-top:1px;">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        <td style="vertical-align:top;padding-right:12px;padding-top:1px;width:26px;">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                            fill="none" stroke="#1a5c4a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                           </svg>
                         </td>
                         <td>
-                          <p style="margin:0;font-size:12.5px;color:#92400e;font-weight:600;line-height:1.6;">
-                            Si no solicitaste este cambio, ignora este correo. Tu contraseña no será modificada.
+                          <p style="margin:0 0 3px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:700;color:#1a5c4a;line-height:1.4;">
+                            Tu seguridad es nuestra prioridad
+                          </p>
+                          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;color:#2d6b52;font-weight:500;line-height:1.6;">
+                            Si no solicitaste este cambio, puedes ignorar este correo con tranquilidad.
+                            Tu contraseña permanecerá sin cambios.
                           </p>
                         </td>
                       </tr>
@@ -126,17 +211,35 @@
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- ── FOOTER ── -->
           <tr>
-            <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:24px 40px;border-radius:0 0 20px 20px;">
-              <table cellpadding="0" cellspacing="0" border="0" width="100%">
+            <td style="background:#f5f3ee;border-top:1px solid #e5dfd6;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td>
-                    <p style="margin:0 0 4px;font-size:13px;font-weight:700;color:#0f172a;">NovaAgendas</p>
-                    <p style="margin:0;font-size:12px;color:#94a3b8;">Plataforma profesional de agendamiento para negocios.</p>
+                  <td style="vertical-align:middle;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <!-- Mini logo mark (NA monogram) -->
+                        <td style="vertical-align:middle;padding-right:10px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="width:30px;height:30px;background:linear-gradient(135deg,#1a5c4a,#0f3d2e);border-radius:8px;text-align:center;vertical-align:middle;">
+                                <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#c9a34b;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">NovaAgendas</p>
+                          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Para negocios de salud y bienestar</p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
-                  <td align="right" style="vertical-align:top;">
-                    <p style="margin:0;font-size:12px;color:#cbd5e1;">© {{ .CurrentYear }} NovaAgendas</p>
+                  <td align="right" style="vertical-align:middle;">
+                    <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#b0a898;font-weight:500;">
+                      © {{ .CurrentYear }} NovaAgendas
+                    </p>
                   </td>
                 </tr>
               </table>
@@ -144,12 +247,20 @@
           </tr>
 
         </table>
-        <!-- /Card -->
+        <!-- /MAIN CARD -->
 
-        <!-- Sub-footer -->
-        <p style="margin:20px 0 0;font-size:11px;color:#94a3b8;text-align:center;">
-          Este correo fue enviado desde una dirección no monitoreada. Por favor no respondas a este mensaje.
-        </p>
+        <!-- Bottom note -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:580px;margin-top:20px;">
+          <tr>
+            <td align="center" style="padding:0 20px;">
+              <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#9c9487;line-height:1.7;text-align:center;">
+                Este correo fue enviado desde una dirección no monitoreada. Por favor no respondas a este mensaje.<br/>
+                Si tienes preguntas, contacta a tu administrador de NovaAgendas.
+              </p>
+            </td>
+          </tr>
+        </table>
 
       </td>
     </tr>

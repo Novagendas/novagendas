@@ -1,10 +1,11 @@
 // Google Calendar integration via Google Identity Services (GIS) + Calendar REST API
-// Requires: VITE_CALENDAR_API = OAuth2 Client ID in .env
-// First use triggers an OAuth popup — the admin must authorize with novagendamiento@gmail.com
+// Requires: VITE_CALENDAR_API = OAuth2 Client ID en .env
+// Primera autorización: popup OAuth — el admin debe autorizarse con novagendamiento@gmail.com
 
 const CLIENT_ID = import.meta.env.VITE_CALENDAR_API;
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 const STORAGE_KEY = 'ng_gcal_token';
+const BASE_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 
 let _token = null;
 let _expiry = 0;
@@ -60,48 +61,81 @@ export const clearCalendarAuth = () => {
   localStorage.removeItem(STORAGE_KEY);
 };
 
+const buildEvent = ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => ({
+  summary,
+  description,
+  start: { dateTime: startDateTime, timeZone: 'America/Bogota' },
+  end: { dateTime: endDateTime, timeZone: 'America/Bogota' },
+  attendees: attendeeEmails.filter(Boolean).map(email => ({ email })),
+  reminders: {
+    useDefault: false,
+    overrides: [
+      { method: 'email', minutes: 24 * 60 },
+      { method: 'popup', minutes: 30 },
+    ],
+  },
+  // Permite que los invitados vean la lista de asistentes
+  guestsCanSeeOtherGuests: true,
+});
+
 /**
  * Crea un evento en Google Calendar con invitados.
- * @param {object} opts
- * @param {string} opts.summary - Título del evento
- * @param {string} opts.description - Descripción detallada
- * @param {string} opts.startDateTime - ISO string (ej. "2024-04-20T10:00:00")
- * @param {string} opts.endDateTime - ISO string
- * @param {string[]} opts.attendeeEmails - Correos de invitados (cliente + especialista)
- * @returns {Promise<object|null>} Evento creado o null si falla silenciosamente
+ * Retorna el ID del evento creado o null si falla silenciosamente.
  */
 export const createCalendarEvent = async ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => {
   if (!CLIENT_ID) return null;
 
   const token = await getToken();
-
-  const event = {
-    summary,
-    description,
-    start: { dateTime: startDateTime, timeZone: 'America/Bogota' },
-    end: { dateTime: endDateTime, timeZone: 'America/Bogota' },
-    attendees: attendeeEmails.filter(Boolean).map((email) => ({ email })),
-    reminders: {
-      useDefault: false,
-      overrides: [
-        { method: 'email', minutes: 24 * 60 },
-        { method: 'popup', minutes: 30 },
-      ],
-    },
-  };
-
-  const res = await fetch(
-    'https://www.googleapis.com/calendar/v3/calendars/primary/events?sendUpdates=all',
-    {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(event),
-    }
-  );
+  const res = await fetch(`${BASE_URL}?sendUpdates=all`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildEvent({ summary, description, startDateTime, endDateTime, attendeeEmails })),
+  });
 
   if (!res.ok) {
     const err = await res.json();
     throw new Error(err.error?.message || `HTTP ${res.status}`);
   }
-  return res.json();
+  const data = await res.json();
+  return data.id || null; // Retorna el ID del evento para guardarlo en BD
+};
+
+/**
+ * Actualiza un evento existente en Google Calendar.
+ * Usa PATCH para solo actualizar los campos enviados.
+ */
+export const updateCalendarEvent = async (eventId, { summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => {
+  if (!CLIENT_ID || !eventId) return null;
+
+  const token = await getToken();
+  const res = await fetch(`${BASE_URL}/${eventId}?sendUpdates=all`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(buildEvent({ summary, description, startDateTime, endDateTime, attendeeEmails })),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  return eventId;
+};
+
+/**
+ * Elimina un evento de Google Calendar y notifica a los invitados.
+ */
+export const deleteCalendarEvent = async (eventId) => {
+  if (!CLIENT_ID || !eventId) return;
+
+  const token = await getToken();
+  const res = await fetch(`${BASE_URL}/${eventId}?sendUpdates=all`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  // 204 No Content = éxito; 410 Gone = ya fue eliminado (ambos son OK)
+  if (!res.ok && res.status !== 410) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
 };
