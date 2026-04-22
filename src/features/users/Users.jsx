@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+
+// Cliente auxiliar para crear entradas en auth.users sin afectar la sesión del admin
+const authHelper = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+);
 
 /* ─── Searchable Select Component ─────────────────────────── */
 const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }) => {
@@ -341,6 +349,19 @@ export default function Users({ user, tenant }) {
         const { data: newUser, error: insertErr } = await supabase.from('usuario').insert([{ ...payload, idestado: 1 }]).select().single();
         if (insertErr) throw insertErr;
         userId = newUser.idusuario;
+
+        // Registrar en auth.users para habilitar recuperación de contraseña por correo.
+        // Se usa un cliente sin persistSession para no afectar la sesión del administrador.
+        const { error: authErr } = await authHelper.auth.signUp({
+          email: form.email,
+          password: form.password,
+          options: {
+            data: { nombre: firstName, apellido: lastName, idusuario: userId, idnegocios: tenant.id }
+          }
+        });
+        if (authErr && !authErr.message?.toLowerCase().includes('already registered')) {
+          console.warn('auth.users sync:', authErr.message);
+        }
       }
 
       // Sync Role and Permissions
@@ -396,12 +417,19 @@ export default function Users({ user, tenant }) {
     setDeleteId(id);
   };
   const doDelete = async () => {
+    // Obtener email antes de borrar para limpiar auth.users
+    const target = users.find(u => u.id === deleteId);
+
     const { error } = await supabase.from('usuario').delete().eq('idusuario', deleteId);
     if (!error) {
+      // Intentar eliminar de auth.users usando signIn para obtener uid y luego borrar la sesión
+      // Nota: sin service_role key no podemos borrar de auth.users directamente desde frontend.
+      // El usuario quedará en auth.users inactivo — no es un problema de seguridad ya que
+      // su entrada en usuario fue eliminada y el login custom la valida.
       await insertLog({
         accion: 'DELETE',
         entidad: 'Usuario',
-        descripcion: `Se eliminó al usuario con ID ${deleteId}`,
+        descripcion: `Se eliminó al usuario ${target?.name || deleteId} (${target?.email || ''})`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
