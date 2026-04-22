@@ -1,7 +1,7 @@
 // Google Calendar integration via Google Identity Services (GIS) + Calendar REST API
 // Requires: VITE_CALENDAR_API = OAuth2 Client ID in .env
 // First use triggers an OAuth popup — the admin must authorize with novagendamiento@gmail.com
-
+//juan
 const CLIENT_ID = import.meta.env.VITE_CALENDAR_API || '932063321082-ape53frieamcjjcm6flthd0saccfa2bd.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 const STORAGE_KEY = 'ng_gcal_token';
