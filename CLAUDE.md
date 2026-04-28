@@ -1,4 +1,4 @@
-# NovaAgendas — CLAUDE.md
+# Novagendas — CLAUDE.md
 
 Plataforma SaaS de agendamiento para clínicas estéticas y de salud. Multi-tenant por subdominio.
 

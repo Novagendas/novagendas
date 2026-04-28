@@ -1,10 +1,10 @@
-# 📋 NovaAgendas - Wiki del Proyecto
+# 📋 Novagendas - Wiki del Proyecto
 
 ## 📌 Descripción General
 
-**NovaAgendas** es una plataforma web de agendamiento inteligente diseñada específicamente para profesionales de estética y negocios de servicios. Se trata de un sistema privado de gestión de citas destinado exclusivamente al uso interno del personal administrativo, donde solo el administrador y los empleados autorizados tienen acceso para registrar, modificar, cancelar y administrar las reservas realizadas por los clientes a través de los canales tradicionales de comunicación.
+**Novagendas** es una plataforma web de agendamiento inteligente diseñada específicamente para profesionales de estética y negocios de servicios. Se trata de un sistema privado de gestión de citas destinado exclusivamente al uso interno del personal administrativo, donde solo el administrador y los empleados autorizados tienen acceso para registrar, modificar, cancelar y administrar las reservas realizadas por los clientes a través de los canales tradicionales de comunicación.
 
-NovaAgendas nace de la necesidad de simplificar la gestión de citas en entornos donde las agendas tradicionales resultan complejas, poco prácticas o no se adaptan a la operación diaria del negocio.
+Novagendas nace de la necesidad de simplificar la gestión de citas en entornos donde las agendas tradicionales resultan complejas, poco prácticas o no se adaptan a la operación diaria del negocio.
 
 ---
 
@@ -44,7 +44,7 @@ Esto genera:
 
 ## 💡 Solución Propuesta
 
-**NovaAgendas** ofrece una plataforma web que permite al equipo administrativo:
+**Novagendas** ofrece una plataforma web que permite al equipo administrativo:
 
 ✅ **Registrar citas** de forma sencilla según el servicio solicitado  
 ✅ **Asignar profesionales** disponibles para cada servicio  
@@ -60,7 +60,7 @@ Esto genera:
 
 **Modelo: Uso interno para personal administrativo**
 
-NovaAgendas corresponde a la implementación de un sistema de gestión de citas destinado principalmente al uso interno de la empresa. En este esquema:
+Novagendas corresponde a la implementación de un sistema de gestión de citas destinado principalmente al uso interno de la empresa. En este esquema:
 
 - Solo el **administrador y empleados autorizados** tienen acceso a la plataforma
 - El personal es responsable de **registrar, modificar, cancelar y administrar** las reservas realizadas por los clientes a través de canales tradicionales (WhatsApp, llamadas telefónicas, redes sociales, atención presencial)
@@ -84,7 +84,7 @@ Este modelo representa una **primera etapa de transformación digital**, con baj
 
 > *"Tu negocio, organizado. Tú, en control."*
 
-NovaAgendas no busca ser la herramienta más compleja del mercado, sino la **más útil y adaptada** para quienes necesitan recuperar el control de su agenda sin complicaciones técnicas ni funcionalidades innecesarias.
+Novagendas no busca ser la herramienta más compleja del mercado, sino la **más útil y adaptada** para quienes necesitan recuperar el control de su agenda sin complicaciones técnicas ni funcionalidades innecesarias.
 
 **Principios que guían el desarrollo:**
 

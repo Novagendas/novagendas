@@ -508,7 +508,7 @@ export default function SuperAdminPortal() {
             <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" onError={e => e.target.style.display = 'none'} />
           </div>
           <h2 style={{ margin: '0 0 0.25rem', fontWeight: 800 }}>{isRegistering ? 'Crear Super Admin' : 'Portal Super Admin'}</h2>
-          <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--text-3)' }}>NovaAgendas · Solo personal autorizado</p>
+          <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--text-3)' }}>Novagendas · Solo personal autorizado</p>
         </div>
 
         {loginError && (
@@ -552,7 +552,7 @@ export default function SuperAdminPortal() {
               <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" onError={e => e.target.style.display = 'none'} />
             </div>
             <div>
-              <div className="super-brand-name">NovaAgendas</div>
+              <div className="super-brand-name">Novagendas</div>
               <div className="super-brand-sub">Super Admin</div>
             </div>
           </div>

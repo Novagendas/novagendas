@@ -17,31 +17,31 @@ const sections = [
     content: [
       {
         title: '1. Aceptación de los Términos',
-        body: 'Al acceder y utilizar la plataforma NovaAgendas, usted acepta quedar vinculado por estos Términos y Condiciones. Si no está de acuerdo con alguna parte de estos términos, no debe utilizar nuestros servicios.\n\nEstos términos aplican a todos los usuarios de la plataforma, incluyendo administradores de negocios, profesionales de la salud y recepcionistas.',
+        body: 'Al acceder y utilizar la plataforma Novagendas, usted acepta quedar vinculado por estos Términos y Condiciones. Si no está de acuerdo con alguna parte de estos términos, no debe utilizar nuestros servicios.\n\nEstos términos aplican a todos los usuarios de la plataforma, incluyendo administradores de negocios, profesionales de la salud y recepcionistas.',
       },
       {
         title: '2. Descripción del Servicio',
-        body: 'NovaAgendas es una plataforma SaaS (Software como Servicio) de agendamiento diseñada para clínicas estéticas, centros médicos y negocios de salud y bienestar en Colombia. La plataforma permite:\n\n• Gestión de citas y agenda\n• Administración de clientes y pacientes\n• Control de servicios e inventario\n• Procesamiento de pagos\n• Integración con Google Calendar\n• Generación de reportes y auditoría',
+        body: 'Novagendas es una plataforma SaaS (Software como Servicio) de agendamiento diseñada para clínicas estéticas, centros médicos y negocios de salud y bienestar en Colombia. La plataforma permite:\n\n• Gestión de citas y agenda\n• Administración de clientes y pacientes\n• Control de servicios e inventario\n• Procesamiento de pagos\n• Integración con Google Calendar\n• Generación de reportes y auditoría',
       },
       {
         title: '3. Registro y Cuentas',
-        body: 'Para acceder a NovaAgendas, los negocios deben registrarse a través de nuestro portal de administración. Usted es responsable de:\n\n• Mantener la confidencialidad de sus credenciales de acceso\n• Todas las actividades que ocurran bajo su cuenta\n• Notificar inmediatamente cualquier uso no autorizado\n• Garantizar que la información proporcionada sea veraz y actualizada\n\nNos reservamos el derecho de suspender o cancelar cuentas que violen estos términos.',
+        body: 'Para acceder a Novagendas, los negocios deben registrarse a través de nuestro portal de administración. Usted es responsable de:\n\n• Mantener la confidencialidad de sus credenciales de acceso\n• Todas las actividades que ocurran bajo su cuenta\n• Notificar inmediatamente cualquier uso no autorizado\n• Garantizar que la información proporcionada sea veraz y actualizada\n\nNos reservamos el derecho de suspender o cancelar cuentas que violen estos términos.',
       },
       {
         title: '4. Uso Aceptable',
-        body: 'El usuario se compromete a utilizar la plataforma únicamente para fines legales y legítimos. Está expresamente prohibido:\n\n• Intentar acceder a datos de otros negocios o usuarios sin autorización\n• Usar la plataforma para actividades fraudulentas o ilegales\n• Interferir con la infraestructura técnica de NovaAgendas\n• Recopilar información de otros usuarios sin su consentimiento\n• Distribuir malware o código malicioso a través de la plataforma',
+        body: 'El usuario se compromete a utilizar la plataforma únicamente para fines legales y legítimos. Está expresamente prohibido:\n\n• Intentar acceder a datos de otros negocios o usuarios sin autorización\n• Usar la plataforma para actividades fraudulentas o ilegales\n• Interferir con la infraestructura técnica de Novagendas\n• Recopilar información de otros usuarios sin su consentimiento\n• Distribuir malware o código malicioso a través de la plataforma',
       },
       {
         title: '5. Propiedad Intelectual',
-        body: 'Todos los derechos de propiedad intelectual sobre la plataforma NovaAgendas, incluyendo pero no limitado a software, diseño, logotipos y documentación, son propiedad exclusiva de NovaAgendas.\n\nSe otorga una licencia limitada, no exclusiva e intransferible para usar la plataforma de acuerdo con estos términos. Esta licencia no autoriza la sublicencia, venta, reventa o explotación comercial de la plataforma.',
+        body: 'Todos los derechos de propiedad intelectual sobre la plataforma Novagendas, incluyendo pero no limitado a software, diseño, logotipos y documentación, son propiedad exclusiva de Novagendas.\n\nSe otorga una licencia limitada, no exclusiva e intransferible para usar la plataforma de acuerdo con estos términos. Esta licencia no autoriza la sublicencia, venta, reventa o explotación comercial de la plataforma.',
       },
       {
         title: '6. Limitación de Responsabilidad',
-        body: 'NovaAgendas no será responsable por daños indirectos, incidentales o consecuentes derivados del uso o imposibilidad de uso de la plataforma. En ningún caso nuestra responsabilidad total superará el monto pagado por el usuario en los últimos tres (3) meses.\n\nNo garantizamos la disponibilidad ininterrumpida del servicio, aunque nos esforzamos por mantener una disponibilidad del 99.5% mensual.',
+        body: 'Novagendas no será responsable por daños indirectos, incidentales o consecuentes derivados del uso o imposibilidad de uso de la plataforma. En ningún caso nuestra responsabilidad total superará el monto pagado por el usuario en los últimos tres (3) meses.\n\nNo garantizamos la disponibilidad ininterrumpida del servicio, aunque nos esforzamos por mantener una disponibilidad del 99.5% mensual.',
       },
       {
         title: '7. Modificaciones',
-        body: 'NovaAgendas se reserva el derecho de modificar estos Términos en cualquier momento. Los cambios entrarán en vigencia 30 días después de su publicación. El uso continuado de la plataforma después de dicho período constituye la aceptación de los nuevos términos.',
+        body: 'Novagendas se reserva el derecho de modificar estos Términos en cualquier momento. Los cambios entrarán en vigencia 30 días después de su publicación. El uso continuado de la plataforma después de dicho período constituye la aceptación de los nuevos términos.',
       },
       {
         title: '8. Ley Aplicable',
@@ -60,7 +60,7 @@ const sections = [
     content: [
       {
         title: '1. Responsable del Tratamiento',
-        body: 'NovaAgendas actúa como responsable del tratamiento de los datos personales recopilados a través de la plataforma, en cumplimiento de la Ley 1581 de 2012 (Ley de Protección de Datos Personales de Colombia) y sus decretos reglamentarios.',
+        body: 'Novagendas actúa como responsable del tratamiento de los datos personales recopilados a través de la plataforma, en cumplimiento de la Ley 1581 de 2012 (Ley de Protección de Datos Personales de Colombia) y sus decretos reglamentarios.',
       },
       {
         title: '2. Datos que Recopilamos',
@@ -105,9 +105,9 @@ export default function TermsPage() {
         <div className="legal-logo-box">
           <a href="/" className="legal-logo-link">
             <div className="legal-logo-img-wrapper">
-              <img src="/logoclaro.jpeg" alt="NovaAgendas Logo" />
+              <img src="/logoclaro.jpeg" alt="Novagendas Logo" />
             </div>
-            <span className="legal-logo-text">NovaAgendas</span>
+            <span className="legal-logo-text">Novagendas</span>
           </a>
           <span className="legal-breadcrumb-sep">/</span>
           <span className="legal-breadcrumb-current">Términos y Privacidad</span>
@@ -131,7 +131,7 @@ export default function TermsPage() {
         </div>
         <h1>Transparencia y Confianza</h1>
         <p>
-          En NovaAgendas nos comprometemos con la protección de tus datos y el uso transparente de nuestra plataforma SaaS para salud y bienestar.
+          En Novagendas nos comprometemos con la protección de tus datos y el uso transparente de nuestra plataforma SaaS para salud y bienestar.
         </p>
       </section>
 
@@ -168,7 +168,7 @@ export default function TermsPage() {
               </div>
               <div className="legal-section-info">
                 <h2>{current?.label}</h2>
-                <p>NovaAgendas Legal Compliance</p>
+                <p>Novagendas Legal Compliance</p>
               </div>
             </div>
 
@@ -198,7 +198,7 @@ export default function TermsPage() {
 
       {/* Footer */}
       <footer className="legal-footer">
-        <p>© {new Date().getFullYear()} NovaAgendas Colombia · Todos los derechos reservados.</p>
+        <p>© {new Date().getFullYear()} Novagendas Colombia · Todos los derechos reservados.</p>
       </footer>
     </div>
   );

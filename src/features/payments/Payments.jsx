@@ -1,102 +1,14 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import SelectableInput from '../../components/inputs/SelectableInput';
+import { PAYMENT_METHODS, PAYMENT_METHOD_ICONS } from '../../utils/constants';
+import { fmt } from '../../utils/formatters';
+import { parseDate } from '../../utils/dateHelpers';
 import './Payments.css';
 
-const METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / Daviplata'];
+const METHOD_ICONS = PAYMENT_METHOD_ICONS;
 
-const METHOD_ICONS = {
-  'Efectivo': '💵',
-  'Tarjeta': '💳',
-  'Transferencia': '🏦',
-  'Nequi / Daviplata': '📱',
-};
 
-const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
-
-// Helper to handle potential day-shifts from UTC to Local
-const parseDate = (dateStr) => {
-  if (!dateStr) return new Date();
-  // Ensure the string is treated as UTC if it's missing the Z suffix (common with TIMESTAMP columns)
-  let normalized = dateStr;
-  if (!normalized.includes('Z') && !normalized.includes('+')) {
-    normalized = normalized.replace(' ', 'T') + 'Z';
-  }
-  return new Date(normalized);
-};
-
-/* ─── Buscador de pacientes ─────────────────────────────────── */
-const ClientSearchSelect = ({ clients, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const wrapRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setIsOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const filtered = clients.filter(c =>
-    `${c.nombre} ${c.apellido} ${c.cedula}`.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const selected = clients.find(c => String(c.idcliente) === String(value));
-
-  return (
-    <div ref={wrapRef} className="client-search-wrapper">
-      <div
-        onClick={() => setIsOpen(o => !o)}
-        className="client-search-trigger"
-        style={{ border: `1.5px solid ${isOpen ? 'var(--primary)' : 'var(--border-strong)'}`, boxShadow: isOpen ? '0 0 0 4px var(--primary-light)' : 'var(--shadow-sm)' }}
-      >
-        <span className="client-search-icon-text">👤</span>
-        <div className="client-search-placeholder" style={{ color: selected ? 'var(--text)' : 'var(--text-5)', fontWeight: selected ? 700 : 500 }}>
-          {selected ? `${selected.nombre} ${selected.apellido}` : 'Busca un paciente...'}
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="3" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}><polyline points="6 9 12 15 18 9" /></svg>
-      </div>
-
-      {isOpen && (
-        <div className="client-search-dropdown animate-scale-in">
-          <div className="client-search-header">
-            <div className="client-search-input-box">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Escribe nombre o cédula..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="input-field client-search-input"
-              />
-              <svg className="client-search-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            </div>
-          </div>
-          <div className="client-search-results">
-            {filtered.length > 0 ? filtered.map(c => (
-              <div
-                key={c.idcliente}
-                className="client-result-item"
-                onClick={() => { onChange(String(c.idcliente)); setIsOpen(false); setSearch(''); }}
-                style={{
-                  background: String(value) === String(c.idcliente) ? 'var(--primary-light)' : 'transparent',
-                  color: String(value) === String(c.idcliente) ? 'var(--primary)' : 'var(--text-2)'
-                }}
-              >
-                <span>{c.nombre} {c.apellido}</span>
-                <span className="client-result-id">CC {c.cedula}</span>
-              </div>
-            )) : (
-              <div className="client-no-results">
-                <div className="client-no-results-emoji">🔍</div>
-                No se encontraron resultados
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function Payments({ user, tenant }) {
   const [payments, setPayments] = useState([]);
@@ -372,7 +284,19 @@ export default function Payments({ user, tenant }) {
               <div className="payment-modal-scroll">
                 <div className="input-group">
                   <label className="input-label">Paciente / Cliente</label>
-                  <ClientSearchSelect clients={clients} value={form.clientId} onChange={v => update('clientId', v)} />
+                  <SelectableInput
+                    label="Paciente"
+                    options={clients.map(c => ({
+                      value: c.idcliente,
+                      label: `${c.nombre} ${c.apellido}`,
+                      cedula: c.cedula,
+                    }))}
+                    value={form.clientId}
+                    onChange={v => update('clientId', v)}
+                    placeholder="Busca un paciente..."
+                    icon="👤"
+                    isClientSearch={true}
+                  />
                 </div>
 
                 <div className="grid-2">

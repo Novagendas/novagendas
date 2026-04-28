@@ -27,7 +27,7 @@ function AuthWrap({ children }) {
       </div>
       {children}
       <p className="auth-footer">
-        NovaAgendas © {new Date().getFullYear()}
+        Novagendas © {new Date().getFullYear()}
       </p>
     </div>
   );

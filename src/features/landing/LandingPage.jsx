@@ -33,7 +33,7 @@ export default function LandingPage() {
           <div className="landing-brand-logo animate-float">
             <span>NA</span>
           </div>
-          <span className="landing-brand-name">NovaAgendas</span>
+          <span className="landing-brand-name">Novagendas</span>
         </div>
 
         <div className="landing-nav-links reveal stagger-2">
@@ -157,7 +157,7 @@ export default function LandingPage() {
         <div className="landing-about-inner reveal">
           <h2>Sobre Nosotros</h2>
           <p>
-            NovaAgendas nació con la misión de modernizar la gestión en el sector de la estética y la salud.
+            Novagendas nació con la misión de modernizar la gestión en el sector de la estética y la salud.
             Entendemos que el tiempo de los profesionales debe enfocarse en sus pacientes, no en tareas administrativas.
             Por eso construimos una herramienta robusta, segura y fácil de usar, impulsada por tecnología de punta.
           </p>
@@ -171,7 +171,7 @@ export default function LandingPage() {
           <span className="landing-footer-sep">·</span>
           <a href="/condiciones">Condiciones de Servicio</a>
         </div>
-        <p>© {new Date().getFullYear()} NovaAgendas. Todos los derechos reservados.</p>
+        <p>© {new Date().getFullYear()} Novagendas. Todos los derechos reservados.</p>
       </footer>
     </div>
 

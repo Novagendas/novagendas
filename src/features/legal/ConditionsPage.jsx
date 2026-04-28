@@ -16,7 +16,7 @@ const sections = [
     content: [
       {
         title: '1. Planes de Servicio',
-        body: 'NovaAgendas ofrece diferentes planes de suscripción adaptados a las necesidades de cada negocio. Cada plan incluye:\n\n• Acceso completo a la plataforma de agendamiento\n• Número de usuarios según el plan seleccionado\n• Soporte técnico por los canales definidos en el plan\n• Actualizaciones automáticas de la plataforma\n• Almacenamiento en la nube para datos e historial',
+        body: 'Novagendas ofrece diferentes planes de suscripción adaptados a las necesidades de cada negocio. Cada plan incluye:\n\n• Acceso completo a la plataforma de agendamiento\n• Número de usuarios según el plan seleccionado\n• Soporte técnico por los canales definidos en el plan\n• Actualizaciones automáticas de la plataforma\n• Almacenamiento en la nube para datos e historial',
       },
       {
         title: '2. Facturación y Cobros',
@@ -47,23 +47,23 @@ const sections = [
     content: [
       {
         title: '1. Responsabilidades del Negocio',
-        body: 'El negocio registrado en NovaAgendas es responsable de:\n\n• Garantizar que el uso de la plataforma cumpla con la legislación colombiana vigente\n• Obtener los consentimientos necesarios de sus pacientes/clientes para el tratamiento de datos\n• Capacitar a sus usuarios en el uso apropiado de la plataforma\n• Mantener actualizados los datos de los pacientes conforme a la normativa de salud\n• Notificar a NovaAgendas de cualquier incidente de seguridad',
+        body: 'El negocio registrado en Novagendas es responsable de:\n\n• Garantizar que el uso de la plataforma cumpla con la legislación colombiana vigente\n• Obtener los consentimientos necesarios de sus pacientes/clientes para el tratamiento de datos\n• Capacitar a sus usuarios en el uso apropiado de la plataforma\n• Mantener actualizados los datos de los pacientes conforme a la normativa de salud\n• Notificar a Novagendas de cualquier incidente de seguridad',
       },
       {
         title: '2. Gestión de Datos Clínicos',
-        body: 'Para negocios del sector salud, la gestión del historial clínico debe realizarse en cumplimiento de:\n\n• Resolución 1995 de 1999 del Ministerio de Salud (Historias Clínicas)\n• Ley 1581 de 2012 (Protección de Datos Personales)\n• Ley 23 de 1981 (Ética Médica)\n\nNovaAgendas provee las herramientas tecnológicas; el cumplimiento normativo es responsabilidad del negocio.',
+        body: 'Para negocios del sector salud, la gestión del historial clínico debe realizarse en cumplimiento de:\n\n• Resolución 1995 de 1999 del Ministerio de Salud (Historias Clínicas)\n• Ley 1581 de 2012 (Protección de Datos Personales)\n• Ley 23 de 1981 (Ética Médica)\n\nNovagendas provee las herramientas tecnológicas; el cumplimiento normativo es responsabilidad del negocio.',
       },
       {
         title: '3. Nivel de Servicio (SLA)',
-        body: 'NovaAgendas se compromete a mantener:\n\n• Disponibilidad de la plataforma: 99.5% mensual (excluye mantenimientos programados)\n• Tiempo de respuesta de soporte: máximo 24 horas hábiles\n• Mantenimientos programados: comunicados con 48 horas de anticipación\n• Respaldo de datos: cada 24 horas\n\nEn caso de incumplimiento del SLA, el negocio podrá solicitar créditos según la política vigente.',
+        body: 'Novagendas se compromete a mantener:\n\n• Disponibilidad de la plataforma: 99.5% mensual (excluye mantenimientos programados)\n• Tiempo de respuesta de soporte: máximo 24 horas hábiles\n• Mantenimientos programados: comunicados con 48 horas de anticipación\n• Respaldo de datos: cada 24 horas\n\nEn caso de incumplimiento del SLA, el negocio podrá solicitar créditos según la política vigente.',
       },
       {
         title: '4. Integraciones de Terceros',
-        body: 'NovaAgendas integra servicios de terceros (Google Calendar, Supabase) para brindar funcionalidades adicionales. El uso de estas integraciones está sujeto a los términos de servicio de cada proveedor.\n\nNovaAgendas no se hace responsable por interrupciones o cambios en los servicios de terceros.',
+        body: 'Novagendas integra servicios de terceros (Google Calendar, Supabase) para brindar funcionalidades adicionales. El uso de estas integraciones está sujeto a los términos de servicio de cada proveedor.\n\nNovagendas no se hace responsable por interrupciones o cambios en los servicios de terceros.',
       },
       {
         title: '5. Actualizaciones del Servicio',
-        body: 'NovaAgendas puede actualizar, modificar o descontinuar funcionalidades de la plataforma en cualquier momento. Las actualizaciones significativas serán comunicadas con al menos 7 días de anticipación a través del correo registrado.',
+        body: 'Novagendas puede actualizar, modificar o descontinuar funcionalidades de la plataforma en cualquier momento. Las actualizaciones significativas serán comunicadas con al menos 7 días de anticipación a través del correo registrado.',
       },
     ],
   },
@@ -78,7 +78,7 @@ const sections = [
     content: [
       {
         title: '1. Canales de Soporte',
-        body: 'NovaAgendas ofrece soporte técnico a través de:\n\n• Correo electrónico: novagendamiento@gmail.com\n• Documentación en línea (próximamente)\n• Soporte vía chat (plan premium)\n\nEl soporte está disponible en días hábiles de lunes a viernes, de 8:00 a.m. a 6:00 p.m. (hora Colombia).',
+        body: 'Novagendas ofrece soporte técnico a través de:\n\n• Correo electrónico: novagendamiento@gmail.com\n• Documentación en línea (próximamente)\n• Soporte vía chat (plan premium)\n\nEl soporte está disponible en días hábiles de lunes a viernes, de 8:00 a.m. a 6:00 p.m. (hora Colombia).',
       },
       {
         title: '2. Alcance del Soporte',
@@ -90,7 +90,7 @@ const sections = [
       },
       {
         title: '4. Exclusiones de Garantía',
-        body: 'NovaAgendas no garantiza:\n\n• Que la plataforma sea libre de errores en todo momento\n• Que los resultados obtenidos sean exactos o confiables para toma de decisiones médicas\n• Compatibilidad con todos los navegadores y dispositivos (soportamos las últimas 2 versiones de Chrome, Firefox, Safari y Edge)\n\nLa plataforma se provee "tal como está" en lo que respecta a las limitaciones técnicas inherentes a cualquier software.',
+        body: 'Novagendas no garantiza:\n\n• Que la plataforma sea libre de errores en todo momento\n• Que los resultados obtenidos sean exactos o confiables para toma de decisiones médicas\n• Compatibilidad con todos los navegadores y dispositivos (soportamos las últimas 2 versiones de Chrome, Firefox, Safari y Edge)\n\nLa plataforma se provee "tal como está" en lo que respecta a las limitaciones técnicas inherentes a cualquier software.',
       },
     ],
   },
@@ -107,9 +107,9 @@ export default function ConditionsPage() {
         <div className="legal-logo-box">
           <a href="/" className="legal-logo-link">
             <div className="legal-logo-img-wrapper">
-              <img src="/logoclaro.jpeg" alt="NovaAgendas Logo" />
+              <img src="/logoclaro.jpeg" alt="Novagendas Logo" />
             </div>
-            <span className="legal-logo-text">NovaAgendas</span>
+            <span className="legal-logo-text">Novagendas</span>
           </a>
           <span className="legal-breadcrumb-sep">/</span>
           <span className="legal-breadcrumb-current">Condiciones de Servicio</span>
@@ -170,7 +170,7 @@ export default function ConditionsPage() {
               </div>
               <div className="legal-section-info">
                 <h2>{current?.label}</h2>
-                <p>NovaAgendas Service Policy</p>
+                <p>Novagendas Service Policy</p>
               </div>
             </div>
 
@@ -200,7 +200,7 @@ export default function ConditionsPage() {
 
       {/* Footer */}
       <footer className="legal-footer">
-        <p>© {new Date().getFullYear()} NovaAgendas Colombia · Todos los derechos reservados.</p>
+        <p>© {new Date().getFullYear()} Novagendas Colombia · Todos los derechos reservados.</p>
       </footer>
     </div>
   );

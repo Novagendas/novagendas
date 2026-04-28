@@ -143,7 +143,7 @@ export default function Login({ tenant, onLogin, onForgotPassword }) {
           </button>
         </form>
 
-        <p className="auth-footer">NovaAgendas © {new Date().getFullYear()}</p>
+        <p className="auth-footer">Novagendas © {new Date().getFullYear()}</p>
       </div>
     </div>
 

@@ -61,7 +61,7 @@ export default function ForgotPassword({ tenant, onBack }) {
             Volver al inicio de sesión
           </button>
 
-          <p className="auth-footer">NovaAgendas © {new Date().getFullYear()}</p>
+          <p className="auth-footer">Novagendas © {new Date().getFullYear()}</p>
         </div>
       </div>
     );
@@ -126,7 +126,7 @@ export default function ForgotPassword({ tenant, onBack }) {
           </button>
         </form>
 
-        <p className="auth-footer">NovaAgendas © {new Date().getFullYear()}</p>
+        <p className="auth-footer">Novagendas © {new Date().getFullYear()}</p>
       </div>
     </div>
 

@@ -1,32 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import SuggestionInput from '../../components/SuggestionInput';
+import SelectableInput from '../../components/inputs/SelectableInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth } from '../../services/googleCalendar';
+import {
+  addDays,
+  startOf,
+  toDateStr,
+  toTimeStr,
+  timeToDec,
+} from '../../utils/dateHelpers';
+import {
+  DAY_LABELS,
+  CALENDAR_CONFIG,
+  STATUS_COLORS,
+  APPOINTMENT_STATUSES,
+} from '../../utils/constants';
 import './Agenda.css';
 
-/* ─── Helpers ──────────────────────────────────────────── */
-const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
-const startOf = (date, unit) => {
-  const d = new Date(date);
-  if (unit === 'week') {
-    const day = d.getDay(); // 0=Sun
-    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // Mon
-  }
-  if (unit === 'month') { d.setDate(1); }
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-const toDateStr = (d) => {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-const toTimeStr = (h, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-const timeToDec = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
-const SLOT_H = 72; // px per hour
-const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-const statusColor = { 'Confirmada': 'var(--success)', 'En Espera': 'var(--warning)', 'Pendiente': 'var(--text-3)', 'Cancelada': 'var(--danger)', 'Completada': 'var(--primary)' };
+const { SLOT_HEIGHT: SLOT_H, MIN_HOUR: START_H_MIN, MAX_HOUR: END_H_MAX } = CALENDAR_CONFIG;
+const statusColor = STATUS_COLORS;
 
 /* ─── Month mini calendar helper ─────────────────────────── */
 function buildMonthGrid(pivot) {
@@ -40,80 +33,6 @@ function buildMonthGrid(pivot) {
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
 }
-
-/* ─── Searchable Select Component ─────────────────────────── */
-const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filtered = options.filter(opt => 
-    opt.label.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const selectedOpt = options.find(o => String(o.value) === String(value));
-
-  return (
-    <div className="input-group searchable-select-wrapper" ref={wrapperRef}>
-      <label className="searchable-select-label">{label}</label>
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className={`searchable-select-trigger ${isOpen ? 'open' : ''}`}
-      >
-        <span className="searchable-select-icon">{icon}</span>
-        <div className={`searchable-select-text ${selectedOpt ? 'selected' : 'placeholder'}`}>
-          {selectedOpt ? selectedOpt.label : placeholder}
-        </div>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="3" className={`searchable-select-arrow ${isOpen ? 'open' : ''}`}><polyline points="6 9 12 15 18 9" /></svg>
-      </div>
-
-      {isOpen && (
-        <div className="animate-scale-in searchable-select-dropdown">
-          <div className="searchable-select-search-container">
-            <div className="searchable-select-search-wrapper">
-                <SuggestionInput 
-                  autoFocus
-                  placeholder="Escribe para buscar..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="searchable-select-search-input"
-                  spellCheck={true} 
-                  lang="es" 
-                  suggestions={[...new Set([...options.map(o => o.label), ...commonTerms])]} 
-                />
-              <svg className="searchable-select-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </div>
-          </div>
-          <div className="searchable-select-options">
-            {filtered.length > 0 ? filtered.map(opt => (
-              <div 
-                key={opt.value}
-                onClick={() => { onChange(opt.value); setIsOpen(false); setSearch(''); }}
-                className={`searchable-select-option ${String(value) === String(opt.value) ? 'selected' : ''}`}
-              >
-                {opt.label}
-                {String(value) === String(opt.value) && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>}
-              </div>
-            )) : (
-              <div className="searchable-select-no-results">
-                <span>🔍</span>
-                No se encontraron resultados para "{search}"
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function Agenda({ user, tenant }) {
   const [appointments, setAppointments] = useState([]);
@@ -150,7 +69,7 @@ export default function Agenda({ user, tenant }) {
       try {
         await createCalendarEvent({
           summary: 'Conexión probada',
-          description: 'Verificación de conexión desde NovaAgendas',
+          description: 'Verificación de conexión desde Novagendas',
           startDateTime: new Date().toISOString(),
           endDateTime: new Date(Date.now() + 60000).toISOString(),
           attendeeEmails: []
@@ -513,7 +432,7 @@ export default function Agenda({ user, tenant }) {
         const timeLabel = form.time;
 
         const description = [
-          `📅 CITA MÉDICA — ${tenant?.name || 'NovaAgendas'}`,
+          `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}`,
           '',
           `📋 Servicios: ${serviceNames}`,
           totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
@@ -531,8 +450,8 @@ export default function Agenda({ user, tenant }) {
           `🕐 Hora: ${timeLabel}`,
           '',
           `━━━━━━━━━━━━━━━━━━━━━━`,
-          `Cita gestionada por NovaAgendas`,
-          `Favor llegar 10 minutos antes de la cita.`,
+          `Cita gestionada por Novagendas`,
+          `Favor llegar 15 minutos antes de la cita.`,
         ].filter(l => l !== null).join('\n');
 
         const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
@@ -1021,7 +940,7 @@ export default function Agenda({ user, tenant }) {
             </div>
 
             <div className="appt-modal-form">
-              <SearchableSelect 
+              <SelectableInput 
                 label="Seleccionar Profesional"
                 placeholder="Busca por nombre..."
                 icon="👨‍⚕️"
@@ -1151,7 +1070,7 @@ export default function Agenda({ user, tenant }) {
 
             <form onSubmit={handleSubmit} className="appt-modal-form">
               <div className="modal-scroll-area gap-md">
-                <SearchableSelect 
+                <SelectableInput 
                   label="Paciente Responsable"
                   placeholder="Busca un paciente..."
                   icon="👤"
@@ -1176,7 +1095,7 @@ export default function Agenda({ user, tenant }) {
                     </button>
                   </div>
 
-                  <SearchableSelect 
+                  <SelectableInput 
                     label="Profesional Asignado"
                     placeholder="Busca profesional..."
                     icon="👨‍⚕️"
@@ -1323,7 +1242,7 @@ export default function Agenda({ user, tenant }) {
                 </div>
 
                 {/* Status Selection */}
-                <SearchableSelect 
+                <SelectableInput 
                   label="Cambiar Estado de la Cita"
                   placeholder="Elige un estado..."
                   icon="🏷️"

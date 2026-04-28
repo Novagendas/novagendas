@@ -29,7 +29,7 @@ function LoadingScreen() {
       <div className="loading-logo">
         <img
           src="/logoclaro.jpeg"
-          alt="NovaAgendas"
+          alt="Novagendas"
           onError={e => {
             e.target.classList.add('hidden-img');
             e.target.parentElement.innerHTML = '<span>NA</span>';
@@ -39,7 +39,7 @@ function LoadingScreen() {
 
       {/* Nombre y tagline */}
       <div className="loading-info">
-        <p className="loading-brand">NovaAgendas</p>
+        <p className="loading-brand">Novagendas</p>
         <p className="loading-tagline">Preparando tu plataforma</p>
       </div>
 

@@ -192,7 +192,7 @@ export default function Inventory({ user, tenant }) {
       {/* ── Page Header ── */}
       <div className="page-header">
         <div>
-          <h2 className="inventory-header-title">Inventario de Insumos</h2>
+          <h2 className="inventory-header-title">Inventario</h2>
           <p className="inventory-header-subtitle">
             {products.length} productos registrados · {alertas} con stock bajo
           </p>
