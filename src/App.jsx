@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { GlobalProvider } from './context/GlobalState';
 import './index.css';
+import './App.css';
 import Login from './features/auth/Login';
 import ForgotPassword from './features/auth/ForgotPassword';
 import ResetPassword from './features/auth/ResetPassword';
@@ -23,71 +24,37 @@ import { supabase } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg-subtle)', gap: '1.75rem'
-    }}>
-      <style>{`
-        @keyframes ng-pulse {
-          0%, 100% { box-shadow: 0 16px 48px var(--primary-light, rgba(37,99,235,0.25)); transform: scale(1); }
-          50% { box-shadow: 0 24px 72px var(--primary, #2563eb); transform: scale(1.04); }
-        }
-        @keyframes ng-bar {
-          0% { transform: translateX(-100%); }
-          50% { transform: translateX(20%); }
-          100% { transform: translateX(120%); }
-        }
-        @keyframes ng-dot {
-          0%, 100% { transform: translateY(0); opacity: 0.35; }
-          50% { transform: translateY(-10px); opacity: 1; }
-        }
-      `}</style>
-
+    <div className="loading-screen">
       {/* Logo animado */}
-      <div style={{
-        width: 76, height: 76, borderRadius: 22,
-        background: 'var(--primary)', overflow: 'hidden',
-        animation: 'ng-pulse 2.2s ease-in-out infinite'
-      }}>
-        <img src="/logoclaro.jpeg" alt="NovaAgendas"
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      <div className="loading-logo">
+        <img
+          src="/logoclaro.jpeg"
+          alt="NovaAgendas"
           onError={e => {
-            e.target.parentElement.style.display = 'flex';
-            e.target.parentElement.style.alignItems = 'center';
-            e.target.parentElement.style.justifyContent = 'center';
-            e.target.parentElement.innerHTML = '<span style="color:#fff;font-weight:900;font-size:1.4rem;letter-spacing:-0.04em">NA</span>';
-          }} />
+            e.target.classList.add('hidden-img');
+            e.target.parentElement.innerHTML = '<span>NA</span>';
+          }}
+        />
       </div>
 
-      {/* Nombre */}
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.03em', marginBottom: '0.25rem' }}>
-          NovaAgendas
-        </div>
-        <div style={{ fontSize: '0.8rem', color: 'var(--text-4)', fontWeight: 500, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          Preparando tu plataforma
-        </div>
+      {/* Nombre y tagline */}
+      <div className="loading-info">
+        <p className="loading-brand">NovaAgendas</p>
+        <p className="loading-tagline">Preparando tu plataforma</p>
       </div>
 
-      {/* Barra de progreso deslizante */}
-      <div style={{ width: 220, height: 3, borderRadius: 999, background: 'var(--border)', overflow: 'hidden' }}>
-        <div style={{
-          height: '100%', width: '45%',
-          background: 'linear-gradient(90deg, transparent, var(--primary), var(--accent, #7c3aed), transparent)',
-          borderRadius: 999,
-          animation: 'ng-bar 1.6s ease-in-out infinite'
-        }} />
+      {/* Barra de progreso */}
+      <div className="loading-bar-wrapper">
+        <div className="loading-bar" />
       </div>
 
       {/* Puntos saltarines */}
-      <div style={{ display: 'flex', gap: '0.55rem' }}>
+      <div className="loading-dots">
         {[0, 1, 2].map(i => (
-          <div key={i} style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: 'var(--primary)',
-            animation: `ng-dot 1.3s ${i * 0.22}s ease-in-out infinite`
-          }} />
+          <div
+            key={i}
+            className="loading-dot"
+          />
         ))}
       </div>
     </div>
@@ -208,23 +175,19 @@ export default function App() {
     const parts = host.split('.');
     let subdomain = null;
 
-    // Detectar si estamos en un subdominio válido de forma robusta
     const isIp = /^[0-9.]+$/.test(host);
     if (!isIp) {
       if (host.includes('localhost')) {
-        // Ej: admin.localhost
         if (parts.length >= 2 && parts[0] !== 'localhost' && parts[0] !== 'www') {
           subdomain = parts[0];
         }
       } else {
-        // Ej: admin.novagendas.com
         if (parts.length >= 3 && parts[0] !== 'www') {
           subdomain = parts[0];
         }
       }
     }
 
-    // Si no hay subdominio, mostrar landing page principal
     if (!subdomain) {
       setView('landing');
       return;
@@ -238,7 +201,7 @@ export default function App() {
     const fetchTenant = async () => {
       try {
         const { data, error } = await supabase
-          .from('negocios') // lowercase
+          .from('negocios')
           .select('*')
           .eq('dominio', subdomain)
           .single();
@@ -274,17 +237,24 @@ export default function App() {
   if (view === 'landing') return <LandingPage />;
 
   if (view === 'not_found') return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
-      <div className="card flex-col items-center gap-4" style={{ padding: '3rem', textAlign: 'center', maxWidth: 400 }}>
-        <div style={{ background: 'var(--danger-light)', width: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+    <div className="not-found-screen animate-fade-in">
+      <div className="not-found-card">
+        <div className="auth-icon-circle auth-icon-circle--error">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
         </div>
-        <h2 style={{ margin: 0 }}>Tienda No Encontrada</h2>
-        <p style={{ color: 'var(--text-3)', margin: 0, fontSize: '0.9rem' }}>El subdominio al que intentas acceder no se encuentra registrado o ha sido suspendido.</p>
-        <button onClick={() => {
-          const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
-          window.location.href = isLocal ? 'http://localhost:5173' : 'https://novagendas.com';
-        }} className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>Ir al Inicio</button>
+        <h2>Tienda No Encontrada</h2>
+        <p>El subdominio al que intentas acceder no se encuentra registrado o ha sido suspendido temporalmente.</p>
+        <button
+          onClick={() => {
+            const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+            window.location.href = isLocal ? 'http://localhost:5173' : 'https://novagendas.com';
+          }}
+          className="btn btn-primary btn-full"
+        >
+          Ir al Inicio
+        </button>
       </div>
     </div>
   );

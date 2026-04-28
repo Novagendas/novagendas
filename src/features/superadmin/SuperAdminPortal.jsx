@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import ParticleBackground from '../../components/ParticleBackground';
 import ThemeToggle from '../../components/ThemeToggle';
+import './SuperAdminPortal.css';
 
 /* ─── authHelper: client aislado para signUp sin afectar sesión activa ── */
 const authHelper = createClient(
@@ -33,13 +34,8 @@ function Snackbar({ snack }) {
   const bg = snack.type === 'error' ? '#dc2626' : snack.type === 'warning' ? '#d97706' : '#16a34a';
   const icon = snack.type === 'error' ? '✕' : snack.type === 'warning' ? '⚠' : '✓';
   return (
-    <div className="animate-fade-in" style={{
-      position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999,
-      background: bg, color: '#fff', borderRadius: 14,
-      padding: '0.85rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.7rem',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.22)', maxWidth: 380, fontSize: '0.9rem', fontWeight: 600,
-    }}>
-      <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0 }}>{icon}</span>
+    <div className="super-snackbar animate-fade-in" style={{ background: bg }}>
+      <span className="super-snackbar-icon">{icon}</span>
       {snack.message}
     </div>
   );
@@ -49,16 +45,16 @@ function Snackbar({ snack }) {
 function ConfirmDialog({ confirm, onCancel }) {
   if (!confirm?.open) return null;
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
-      <div className="card animate-scale-in" style={{ padding: '2rem', maxWidth: 400, width: '90%', borderRadius: 20, textAlign: 'center' }}>
-        <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#fee2e2', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="super-confirm-overlay">
+      <div className="card super-confirm-card animate-scale-in" style={{ padding: '2rem', maxWidth: 400, width: '90%', borderRadius: 20, textAlign: 'center' }}>
+        <div className="super-confirm-icon-box">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </div>
-        <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem' }}>¿Confirmar acción?</h3>
-        <p style={{ margin: '0 0 1.5rem', color: 'var(--text-3)', fontSize: '0.9rem', lineHeight: 1.5 }}>{confirm.message}</p>
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-          <button onClick={onCancel} style={{ padding: '0.65rem 1.4rem', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-2)', fontFamily: 'var(--font-main)' }}>Cancelar</button>
-          <button onClick={confirm.onConfirm} style={{ padding: '0.65rem 1.4rem', borderRadius: 10, border: 'none', background: '#dc2626', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', color: '#fff', fontFamily: 'var(--font-main)' }}>Eliminar</button>
+        <h3 className="super-confirm-title">¿Confirmar acción?</h3>
+        <p className="super-confirm-msg">{confirm.message}</p>
+        <div className="super-confirm-actions">
+          <button onClick={onCancel} className="btn-cancel" style={{ padding: '0.65rem 1.4rem', borderRadius: 10 }}>Cancelar</button>
+          <button onClick={confirm.onConfirm} className="super-btn-delete-alt">Eliminar</button>
         </div>
       </div>
     </div>
@@ -69,16 +65,24 @@ function ConfirmDialog({ confirm, onCancel }) {
 function EstadoBadge({ id }) {
   const opt = ESTADO_OPTIONS.find(e => e.id === id);
   if (!opt) return <span style={{ color: '#9ca3af' }}>—</span>;
-  return <span style={{ background: opt.bg, color: opt.color, border: `1px solid ${opt.border}`, borderRadius: 99, padding: '3px 10px', fontSize: '0.71rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{opt.label}</span>;
+  return (
+    <span 
+      className="super-badge" 
+      style={{ background: opt.bg, color: opt.color, border: `1px solid ${opt.border}` }}
+    >
+      {opt.label}
+    </span>
+  );
 }
 
 const TH = ({ children }) => (
-  <th style={{ padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-3)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap', borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+  <th className="super-th">
     {children}
   </th>
 );
-const TD = ({ children, style }) => (
-  <td style={{ padding: '0.72rem 1rem', borderBottom: '1px solid var(--border)', verticalAlign: 'middle', fontSize: '0.875rem', ...style }}>
+
+const TD = ({ children, className = '', style }) => (
+  <td className={`super-td ${className}`} style={style}>
     {children}
   </td>
 );
@@ -86,7 +90,7 @@ const TD = ({ children, style }) => (
 function Field({ label, style, children }) {
   return (
     <div className="input-group" style={{ flex: '1 1 240px', ...style }}>
-      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</label>
+      <label className="super-field-label">{label}</label>
       {children}
     </div>
   );
@@ -94,14 +98,13 @@ function Field({ label, style, children }) {
 
 function Modal({ title, onClose, children, width = 640 }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(6px)' }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="super-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="card animate-scale-in" style={{ width: '100%', maxWidth: width, maxHeight: '90vh', overflowY: 'auto', padding: 0, borderRadius: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.75rem', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, background: 'var(--surface)', zIndex: 1 }}>
+        <div className="super-modal-header">
           <h3 style={{ margin: 0, fontSize: '1rem' }}>{title}</h3>
-          <button onClick={onClose} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>✕</button>
+          <button onClick={onClose} className="super-modal-close">✕</button>
         </div>
-        <div style={{ padding: '1.5rem 1.75rem' }}>{children}</div>
+        <div className="super-modal-body">{children}</div>
       </div>
     </div>
   );
@@ -109,13 +112,12 @@ function Modal({ title, onClose, children, width = 640 }) {
 
 function FilterBar({ search, onSearch, sort, onSort, extra }) {
   return (
-    <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-      <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-        <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)', pointerEvents: 'none' }} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-        <input className="input-field" style={{ paddingLeft: '2rem', fontSize: '0.84rem', height: 36 }} placeholder="Buscar…" value={search} onChange={e => onSearch(e.target.value)} />
+    <div className="super-filter-bar">
+      <div className="super-search-wrapper">
+        <svg className="super-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+        <input className="input-field super-search-input" placeholder="Buscar…" value={search} onChange={e => onSearch(e.target.value)} />
       </div>
-      <select value={sort} onChange={e => onSort(e.target.value)}
-        style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '4px 10px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-main)', height: 36 }}>
+      <select value={sort} onChange={e => onSort(e.target.value)} className="super-select-small">
         <option value="newest">Más reciente</option>
         <option value="oldest">Más antiguo</option>
       </select>
@@ -126,8 +128,8 @@ function FilterBar({ search, onSearch, sort, onSort, extra }) {
 
 function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
   return (
-    <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+    <form onSubmit={onSubmit} className="super-form">
+      <div className="super-form-grid">
         <Field label="NIT"><input className="input-field" required value={form.nit} onChange={e => setForm(f => ({ ...f, nit: e.target.value }))} placeholder="900123456-1" /></Field>
         <Field label="Nombre"><input className="input-field" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Clínica Ejemplo" /></Field>
         <Field label="Teléfono"><input className="input-field" value={form.telefono} onChange={e => setForm(f => ({ ...f, telefono: e.target.value }))} placeholder="+57 300..." /></Field>
@@ -156,11 +158,10 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
       </div>
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
         <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: 10 }}>
-          {saving ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginRight: 8 }} />Guardando...</> : isEdit ? 'Guardar Cambios' : 'Crear Negocio'}
+          {saving ? <><span className="spinner-mini" style={{ marginRight: 8 }} />Guardando...</> : isEdit ? 'Guardar Cambios' : 'Crear Negocio'}
         </button>
         {isEdit && (
-          <button type="button" onClick={onDelete}
-            style={{ borderRadius: 10, background: '#fee2e2', border: '1px solid #fca5a5', color: '#dc2626', padding: '0.6rem 1.1rem', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-main)', fontSize: '0.9rem' }}>
+          <button type="button" onClick={onDelete} className="super-btn-delete-alt">
             🗑️ Eliminar Negocio
           </button>
         )}
@@ -172,8 +173,8 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
 function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }) {
   const [showPass, setShowPass] = useState(false);
   return (
-    <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+    <form onSubmit={onSubmit} className="super-form">
+      <div className="super-form-grid">
         <Field label="Nombre"><input className="input-field" required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} placeholder="Karen" /></Field>
         <Field label="Apellido"><input className="input-field" required value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} placeholder="Useche" /></Field>
         <Field label="Cédula"><input className="input-field" required value={form.cedula} onChange={e => setForm(f => ({ ...f, cedula: e.target.value }))} placeholder="1010000001" /></Field>
@@ -214,11 +215,10 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
       )}
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
         <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: 10 }}>
-          {saving ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite', marginRight: 8 }} />Guardando...</> : isEdit ? 'Guardar Cambios' : 'Crear Usuario'}
+          {saving ? <><span className="spinner-mini" style={{ marginRight: 8 }} />Guardando...</> : isEdit ? 'Guardar Cambios' : 'Crear Usuario'}
         </button>
         {isEdit && (
-          <button type="button" onClick={onDelete}
-            style={{ borderRadius: 10, background: '#fee2e2', border: '1px solid #fca5a5', color: '#dc2626', padding: '0.6rem 1.1rem', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-main)', fontSize: '0.9rem' }}>
+          <button type="button" onClick={onDelete} className="super-btn-delete-alt">
             🗑️ Eliminar Usuario
           </button>
         )}
@@ -288,7 +288,7 @@ export default function SuperAdminPortal() {
     setUserLoad(false);
   }, []);
 
-  useEffect(() => { if (adminLogged) { fetchTenants(); fetchUsers(); } }, [adminLogged]);
+  useEffect(() => { if (adminLogged) { fetchTenants(); fetchUsers(); } }, [adminLogged, fetchTenants, fetchUsers]);
 
   /* ── Login ── */
   const [email, setEmail]                 = useState('');
@@ -499,13 +499,13 @@ export default function SuperAdminPortal() {
 
   /* ═══════════════ LOGIN SCREEN ═══════════════ */
   if (!adminLogged) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--surface-2)', position: 'relative' }}>
+    <div className="super-login-wrap">
       <ParticleBackground />
       <ThemeToggle style={{ position: 'absolute', top: '2rem', right: '2rem', zIndex: 100 }} />
-      <div className="card animate-fade-up" style={{ width: 380, padding: '2.5rem', zIndex: 1, borderRadius: 24 }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-          <div style={{ width: 72, height: 72, borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', overflow: 'hidden', boxShadow: '0 4px 16px rgba(37,99,235,0.2)' }}>
-            <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
+      <div className="card super-login-card animate-fade-up">
+        <div className="super-login-header">
+          <div className="super-login-logo">
+            <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" onError={e => e.target.style.display = 'none'} />
           </div>
           <h2 style={{ margin: '0 0 0.25rem', fontWeight: 800 }}>{isRegistering ? 'Crear Super Admin' : 'Portal Super Admin'}</h2>
           <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--text-3)' }}>NovaAgendas · Solo personal autorizado</p>
@@ -518,21 +518,21 @@ export default function SuperAdminPortal() {
           </div>
         )}
 
-        <form onSubmit={isRegistering ? handleRegisterSuper : handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <form onSubmit={isRegistering ? handleRegisterSuper : handleLogin} className="super-login-form">
           <input type="email" className="input-field" placeholder="Correo electrónico" value={email} onChange={e => { setEmail(e.target.value); setLoginError(''); }} autoFocus />
           <input type="password" className="input-field" placeholder="Contraseña" value={pass} onChange={e => { setPass(e.target.value); setLoginError(''); }} />
           {isRegistering && (
             <input type="password" className="input-field" placeholder="Contraseña maestra de confirmación" value={masterPass} onChange={e => setMasterPass(e.target.value)} style={{ border: '1px solid var(--accent)' }} />
           )}
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.9rem', marginTop: '0.25rem', borderRadius: 12 }} disabled={isAuthLoading}>
+          <button type="submit" className="btn btn-primary btn-full" style={{ padding: '0.9rem', marginTop: '0.25rem', borderRadius: 12 }} disabled={isAuthLoading}>
             {isAuthLoading
-              ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><span style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} />Procesando...</span>
+              ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><span className="spinner-mini" />Procesando...</span>
               : isRegistering ? 'Registrar SuperAdmin' : 'Ingresar'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-          <button type="button" onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }} style={{ background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}>
+        <div className="super-login-footer">
+          <button type="button" onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }} className="super-text-link">
             {isRegistering ? '← Volver al Login' : '¿Eres nuevo? Crear SuperAdmin'}
           </button>
         </div>
@@ -542,42 +542,48 @@ export default function SuperAdminPortal() {
 
   /* ═══════════════ MAIN PORTAL ═══════════════ */
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-main)', position: 'relative' }}>
+    <div className="super-portal-layout">
 
       {/* ── Sticky header ── */}
-      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem' }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-              <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
+      <div className="super-header">
+        <div className="super-header-left">
+          <div className="super-brand">
+            <div className="super-brand-logo">
+              <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" onError={e => e.target.style.display = 'none'} />
             </div>
             <div>
-              <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>NovaAgendas</div>
-              <div style={{ fontSize: '0.6rem', color: 'var(--text-4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Super Admin</div>
+              <div className="super-brand-name">NovaAgendas</div>
+              <div className="super-brand-sub">Super Admin</div>
             </div>
           </div>
-          <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 10, padding: 3, border: '1px solid var(--border)', marginLeft: '0.5rem' }}>
+          <div className="super-nav-tabs">
             {[{ id: 'negocios', label: 'Negocios', count: filteredTenants.length }, { id: 'usuarios', label: 'Usuarios', count: filteredUsers.length }].map(t => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                style={{ padding: '0.38rem 1rem', borderRadius: 8, fontWeight: 700, fontSize: '0.82rem', background: tab === t.id ? 'var(--primary)' : 'transparent', color: tab === t.id ? '#fff' : 'var(--text-3)', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-main)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <button 
+                key={t.id} 
+                onClick={() => setTab(t.id)}
+                className={`super-nav-btn ${tab === t.id ? 'super-nav-btn--active' : ''}`}
+              >
                 {t.label}
-                <span style={{ background: tab === t.id ? 'rgba(255,255,255,0.25)' : 'var(--border)', borderRadius: 99, padding: '1px 6px', fontSize: '0.7rem' }}>{t.count}</span>
+                <span className="super-nav-count">{t.count}</span>
               </button>
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {currentUser && <span style={{ fontSize: '0.78rem', color: 'var(--text-4)', fontWeight: 500 }}>{currentUser.email}</span>}
+        <div className="super-header-right">
+          {currentUser && <span className="super-user-email">{currentUser.email}</span>}
           <ThemeToggle style={{ position: 'relative' }} />
-          <button className="btn btn-primary" style={{ borderRadius: 10, padding: '0.5rem 1.1rem', fontSize: '0.85rem' }}
-            onClick={tab === 'negocios' ? openAddTenant : openAddUser}>
+          <button 
+            className="btn btn-primary" 
+            style={{ borderRadius: 10, padding: '0.5rem 1.1rem', fontSize: '0.85rem' }}
+            onClick={tab === 'negocios' ? openAddTenant : openAddUser}
+          >
             + {tab === 'negocios' ? 'Nueva Tienda' : 'Nuevo Usuario'}
           </button>
         </div>
       </div>
 
       {/* ── Stats bar ── */}
-      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0.6rem 2rem', display: 'flex', gap: '2rem', overflowX: 'auto' }}>
+      <div className="super-stats-bar">
         {[
           { label: 'Negocios activos', value: activeTenantsCount, color: '#16a34a' },
           { label: 'En producción',    value: deployedCount,       color: '#0891b2' },
@@ -585,33 +591,36 @@ export default function SuperAdminPortal() {
           { label: 'Usuarios activos', value: activeUsersCount,    color: '#7c3aed' },
           { label: 'Total usuarios',   value: users.length,        color: 'var(--text-2)' },
         ].map(s => (
-          <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', whiteSpace: 'nowrap' }}>
-            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: s.color }}>{s.value}</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 600 }}>{s.label}</span>
+          <div key={s.label} className="super-stat-item">
+            <span className="super-stat-value" style={{ color: s.color }}>{s.value}</span>
+            <span className="super-stat-label">{s.label}</span>
           </div>
         ))}
       </div>
 
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '1.75rem 2rem' }}>
+      <div className="super-content-container">
 
         {/* ══════════ NEGOCIOS TAB ══════════ */}
         {tab === 'negocios' && (
-          <div className="card animate-fade-in" style={{ padding: 0, overflow: 'hidden', borderRadius: 20 }}>
-            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
+          <div className="card super-main-card animate-fade-in">
+            <div className="super-card-header">
+              <h3 className="super-card-title">
                 Negocios registrados
-                <span style={{ color: 'var(--text-4)', fontWeight: 500, fontSize: '0.82rem', marginLeft: 8 }}>({filteredTenants.length})</span>
+                <span className="super-card-subtitle">({filteredTenants.length})</span>
               </h3>
-              <button onClick={fetchTenants} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: '1.15rem', transition: 'transform 0.3s' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'rotate(180deg)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'rotate(0deg)'}
-                title="Actualizar">↻</button>
+              <button 
+                onClick={fetchTenants} 
+                className="super-refresh-btn"
+                title="Actualizar"
+              >
+                ↻
+              </button>
             </div>
 
             <FilterBar search={tenantSearch} onSearch={setTenantSearch} sort={tenantSort} onSort={setTenantSort} />
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div className="super-table-wrapper">
+              <table className="super-table">
                 <thead><tr>
                   {['ID', 'Subdominio', 'Nombre / NIT', 'Admin', 'Deployed', 'Estado', 'Editar', 'Abrir'].map(h => <TH key={h}>{h}</TH>)}
                 </tr></thead>
@@ -619,24 +628,24 @@ export default function SuperAdminPortal() {
                   {tenantLoad ? (
                     <tr><td colSpan="8" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-4)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                        <span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                        <span className="spinner-mini" style={{ width: 18, height: 18 }} />
                         Cargando...
                       </div>
                     </td></tr>
                   ) : filteredTenants.length === 0 ? (
                     <tr><td colSpan="8" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-4)' }}>{tenantSearch ? 'Sin resultados para esa búsqueda.' : 'Sin negocios registrados.'}</td></tr>
                   ) : filteredTenants.map(t => (
-                    <tr key={t.idnegocios}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      style={{ transition: 'background 0.15s' }}>
+                    <tr key={t.idnegocios} className="super-tr-hover">
                       <TD>
-                        <button onClick={e => copyId(t.idnegocios, e)} title="Copiar ID"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: copied === t.idnegocios ? '#dcfce7' : 'var(--surface-2)', border: `1px solid ${copied === t.idnegocios ? '#86efac' : 'var(--border)'}`, borderRadius: 7, padding: '3px 8px', cursor: 'pointer', fontSize: '0.79rem', fontWeight: 700, color: copied === t.idnegocios ? '#16a34a' : 'var(--text-3)', fontFamily: 'monospace', transition: 'all 0.2s' }}>
+                        <button 
+                          onClick={e => copyId(t.idnegocios, e)} 
+                          title="Copiar ID"
+                          className={`super-btn-copy ${copied === t.idnegocios ? 'super-btn-copy--success' : ''}`}
+                        >
                           {copied === t.idnegocios ? '✓' : '⎘'} #{t.idnegocios}
                         </button>
                       </TD>
-                      <TD><span style={{ fontWeight: 700, color: 'var(--primary)', fontFamily: 'monospace', fontSize: '0.88rem' }}>{t.dominio}</span></TD>
+                      <TD><span className="super-subdomain-tag">{t.dominio}</span></TD>
                       <TD>
                         <div style={{ fontWeight: 600 }}>{t.nombre}</div>
                         {t.nit && <div style={{ fontSize: '0.7rem', color: 'var(--text-4)', marginTop: 2 }}>NIT: {t.nit}</div>}
@@ -684,32 +693,33 @@ export default function SuperAdminPortal() {
 
         {/* ══════════ USUARIOS TAB ══════════ */}
         {tab === 'usuarios' && (
-          <div className="card animate-fade-in" style={{ padding: 0, overflow: 'hidden', borderRadius: 20 }}>
-            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
+          <div className="card super-main-card animate-fade-in">
+            <div className="super-card-header">
+              <h3 className="super-card-title">
                 Usuarios del sistema
-                <span style={{ color: 'var(--text-4)', fontWeight: 500, fontSize: '0.82rem', marginLeft: 8 }}>({filteredUsers.length})</span>
+                <span className="super-card-subtitle">({filteredUsers.length})</span>
               </h3>
-              <button onClick={fetchUsers}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: '1.15rem', transition: 'transform 0.3s' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'rotate(180deg)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'rotate(0deg)'}>↻</button>
+              <button 
+                onClick={fetchUsers}
+                className="super-refresh-btn"
+              >
+                ↻
+              </button>
             </div>
 
             <FilterBar
               search={userSearch} onSearch={setUserSearch}
               sort={userSort} onSort={setUserSort}
               extra={
-                <select value={userRolFilter} onChange={e => setUserRolFilter(e.target.value)}
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 9, padding: '4px 10px', fontSize: '0.82rem', cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-main)', height: 36 }}>
+                <select value={userRolFilter} onChange={e => setUserRolFilter(e.target.value)} className="super-select-small">
                   <option value="all">Todos los roles</option>
                   {ROL_OPTIONS.map(r => <option key={r.id} value={String(r.id)}>{r.label}</option>)}
                 </select>
               }
             />
 
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div className="super-table-wrapper">
+              <table className="super-table">
                 <thead><tr>
                   {['ID', 'Nombre', 'Email', 'Negocio', 'Rol', 'Super', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}
                 </tr></thead>
@@ -717,20 +727,20 @@ export default function SuperAdminPortal() {
                   {userLoad ? (
                     <tr><td colSpan="8" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-4)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-                        <span style={{ display: 'inline-block', width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                        <span className="spinner-mini" style={{ width: 18, height: 18 }} />
                         Cargando desde Supabase...
                       </div>
                     </td></tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr><td colSpan="8" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-4)' }}>{userSearch ? 'Sin resultados.' : 'Sin usuarios registrados.'}</td></tr>
                   ) : filteredUsers.map(u => (
-                    <tr key={u.idusuario}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      style={{ transition: 'background 0.15s' }}>
+                    <tr key={u.idusuario} className="super-tr-hover">
                       <TD>
-                        <button onClick={e => copyId(u.idusuario, e)} title="Copiar ID"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: copied === u.idusuario ? '#dcfce7' : 'var(--surface-2)', border: `1px solid ${copied === u.idusuario ? '#86efac' : 'var(--border)'}`, borderRadius: 7, padding: '3px 8px', cursor: 'pointer', fontSize: '0.79rem', fontWeight: 700, color: copied === u.idusuario ? '#16a34a' : 'var(--text-3)', fontFamily: 'monospace', transition: 'all 0.2s' }}>
+                        <button 
+                          onClick={e => copyId(u.idusuario, e)} 
+                          title="Copiar ID"
+                          className={`super-btn-copy ${copied === u.idusuario ? 'super-btn-copy--success' : ''}`}
+                        >
                           {copied === u.idusuario ? '✓' : '⎘'} #{u.idusuario}
                         </button>
                       </TD>

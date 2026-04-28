@@ -1,0 +1,329 @@
+/* ==========================================================
+   Layout.css — Premium v8.0
+   ========================================================== */
+
+.layout-root {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── Overlay móvil ── */
+.layout-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.6);
+  z-index: 99;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.layout-overlay.visible {
+  display: block;
+  animation: fadeIn 0.25s ease;
+}
+
+/* ── Sidebar wrapper ── */
+.layout-sidebar-wrapper {
+  width: 260px;
+  flex-shrink: 0;
+  height: 100vh;
+  position: relative;
+  z-index: 100;
+  transition: transform 0.32s cubic-bezier(0.32, 0, 0.67, 0);
+}
+
+/* ── Content area ── */
+.layout-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── Header ── */
+.layout-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 1rem;
+  z-index: 50;
+  position: relative;
+}
+
+/* Subtle shine line at bottom of header */
+.layout-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb), 0.15), transparent);
+}
+
+.layout-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.layout-hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.layout-hamburger:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.layout-route-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+}
+
+.layout-route-info {
+  min-width: 0;
+}
+
+.layout-route-info h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.025em;
+}
+
+.layout-route-info p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-4);
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.layout-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.layout-user-section {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.layout-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-strong);
+  opacity: 0.6;
+}
+
+.layout-logout-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  box-shadow: var(--shadow-xs);
+}
+
+.layout-logout-icon-btn:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: rgba(var(--danger-rgb), 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(var(--danger-rgb), 0.1);
+}
+
+.layout-logout-icon-btn svg {
+  transition: transform 0.2s var(--ease);
+}
+
+.layout-logout-icon-btn:hover svg {
+  transform: translateX(1px);
+}
+
+.layout-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.35rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+  box-shadow: var(--shadow-xs);
+}
+
+.layout-profile:hover {
+  background: var(--surface-2);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.layout-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--primary), var(--brand-700));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 10px var(--primary-light);
+}
+
+.layout-profile-info {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.layout-profile-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.layout-profile-role {
+  font-size: 0.65rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.2;
+}
+
+/* ── Main scrollable content ── */
+.layout-main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.layout-main::-webkit-scrollbar {
+  width: 5px;
+}
+
+.layout-main::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+
+.layout-main::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.layout-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.75rem 2rem 4rem;
+}
+
+/* Variante para páginas que gestionan su propio scroll interno (Agenda) */
+.layout-main--fill {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.layout-inner--fill {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0; /* Removed padding to let children manage their own edges */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add a wrapper class for content that needs internal padding even in fill mode */
+.layout-inner-content {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+  .layout-sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    transform: translateX(-100%);
+  }
+
+  .layout-sidebar-wrapper.open {
+    transform: translateX(0);
+  }
+
+  .layout-hamburger {
+    display: flex;
+  }
+
+  .layout-inner {
+    padding: 1.25rem 1rem 4rem;
+  }
+
+  .layout-profile-info {
+    display: none;
+  }
+}

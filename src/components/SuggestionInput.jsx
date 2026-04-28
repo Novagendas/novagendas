@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import './SuggestionInput.css';
 
 /**
  * Custom Suggestion Input
@@ -68,7 +69,7 @@ export default function SuggestionInput({
   };
 
   return (
-    <div className="suggestion-wrapper" ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+    <div className="suggestion-wrapper" ref={wrapperRef}>
       <input
         id={id}
         ref={inputRef}
@@ -88,41 +89,7 @@ export default function SuggestionInput({
       />
 
       {isOpen && filtered.length > 0 && (
-        <ul className="suggestion-dropdown" style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
-          background: 'var(--surface)',
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          boxShadow: 'var(--shadow-xl)',
-          zIndex: 9999,
-          listStyle: 'none',
-          padding: '4px',
-          margin: 0,
-          overflow: 'hidden',
-          animation: 'suggestionFadeIn 0.2s ease-out'
-        }}>
-          <style>{`
-            @keyframes suggestionFadeIn {
-              from { opacity: 0; transform: translateY(-8px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            .suggestion-item {
-              padding: 8px 12px;
-              border-radius: 8px;
-              font-size: 0.9rem;
-              font-weight: 500;
-              cursor: pointer;
-              color: var(--text-2);
-              transition: all 0.15s ease;
-            }
-            .suggestion-item:hover, .suggestion-item.active {
-              background: var(--primary-light);
-              color: var(--primary);
-            }
-          `}</style>
+        <ul className="suggestion-dropdown">
           {filtered.map((s, i) => (
             <li 
               key={i} 
