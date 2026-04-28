@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
-import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from '../../services/googleCalendar';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth } from '../../services/googleCalendar';
 import './Agenda.css';
 
 /* ─── Helpers ──────────────────────────────────────────── */
@@ -137,6 +137,31 @@ export default function Agenda({ user, tenant }) {
   /* ------ View state ------ */
   const [view, setView] = useState('week'); // 'day' | 'week' | 'month'
   const [pivot, setPivot] = useState(new Date());
+
+  /* ------ Google Calendar connection state ------ */
+  const [calConnected, setCalConnected] = useState(() => isCalendarConnected());
+
+  const handleCalSync = async () => {
+    if (calConnected) {
+      clearCalendarAuth();
+      setCalConnected(false);
+      showSnack('Desconectado de Google Calendar');
+    } else {
+      try {
+        await createCalendarEvent({
+          summary: 'Conexión probada',
+          description: 'Verificación de conexión desde NovaAgendas',
+          startDateTime: new Date().toISOString(),
+          endDateTime: new Date(Date.now() + 60000).toISOString(),
+          attendeeEmails: []
+        }).catch(() => null);
+        setCalConnected(isCalendarConnected());
+        if (isCalendarConnected()) showSnack('¡Conectado a Google Calendar!');
+      } catch {
+        setCalConnected(false);
+      }
+    }
+  };
 
   const [hoveredAppt, setHoveredAppt] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -344,8 +369,8 @@ export default function Agenda({ user, tenant }) {
 
   const headerTitle = (() => {
     const opts = { month: 'long', year: 'numeric' };
-    if (view === 'day') return pivot.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    if (view === 'week') return `Semana del ${weekDays[0].toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${weekDays[6].toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    if (view === 'day') return pivot.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+    if (view === 'week') return `${weekDays[0].toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })} — ${weekDays[6].toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })}`;
     if (view === 'month') return pivot.toLocaleDateString('es-CO', opts);
     return '';
   })();
@@ -725,7 +750,6 @@ export default function Agenda({ user, tenant }) {
           const isToday = ds === todayStr;
           return (
             <div key={i} className="week-header-cell" onClick={() => { setPivot(d); setView('day'); }}>
-              <div className="week-day-name">{DAY_LABELS[i]}</div>
               <div className={`week-day-number ${isToday ? 'today' : ''}`}>
                 {d.getDate()}
               </div>
@@ -789,11 +813,11 @@ export default function Agenda({ user, tenant }) {
                   const serviceNames = a.services?.map(s => s.nombre).join(', ') || 'Consulta General';
                   const apptColor = a.services?.[0]?.color || 'var(--primary)';
                   return (
-                    <div 
-                      key={a.id} 
+                    <div
+                      key={a.id}
                       className="month-appt"
                       style={{ background: apptColor }}
-                      onMouseEnter={e => { 
+                      onMouseEnter={e => {
                         const rect = e.currentTarget.getBoundingClientRect();
                         setHoveredAppt({ ...a, client, serviceNames, endTime: getEndTime(a) });
                         setMousePos({ x: rect.left + rect.width / 2, y: rect.top });
@@ -803,7 +827,7 @@ export default function Agenda({ user, tenant }) {
                       <span className="month-appt-text">
                         {client?.nombre || 'Paciente'} {client?.apellido || ''}
                       </span>
-                      <button 
+                      <button
                         className="month-appt-edit"
                         onClick={(e) => { e.stopPropagation(); startEdit(a); }}
                       >
@@ -812,6 +836,14 @@ export default function Agenda({ user, tenant }) {
                     </div>
                   );
                 })}
+                {dayAppts.length > 3 && (
+                  <button
+                    className="month-appt-more"
+                    onClick={e => { e.stopPropagation(); setPivot(day); setView('day'); }}
+                  >
+                    +{dayAppts.length - 3} más
+                  </button>
+                )}
               </div>
             );
           })}

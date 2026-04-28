@@ -61,6 +61,13 @@ export const clearCalendarAuth = () => {
   localStorage.removeItem(STORAGE_KEY);
 };
 
+export const isCalendarConnected = () => isValid() || loadCached();
+
+export const connectCalendar = async () => {
+  await requestToken();
+  return isValid();
+};
+
 const buildEvent = ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => ({
   summary,
   description,

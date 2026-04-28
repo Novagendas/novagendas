@@ -393,8 +393,28 @@
 /* Tags de información */
 .client-tags {
   display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.client-tags-row {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
+}
+
+.client-tags-row--email {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.client-tag--email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .client-tag {
