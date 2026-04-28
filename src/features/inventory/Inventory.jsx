@@ -2,6 +2,7 @@ import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import { useState, useEffect } from 'react';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
+import './Inventory.css';
 
 export default function Inventory({ user, tenant }) {
   const [products, setProducts] = useState([]);
@@ -183,18 +184,18 @@ export default function Inventory({ user, tenant }) {
   const stockPercent = (item) => Math.min(100, (item.cantidad / Math.max(item.cantidadminima * 2, 1)) * 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="inventory-container">
       
       {/* ── Page Header ── */}
       <div className="page-header">
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Inventario de Insumos</h2>
-          <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--text-4)', fontWeight: 500 }}>
+          <h2 className="inventory-header-title">Inventario de Insumos</h2>
+          <p className="inventory-header-subtitle">
             {products.length} productos registrados · {alertas} con stock bajo
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn btn-outline" onClick={() => setShowCatModal(true)} style={{ background: 'var(--surface-2)', border: '1px solid var(--border)' }}>
+        <div className="inventory-actions">
+          <button className="btn btn-outline btn-inventory-category" onClick={() => setShowCatModal(true)}>
              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
              Categorías
           </button>
@@ -206,9 +207,9 @@ export default function Inventory({ user, tenant }) {
       </div>
 
       {/* ── Main Inventory Table ── */}
-      <div className="card w-full" style={{ padding: 0, overflow: 'hidden', marginBottom: '4rem' }}>
-        <div style={{ padding: '1.25rem 1.5rem', background: 'var(--surface-2)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-2)' }}>Existencias actuales</span>
+      <div className="card w-full inventory-table-card">
+        <div className="inventory-table-header">
+          <span className="inventory-table-header-title">Existencias actuales</span>
           <span className={`badge ${alertas > 0 ? 'badge-danger' : 'badge-success'}`}>
              {alertas > 0 ? `${alertas} Alertas Críticas` : '✓ Stock Saludable'}
           </span>
@@ -216,21 +217,22 @@ export default function Inventory({ user, tenant }) {
 
         <div>
           {loading ? (
-            <div style={{ padding: '2rem' }}>
+            <div className="padded-xl">
               {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} className="skeleton" style={{ height: '60px', marginBottom: '1rem', opacity: 1 - (i * 0.15) }} />
               ))}
             </div>
           ) : products.length > 0 ? (
+            <div className="table-scroll-wrap">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Producto</th>
                   <th>Categoría</th>
                   <th>Valor Unitario</th>
-                  <th style={{ textAlign: 'center' }}>Nivel de Stock</th>
-                  <th style={{ textAlign: 'center' }}>Cantidad</th>
-                  <th style={{ textAlign: 'center' }}>Acciones</th>
+                  <th className="text-center">Nivel de Stock</th>
+                  <th className="text-center">Cantidad</th>
+                  <th className="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -241,27 +243,27 @@ export default function Inventory({ user, tenant }) {
                   const catName = categories.find(c => c.idcategoriaproducto === item.idcategoriaproducto)?.descripcion || 'General';
                   return (
                     <tr key={item.idproducto}>
-                      <td><span style={{ fontWeight: 700, color: 'var(--text)' }}>{item.nombre}</span></td>
+                      <td><span className="font-bold text-main">{item.nombre}</span></td>
                       <td><span className="badge badge-neutral">{catName}</span></td>
-                      <td><span style={{ fontWeight: 600 }}>{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.precio || 0)}</span></td>
-                      <td style={{ minWidth: 140 }}>
-                        <div style={{ background: 'var(--surface-3)', borderRadius: 99, height: 6, position: 'relative', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: barColor, borderRadius: 99, transition: 'width 0.5s var(--ease)' }} />
+                      <td><span className="font-semibold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.precio || 0)}</span></td>
+                      <td className="stock-level-container">
+                        <div className="stock-bar-bg">
+                          <div className="stock-bar-fill" style={{ width: `${pct}%`, background: barColor }} />
                         </div>
-                        <div style={{ fontSize: '0.65rem', color: 'var(--text-4)', fontWeight: 700, marginTop: 5, textAlign: 'center' }}>{Math.round(pct)}% del stock objetivo</div>
+                        <div className="stock-bar-label">{Math.round(pct)}% del stock objetivo</div>
                       </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '1.3rem', fontWeight: 900, color: isLow ? 'var(--danger)' : 'var(--text)' }}>{item.cantidad}</span>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-4)', fontWeight: 600 }}>mín: {item.cantidadminima}</span>
+                      <td>
+                        <div className="quantity-display">
+                          <span className="quantity-main" style={{ color: isLow ? 'var(--danger)' : 'var(--text)' }}>{item.cantidad}</span>
+                          <span className="quantity-min">mín: {item.cantidadminima}</span>
                         </div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                        <div className="inventory-row-actions">
                           <button onClick={() => startEdit(item)} className="btn btn-ghost btn-icon" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg></button>
-                          <div style={{ width: 1, background: 'var(--border)', margin: '0 0.25rem' }} />
-                          <button onClick={() => handleUpdateStock(item, -1)} className="btn btn-secondary btn-icon" style={{ padding: 0, width: 28, height: 28 }}>-</button>
-                          <button onClick={() => handleUpdateStock(item, 1)} className="btn btn-primary btn-icon" style={{ padding: 0, width: 28, height: 28 }}>+</button>
+                          <div className="inventory-action-separator" />
+                          <button onClick={() => handleUpdateStock(item, -1)} className="btn btn-secondary btn-icon btn-stock-adjust">-</button>
+                          <button onClick={() => handleUpdateStock(item, 1)} className="btn btn-primary btn-icon btn-stock-adjust">+</button>
                         </div>
                       </td>
                     </tr>
@@ -269,11 +271,12 @@ export default function Inventory({ user, tenant }) {
                 })}
               </tbody>
             </table>
+            </div>
           ) : (
-            <div className="empty-state" style={{ border: 'none', padding: '4rem' }}>
+            <div className="empty-state no-border padded-xl">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
-              <h4 style={{ margin: 0, color: 'var(--text-3)' }}>No hay insumos</h4>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>Agrega productos para comenzar el control de stock.</p>
+              <h4 className="empty-state-title">No hay insumos</h4>
+              <p className="empty-state-text">Agrega productos para comenzar el control de stock.</p>
             </div>
           )}
         </div>
@@ -282,34 +285,34 @@ export default function Inventory({ user, tenant }) {
       {/* ── Product Register/Edit Modal ── */}
       {showModal && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && cancelEdit()}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 480 }}>
+          <div className="modal-box animate-scale-in modal-sm">
             {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <div className="inventory-modal-header">
+              <div className="inventory-modal-header-content">
+                <div className="inventory-modal-icon glass">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>{editId ? 'Editar Insumo' : 'Nuevo Insumo'}</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>{saving ? 'Guardando existencias...' : 'Gestiona los datos técnicos del producto.'}</p>
+                  <h3 className="inventory-modal-title">{editId ? 'Editar Insumo' : 'Nuevo Insumo'}</h3>
+                  <p className="inventory-modal-subtitle">{saving ? 'Guardando existencias...' : 'Gestiona los datos técnicos del producto.'}</p>
                 </div>
               </div>
               {!saving && (
-                <button className="btn btn-ghost btn-icon" onClick={cancelEdit} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+                <button className="btn btn-ghost btn-icon btn-modal-close-glass" onClick={cancelEdit}>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                 </button>
               )}
             </div>
 
-            <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'var(--surface)' }}>
+            <form onSubmit={handleSubmit} className="inventory-form">
               <div className="input-group">
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Nombre del Producto</label>
+                <label className="inventory-input-label">Nombre del Producto</label>
                 <SuggestionInput 
                   placeholder="Ej. Agujas 30G" 
                   value={form.name} 
                   onChange={e => update('name', e.target.value)} 
                   required 
-                  style={{ borderRadius: '12px' }} 
+                  className="input-rounded" 
                   spellCheck={true} 
                   lang="es" 
                   suggestions={commonTerms} 
@@ -317,34 +320,34 @@ export default function Inventory({ user, tenant }) {
               </div>
 
               <div className="input-group">
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Categoría de Almacén</label>
-                <select className="input-field" value={form.category} onChange={e => update('category', e.target.value)} required style={{ borderRadius: '12px' }}>
+                <label className="inventory-input-label">Categoría de Almacén</label>
+                <select className="input-field input-rounded" value={form.category} onChange={e => update('category', e.target.value)} required>
                   {categories.map(c => <option key={c.idcategoriaproducto} value={c.descripcion}>{c.descripcion}</option>)}
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
+              <div className="inventory-grid-inputs">
                 <div className="input-group">
-                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Existencias</label>
-                  <input type="number" className="input-field" value={form.initial} onChange={e => update('initial', e.target.value)} required min="0" style={{ borderRadius: '12px' }} />
+                  <label className="inventory-input-label">Existencias</label>
+                  <input type="number" className="input-field input-rounded" value={form.initial} onChange={e => update('initial', e.target.value)} required min="0" />
                 </div>
                 <div className="input-group">
-                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Stock Mínimo</label>
-                  <input type="number" className="input-field" value={form.minStock} onChange={e => update('minStock', e.target.value)} required min="1" style={{ borderRadius: '12px' }} />
+                  <label className="inventory-input-label">Stock Mínimo</label>
+                  <input type="number" className="input-field input-rounded" value={form.minStock} onChange={e => update('minStock', e.target.value)} required min="1" />
                 </div>
               </div>
 
               <div className="input-group">
-                <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>Costo Unitario de Compra (COP)</label>
-                <input type="number" className="input-field" placeholder="0" value={form.price} onChange={e => update('price', e.target.value)} style={{ borderRadius: '12px' }} />
+                <label className="inventory-input-label">Costo Unitario de Compra (COP)</label>
+                <input type="number" className="input-field input-rounded" placeholder="0" value={form.price} onChange={e => update('price', e.target.value)} />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.75rem' }}>
-                <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={cancelEdit} disabled={saving}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', padding: '0.8rem', fontSize: '1rem', boxShadow: '0 8px 24px var(--primary-light)' }} disabled={saving}>
+              <div className="inventory-form-footer">
+                <button type="button" className="btn btn-outline flex-1 rounded-lg padded" onClick={cancelEdit} disabled={saving}>Cancelar</button>
+                <button type="submit" className="btn btn-primary btn-form-confirm" disabled={saving}>
                   {saving ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div className="spinner" style={{ width: '1.1rem', height: '1.1rem' }}></div>
+                    <div className="flex items-center gap-2">
+                      <div className="spinner-sm spinner"></div>
                       Guardando...
                     </div>
                   ) : 'Confirmar Cambios'}
@@ -352,7 +355,7 @@ export default function Inventory({ user, tenant }) {
               </div>
 
               {editId && (
-                <button type="button" onClick={() => handleDeleteProduct(editId)} style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', alignSelf: 'center', opacity: 0.7 }}>
+                <button type="button" onClick={() => handleDeleteProduct(editId)} className="btn-delete-link">
                   Eliminar permanentemente del inventario
                 </button>
               )}
@@ -364,33 +367,33 @@ export default function Inventory({ user, tenant }) {
       {/* ── Category Management Modal ── */}
       {showCatModal && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && setShowCatModal(false)}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 460 }}>
+          <div className="modal-box animate-scale-in modal-sm">
             {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg, var(--secondary) 0%, var(--secondary-hover) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem', borderRadius: '14px' }}>
+            <div className="inventory-modal-header secondary">
+              <div className="inventory-modal-header-content">
+                <div className="inventory-modal-icon glass">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Categorías</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>Familias de insumos.</p>
+                  <h3 className="inventory-modal-title">Categorías</h3>
+                  <p className="inventory-modal-subtitle">Familias de insumos.</p>
                 </div>
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowCatModal(false)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+              <button className="btn btn-ghost btn-icon btn-modal-close-glass" onClick={() => setShowCatModal(false)}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
 
-            <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--surface)' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div className="inventory-form gap-lg">
+              <div className="category-list">
                 {categories.map(c => (
-                  <div key={c.idcategoriaproducto} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', background: 'var(--bg-subtle)', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text)' }}>{c.descripcion}</span>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={() => { setEditCatId(c.idcategoriaproducto); setCatName(c.descripcion); }} className="btn btn-ghost btn-icon" style={{ width: 32, height: 32, padding: 0 }}>
+                  <div key={c.idcategoriaproducto} className="category-item">
+                    <span className="category-name">{c.descripcion}</span>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditCatId(c.idcategoriaproducto); setCatName(c.descripcion); }} className="btn btn-ghost btn-icon padded-none size-32">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                       </button>
-                      <button onClick={() => handleDeleteCategory(c.idcategoriaproducto)} className="btn btn-ghost btn-icon" style={{ width: 32, height: 32, padding: 0, color: 'var(--danger)' }}>
+                      <button onClick={() => handleDeleteCategory(c.idcategoriaproducto)} className="btn btn-ghost btn-icon padded-none size-32 text-danger">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                       </button>
                     </div>
@@ -398,22 +401,22 @@ export default function Inventory({ user, tenant }) {
                 ))}
               </div>
 
-              <form onSubmit={handleSaveCategory} style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <label style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)' }}>
+              <form onSubmit={handleSaveCategory} className="category-new-form">
+                <label className="inventory-input-label font-black">
                   {editCatId ? 'Editando Categoría' : 'Añadir Nueva Categoría'}
                 </label>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className="flex gap-3">
                   <SuggestionInput 
                     placeholder="Nombre..." 
                     value={catName} 
                     onChange={e => setCatName(e.target.value)} 
                     required 
-                    style={{ flex: 1, borderRadius: '12px' }} 
+                    className="flex-1 input-rounded" 
                     spellCheck={true} 
                     lang="es" 
                     suggestions={commonTerms.filter(t => products.map(p => p.nombre).includes(t) === false)} 
                   />
-                  <button type="submit" className="btn btn-primary" disabled={saving} style={{ borderRadius: '12px', padding: '0 1.5rem' }}>
+                  <button type="submit" className="btn btn-primary rounded-lg px-6" disabled={saving}>
                     {editCatId ? 'Guardar' : 'Añadir'}
                   </button>
                 </div>
@@ -425,17 +428,10 @@ export default function Inventory({ user, tenant }) {
 
       {/* ── Custom Alert / Confirm Modal (Unified Style) ── */}
       {alertConfig.show && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={closeAlert}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
-              <div style={{ 
-                background: alertConfig.type === 'confirm' ? 'var(--danger-light)' : 'var(--primary-light)', 
-                color: alertConfig.type === 'confirm' ? 'var(--danger)' : 'var(--primary)', 
-                width: '72px', height: '72px', borderRadius: '50%', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                margin: '0 auto 1.5rem',
-                boxShadow: `0 0 0 8px ${alertConfig.type === 'confirm' ? 'var(--danger-light)' : 'var(--primary-light)'}80`
-              }}>
+        <div className="modal-overlay high-z" onClick={closeAlert}>
+          <div className="modal-box animate-scale-in modal-xs" onClick={e => e.stopPropagation()}>
+            <div className="padded-xl centered">
+              <div className={`alert-icon-wrapper ${alertConfig.type === 'confirm' ? 'confirm' : 'alert'}`}>
                 {alertConfig.type === 'confirm' ? (
                   <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
                 ) : (
@@ -443,14 +439,14 @@ export default function Inventory({ user, tenant }) {
                 )}
               </div>
               
-              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>{alertConfig.title}</h3>
-              <p style={{ margin: '0 0 2rem', fontSize: '1rem', color: 'var(--text-4)', lineHeight: 1.5, fontWeight: 500 }}>{alertConfig.message}</p>
+              <h3 className="alert-title">{alertConfig.title}</h3>
+              <p className="alert-message">{alertConfig.message}</p>
               
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <div className="flex gap-4 centered">
                 {alertConfig.type === 'confirm' ? (
                   <>
-                    <button className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={closeAlert}>Cancelar</button>
-                    <button className="btn btn-danger" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem', background: 'var(--danger)', boxShadow: '0 8px 20px var(--danger-light)' }} 
+                    <button className="btn btn-outline flex-1 rounded-lg padded" onClick={closeAlert}>Cancelar</button>
+                    <button className="btn btn-danger flex-1 rounded-lg padded shadow-danger" 
                       onClick={() => {
                         const onConfirm = alertConfig.onConfirm;
                         closeAlert();
@@ -461,7 +457,7 @@ export default function Inventory({ user, tenant }) {
                     </button>
                   </>
                 ) : (
-                  <button className="btn btn-primary" style={{ width: '100%', borderRadius: '14px', padding: '0.8rem', boxShadow: '0 8px 24px var(--primary-light)' }} onClick={closeAlert}>
+                  <button className="btn btn-primary w-full rounded-lg padded shadow-primary" onClick={closeAlert}>
                     Entendido
                   </button>
                 )}
@@ -473,10 +469,7 @@ export default function Inventory({ user, tenant }) {
 
       {/* ── Snackbar ── */}
       {snackbar.show && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 12, boxShadow: 'var(--shadow-lg)', fontWeight: 700, animation: 'slideInBottom 0.3s ease-out' }}>
-          <style>{`
-            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-          `}</style>
+        <div className={`inventory-snackbar ${snackbar.type}`}>
           {snackbar.message}
         </div>
       )}

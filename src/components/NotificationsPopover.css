@@ -1,0 +1,247 @@
+/* ==========================================================
+   NotificationsPopover.css — Professional Refactor
+   ========================================================== */
+
+.notif-container {
+  position: relative;
+}
+
+.notif-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.3s var(--ease);
+  color: var(--text-3);
+}
+
+.notif-btn:hover, .notif-btn--open {
+  background: var(--surface-overlay);
+  color: var(--text);
+  border-color: var(--border-light);
+}
+
+.notif-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  background: var(--danger);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--surface);
+  animation: pulse 2s infinite;
+}
+
+.notif-popover {
+  position: absolute;
+  top: 100%;
+  right: -10px;
+  margin-top: 0.75rem;
+  width: 360px;
+  padding: 0;
+  overflow: hidden;
+  z-index: 1000;
+  box-shadow: var(--shadow-xl);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+}
+
+.notif-header {
+  background: rgba(var(--primary-rgb), 0.03);
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notif-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.notif-mark-read {
+  border: 1px solid var(--primary-light);
+  background: var(--primary-light);
+  border-radius: 10px;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.65rem;
+  color: var(--primary);
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s var(--ease);
+}
+
+.notif-mark-read:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.notif-scroll {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notif-loading, .notif-empty {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-4);
+  font-size: 0.9rem;
+}
+
+.notif-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.notif-item {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: background 0.2s ease;
+  cursor: default;
+}
+
+.notif-item:hover {
+  background: rgba(var(--primary-rgb), 0.02);
+}
+
+.notif-item:last-child {
+  border-bottom: none;
+}
+
+.notif-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.notif-icon--create { background: var(--success-light); color: var(--success); }
+.notif-icon--delete { background: var(--danger-light);  color: var(--danger); }
+.notif-icon--update { background: var(--primary-light); color: var(--primary); }
+
+.notif-content {
+  flex: 1;
+}
+
+.notif-desc {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+.notif-date {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-4);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.notif-action-btn {
+  border: none;
+  background: var(--bg-subtle);
+  color: var(--text-4);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.notif-action-btn:hover {
+  background: var(--border);
+  color: var(--text-2);
+  transform: scale(1.1);
+}
+
+.notif-footer {
+  background: rgba(var(--primary-rgb), 0.03);
+  padding: 0.85rem;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.notif-footer button {
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* ── Historial Modal ── */
+.notif-modal-header {
+  padding: 1.5rem 2.5rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.notif-modal-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.notif-history-overlay {
+  z-index: 10001;
+}
+
+.notif-history-modal {
+  max-width: 900px;
+  width: 95%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.notif-history-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.notif-table-date {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.notif-table-desc {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}

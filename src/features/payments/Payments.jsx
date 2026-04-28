@@ -1,5 +1,6 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import { useState, useEffect, useRef } from 'react';
+import './Payments.css';
 
 const METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / Daviplata'];
 
@@ -42,64 +43,51 @@ const ClientSearchSelect = ({ clients, value, onChange }) => {
   const selected = clients.find(c => String(c.idcliente) === String(value));
 
   return (
-    <div ref={wrapRef} style={{ position: 'relative' }}>
+    <div ref={wrapRef} className="client-search-wrapper">
       <div
         onClick={() => setIsOpen(o => !o)}
-        style={{
-          background: 'var(--surface)', border: `1.5px solid ${isOpen ? 'var(--primary)' : 'var(--border-strong)'}`,
-          borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center',
-          gap: '0.75rem', cursor: 'pointer', transition: 'all 0.2s',
-          boxShadow: isOpen ? '0 0 0 4px var(--primary-light)' : 'var(--shadow-sm)'
-        }}
+        className="client-search-trigger"
+        style={{ border: `1.5px solid ${isOpen ? 'var(--primary)' : 'var(--border-strong)'}`, boxShadow: isOpen ? '0 0 0 4px var(--primary-light)' : 'var(--shadow-sm)' }}
       >
-        <span style={{ fontSize: '1.1rem' }}>👤</span>
-        <div style={{ flex: 1, color: selected ? 'var(--text)' : 'var(--text-5)', fontWeight: selected ? 700 : 500, fontSize: '0.92rem' }}>
+        <span className="client-search-icon-text">👤</span>
+        <div className="client-search-placeholder" style={{ color: selected ? 'var(--text)' : 'var(--text-5)', fontWeight: selected ? 700 : 500 }}>
           {selected ? `${selected.nombre} ${selected.apellido}` : 'Busca un paciente...'}
         </div>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="3" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}><polyline points="6 9 12 15 18 9" /></svg>
       </div>
 
       {isOpen && (
-        <div className="animate-scale-in" style={{
-          position: 'absolute', top: '100%', left: 0, right: 0,
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: '16px', marginTop: '0.5rem', boxShadow: 'var(--shadow-xl)',
-          zIndex: 3000, overflow: 'hidden'
-        }}>
-          <div style={{ padding: '0.75rem', borderBottom: '1px solid var(--border)', background: 'var(--bg-subtle)' }}>
-            <div style={{ position: 'relative' }}>
+        <div className="client-search-dropdown animate-scale-in">
+          <div className="client-search-header">
+            <div className="client-search-input-box">
               <input
                 autoFocus
                 type="text"
                 placeholder="Escribe nombre o cédula..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="input-field"
-                style={{ padding: '0.55rem 1rem 0.55rem 2.25rem', fontSize: '0.87rem', borderRadius: '10px', border: '1.5px solid var(--border-strong)' }}
+                className="input-field client-search-input"
               />
-              <svg style={{ position: 'absolute', left: '0.7rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+              <svg className="client-search-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
             </div>
           </div>
-          <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+          <div className="client-search-results">
             {filtered.length > 0 ? filtered.map(c => (
               <div
                 key={c.idcliente}
+                className="client-result-item"
                 onClick={() => { onChange(String(c.idcliente)); setIsOpen(false); setSearch(''); }}
                 style={{
-                  padding: '0.8rem 1.1rem', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
                   background: String(value) === String(c.idcliente) ? 'var(--primary-light)' : 'transparent',
-                  color: String(value) === String(c.idcliente) ? 'var(--primary)' : 'var(--text-2)',
-                  transition: 'all 0.15s ease', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                  color: String(value) === String(c.idcliente) ? 'var(--primary)' : 'var(--text-2)'
                 }}
-                onMouseEnter={e => { if (String(value) !== String(c.idcliente)) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
-                onMouseLeave={e => { if (String(value) !== String(c.idcliente)) e.currentTarget.style.background = 'transparent'; }}
               >
                 <span>{c.nombre} {c.apellido}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>CC {c.cedula}</span>
+                <span className="client-result-id">CC {c.cedula}</span>
               </div>
             )) : (
-              <div style={{ padding: '1.75rem', textAlign: 'center', color: 'var(--text-4)', fontSize: '0.87rem' }}>
-                <div style={{ fontSize: '1.3rem', marginBottom: '0.4rem' }}>🔍</div>
+              <div className="client-no-results">
+                <div className="client-no-results-emoji">🔍</div>
                 No se encontraron resultados
               </div>
             )}
@@ -242,13 +230,13 @@ export default function Payments({ user, tenant }) {
   }).reduce((s, p) => s + Number(p.monto), 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div className="payments-container">
 
       {/* ── Header ── */}
-      <div className="page-header">
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Registro de Pagos</h2>
-          <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: 'var(--text-4)', fontWeight: 500 }}>{payments.length} transacciones registradas</p>
+      <div className="payments-header">
+        <div className="payments-title">
+          <h2>Registro de Pagos</h2>
+          <p className="payments-subtitle">{payments.length} transacciones registradas</p>
         </div>
         <button className="btn btn-primary" onClick={() => { fetchData(); setShowModal(true); }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
@@ -257,7 +245,7 @@ export default function Payments({ user, tenant }) {
       </div>
 
       {/* ── Summary Cards ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+      <div className="payments-summary-grid">
         {[
           {
             label: 'Ingresos Totales', value: fmt(totalRevenue), color: 'var(--success)',
@@ -275,45 +263,39 @@ export default function Payments({ user, tenant }) {
             icon: <><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></>,
           },
         ].map((s, i) => (
-          <div key={i} className="card-stat animate-fade-in" style={{ animationDelay: `${i * 65}ms` }}>
-            {/* Decorative bubbles */}
-            <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: `${s.color}0D`, pointerEvents: 'none' }} />
-            <div style={{ position: 'absolute', bottom: -10, right: 20, width: 55, height: 55, borderRadius: '50%', background: `${s.color}07`, pointerEvents: 'none' }} />
-            {/* Icon */}
-            <div style={{ width: 40, height: 40, borderRadius: 'var(--radius)', background: `${s.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.85rem', boxShadow: `0 0 0 6px ${s.color}07` }}>
+          <div key={i} className="card-stat payment-stat-card animate-fade-in" style={{ animationDelay: `${i * 65}ms`, '--stat-color': s.color, '--bubble-color-1': `${s.color}0D`, '--bubble-color-2': `${s.color}07`, '--icon-bg': `${s.color}14`, '--icon-shadow': `${s.color}07` }}>
+            <div className="stat-bubble-lg" />
+            <div className="stat-bubble-sm" />
+            <div className="stat-icon-wrapper">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{s.icon}</svg>
             </div>
-            <div style={{ fontSize: '1.9rem', fontWeight: 900, color: s.color, letterSpacing: '-0.03em', lineHeight: 1, marginBottom: '0.25rem' }}>{s.value}</div>
-            <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-2)', marginBottom: '0.2rem' }}>{s.label}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-4)', fontWeight: 500 }}>{s.sub}</div>
+            <div className="stat-value">{s.value}</div>
+            <div className="stat-label">{s.label}</div>
+            <div className="stat-subtext">{s.sub}</div>
           </div>
         ))}
       </div>
 
       {methods.length === 0 && !loading && (
-        <div className="alert alert-warning animate-fade-in" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
-          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Métodos de pago no configurados</h4>
-          <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem' }}>Por favor póngase en contacto con soporte para la configuración de sus métodos de pago.</p>
+        <div className="alert alert-warning animate-fade-in">
+          <h4>Métodos de pago no configurados</h4>
+          <p>Por favor póngase en contacto con soporte para la configuración de sus métodos de pago.</p>
         </div>
       )}
-      <div style={{ display: 'flex', gap: '0.4rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '0.3rem', width: 'fit-content' }}>
+      <div className="payments-filter-bar">
         {['all', ...methods.map(m => m.tipo)].map(m => (
           <button key={m} onClick={() => setFilter(m)}
-            style={{
-              padding: '0.35rem 0.9rem', borderRadius: 8, border: 'none', cursor: 'pointer',
-              background: filter === m ? 'var(--surface)' : 'transparent',
-              color: filter === m ? 'var(--text)' : 'var(--text-3)',
-              fontWeight: filter === m ? 700 : 500, fontSize: '0.82rem',
-              fontFamily: 'var(--font-main)', boxShadow: filter === m ? 'var(--shadow-xs)' : 'none',
-              transition: 'var(--transition)',
-            }}>{m === 'all' ? '📊 Todos' : `${METHOD_ICONS[m] || '💰'} ${m}`}</button>
+            className={`filter-btn ${filter === m ? 'filter-btn--active' : ''}`}
+          >
+            {m === 'all' ? '📊 Todos' : `${METHOD_ICONS[m] || '💰'} ${m}`}
+          </button>
         ))}
       </div>
 
       {/* ── Payments Table ── */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '4rem' }}>
+      <div className="card payments-table-card">
         {filtered.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
@@ -322,24 +304,24 @@ export default function Payments({ user, tenant }) {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan="7" style={{ padding: '4rem', textAlign: 'center', color: 'var(--primary)' }}>Cargando transacciones...</td></tr>
+                  <tr><td colSpan="7" className="table-loader">Cargando transacciones...</td></tr>
                 ) : filtered.map(p => {
                   const meth = methods.find(m => m.idmetodopago === p.idmetodopago);
                   const client = clients.find(c => c.idcliente === p.idcliente);
                   return (
                     <tr key={p.idpagos}>
                       <td>{p.fecha ? parseDate(p.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
-                      <td><span style={{ fontWeight: 800 }}>{client?.nombre || 'Desconocido'}</span></td>
-                      <td><span style={{ color: 'var(--text-4)', fontSize: '0.82rem' }}>{p.servicios?.nombre || '—'}</span></td>
+                      <td><span className="payment-client-name">{client?.nombre || 'Desconocido'}</span></td>
+                      <td><span className="payment-service-name">{p.servicios?.nombre || '—'}</span></td>
                       <td>
-                        <span className="badge badge-neutral" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: 'fit-content' }}>
+                        <span className="badge badge-neutral payment-method-badge">
                           {METHOD_ICONS[meth?.tipo] || '💰'} {meth?.tipo || '—'}
                         </span>
                       </td>
-                      <td><span style={{ fontWeight: 800, color: 'var(--success)' }}>{fmt(p.monto)}</span></td>
+                      <td><span className="payment-amount">{fmt(p.monto)}</span></td>
                       <td><span className="badge badge-success">Pagado</span></td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(p.idpagos)} style={{ color: 'var(--text-4)' }}>
+                      <td className="table-actions">
+                        <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(p.idpagos)}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                         </button>
                       </td>
@@ -350,10 +332,10 @@ export default function Payments({ user, tenant }) {
             </table>
           </div>
         ) : (
-          <div className="empty-state" style={{ border: 'none', padding: '4rem' }}>
+          <div className="empty-state">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-            <h4 style={{ margin: 0, color: 'var(--text-3)' }}>Sin transacciones</h4>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-4)' }}>Registra el primer pago usando el botón de arriba.</p>
+            <h4>Sin transacciones</h4>
+            <p>Registra el primer pago usando el botón de arriba.</p>
           </div>
         )}
       </div>
@@ -361,71 +343,69 @@ export default function Payments({ user, tenant }) {
       {/* ── Register Payment Modal ── */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 480 }}>
+          <div className="modal-box animate-scale-in payment-modal-box">
             {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)', padding: '1.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '0.6rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <div className="payment-modal-header" style={{ '--payment-modal-bg': 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' }}>
+              <div className="payment-modal-inner-row">
+                <div className="payment-modal-icon-box">
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>Registrar Pago</h3>
+                  <h3 className="payment-modal-title">Registrar Pago</h3>
                   {form.amount ? (
-                    <div style={{ marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#fff', fontWeight: 700, background: 'rgba(255,255,255,0.2)', padding: '0.2rem 0.6rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div className="payment-modal-summary-pill">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
                       {fmt(parseInt(form.amount))} vía {form.method}
                     </div>
                   ) : (
-                    <p style={{ margin: 0, fontSize: '0.75rem', color: 'rgba(255,255,255,0.8)', fontWeight: 500 }}>Ingresa los detalles del ingreso.</p>
+                    <p className="payment-modal-hint">Ingresa los detalles del ingreso.</p>
                   )}
                 </div>
               </div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)} style={{ color: '#fff', background: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}>
+              <button className="btn btn-ghost btn-icon payment-modal-close-btn" onClick={() => setShowModal(false)}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ background: 'var(--surface)', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
-              <div className="modal-scroll-area" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="payment-modal-scroll">
                 <div className="input-group">
-                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)', fontWeight: 700 }}>Paciente / Cliente</label>
+                  <label className="input-label">Paciente / Cliente</label>
                   <ClientSearchSelect clients={clients} value={form.clientId} onChange={v => update('clientId', v)} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                <div className="grid-2">
                   <div className="input-group">
-                    <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)', fontWeight: 700 }}>Servicio Prestado</label>
-                    <select className="input-field" value={form.serviceId} onChange={e => handleServiceChange(e.target.value)} style={{ borderRadius: '12px' }}>
+                    <label className="input-label">Servicio Prestado</label>
+                    <select className="input-field" value={form.serviceId} onChange={e => handleServiceChange(e.target.value)}>
                       <option value="">Sin especificar</option>
                       {services.map(s => <option key={s.idservicios} value={s.idservicios}>{s.nombre}</option>)}
                     </select>
                   </div>
                   <div className="input-group">
-                    <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)', fontWeight: 700 }}>Método de Pago</label>
-                    <select className="input-field" value={form.method} onChange={e => update('method', e.target.value)} style={{ borderRadius: '12px' }}>
+                    <label className="input-label">Método de Pago</label>
+                    <select className="input-field" value={form.method} onChange={e => update('method', e.target.value)}>
                       {methods.map(m => <option key={m.idmetodopago} value={m.tipo}>{m.tipo}</option>)}
                     </select>
                   </div>
                 </div>
 
-                <div className="input-group" style={{ background: 'var(--bg-subtle)', padding: '1.25rem', borderRadius: '20px', border: '1px solid var(--border)' }}>
-                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)', fontWeight: 700 }}>Monto Cobrado (COP)</label>
-                  <div style={{ position: 'relative' }}>
-                    <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontWeight: 800, color: 'var(--text-3)' }}>$</span>
-                    <input type="number" className="input-field" placeholder="0" value={form.amount} onChange={e => update('amount', e.target.value)} required min="0" style={{ borderRadius: '12px', paddingLeft: '2.5rem', fontSize: '1.25rem', fontWeight: 900 }} />
+                <div className="payment-amount-box">
+                  <label className="input-label">Monto Cobrado (COP)</label>
+                  <div className="amount-input-wrapper">
+                    <span className="amount-currency-symbol">$</span>
+                    <input type="number" className="input-field amount-input" placeholder="0" value={form.amount} onChange={e => update('amount', e.target.value)} required min="0" />
                   </div>
                 </div>
 
                 <div className="input-group">
-                  <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-4)', fontWeight: 700 }}>Nota u Observación (Opcional)</label>
-                  <input className="input-field" placeholder="Ej. Descuento aplicado..." value={form.note} onChange={e => update('note', e.target.value)} style={{ borderRadius: '12px' }} />
+                  <label className="input-label">Nota u Observación (Opcional)</label>
+                  <input className="input-field" placeholder="Ej. Descuento aplicado..." value={form.note} onChange={e => update('note', e.target.value)} />
                 </div>
 
-
-
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                  <button type="button" className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', height: '52px', fontWeight: 700 }} onClick={() => setShowModal(false)}>Cancelar</button>
-                  <button type="submit" className="btn btn-primary" style={{ flex: 2, borderRadius: '14px', height: '52px', fontSize: '1rem', fontWeight: 800, boxShadow: '0 8px 24px var(--primary-light)' }}>Confirmar Pago</button>
+                <div className="modal-actions">
+                  <button type="button" className="btn btn-outline btn-flex-1" onClick={() => setShowModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary btn-flex-2">Confirmar Pago</button>
                 </div>
               </div>
             </form>
@@ -436,17 +416,17 @@ export default function Payments({ user, tenant }) {
       {/* ── Delete Confirm Modal ── */}
       {deleteTarget && (
         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="modal-box animate-scale-in" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '2.5rem 2rem', textAlign: 'center' }}>
-              <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+          <div className="modal-box animate-scale-in delete-modal-box" onClick={e => e.stopPropagation()}>
+            <div className="modal-content-confirm">
+              <div className="confirm-icon-wrapper danger">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
               </div>
-              <h3 style={{ margin: '0 0 0.75rem', fontSize: '1.5rem', fontWeight: 800 }}>¿Eliminar pago?</h3>
-              <p style={{ margin: '0 0 2rem', fontSize: '1rem', color: 'var(--text-4)', lineHeight: 1.5 }}>Esta acción es irreversible y afectará los reportes financieros.</p>
+              <h3 className="confirm-title">¿Eliminar pago?</h3>
+              <p className="confirm-text">Esta acción es irreversible y afectará los reportes financieros.</p>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <button className="btn btn-outline" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem' }} onClick={() => setDeleteTarget(null)}>Cancelar</button>
-                <button className="btn btn-danger" style={{ flex: 1, borderRadius: '14px', padding: '0.8rem', background: 'var(--danger)', boxShadow: '0 8px 20px var(--danger-light)' }} onClick={() => handleDelete(deleteTarget)}>Sí, eliminar</button>
+              <div className="modal-actions">
+                <button className="btn btn-outline btn-flex-1" onClick={() => setDeleteTarget(null)}>Cancelar</button>
+                <button className="btn btn-danger btn-flex-1" onClick={() => handleDelete(deleteTarget)}>Sí, eliminar</button>
               </div>
             </div>
           </div>
@@ -454,10 +434,7 @@ export default function Payments({ user, tenant }) {
       )}
       {/* ── Snackbar ── */}
       {snackbar.show && (
-        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 10000, background: snackbar.type === 'success' ? '#10b981' : '#ef4444', color: '#fff', padding: '0.75rem 1.5rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', transform: 'translateY(0)', animation: 'slideInBottom 0.3s ease-out' }}>
-          <style>{`
-            @keyframes slideInBottom { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-          `}</style>
+        <div className={`payment-snackbar payment-snackbar--${snackbar.type}`}>
           {snackbar.type === 'success' ? '✓' : '✕'} {snackbar.message}
         </div>
       )}

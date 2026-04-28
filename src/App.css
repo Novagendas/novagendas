@@ -1,0 +1,185 @@
+/* ==========================================================
+   App.css — Refactor v7.0 Professional
+   ========================================================== */
+
+/* ── Loading Screen ── */
+.loading-screen {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, var(--bg) 0%, var(--surface) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.loading-logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 40px var(--primary-glow);
+  animation: ng-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.loading-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loading-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-brand {
+  font-size: 1.75rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: -0.05em;
+  margin: 0;
+  text-align: center;
+}
+
+.loading-tagline {
+  font-size: 0.75rem;
+  color: var(--text-4);
+  font-weight: 800;
+  margin: 0.25rem 0 0;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.loading-bar-wrapper {
+  width: 200px;
+  height: 4px;
+  background: var(--border-light);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.loading-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
+  background-size: 200% 100%;
+  animation: ng-bar 1.5s linear infinite;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0.3;
+  animation: ng-dot 1.2s ease-in-out infinite;
+}
+
+.loading-dot:nth-child(1) { animation-delay: 0s; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+.hidden-img {
+  display: none !important;
+}
+
+/* ── Animations ── */
+@keyframes ng-pulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50%       { transform: scale(1.1); filter: brightness(1.2); }
+}
+
+@keyframes ng-bar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes ng-dot {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50%       { transform: scale(1.5); opacity: 1; }
+}
+
+/* ── Snackbar global ── */
+.snackbar {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 10000;
+  color: #fff;
+  padding: 1rem 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: slideInBottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(10px);
+}
+
+.snackbar--success { background: rgba(16, 185, 129, 0.95); border: 1px solid rgba(255,255,255,0.1); }
+.snackbar--error   { background: rgba(239, 68, 68, 0.95); border: 1px solid rgba(255,255,255,0.1); }
+
+@keyframes slideInBottom {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Not Found Screen ── */
+.not-found-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: var(--bg);
+  padding: 2rem;
+}
+
+.not-found-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-light);
+  padding: 3.5rem;
+  border-radius: 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: var(--shadow-xl);
+}
+
+.not-found-card h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.not-found-card p {
+  margin: 0;
+  color: var(--text-3);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.btn-full {
+  width: 100%;
+}

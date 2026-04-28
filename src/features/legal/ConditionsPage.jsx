@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ThemeToggle from '../../components/ThemeToggle';
+import './Legal.css';
 
 const LAST_UPDATED = '22 de abril de 2026';
 
@@ -8,7 +9,7 @@ const sections = [
     id: 'suscripcion',
     label: 'Suscripción y Pagos',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
       </svg>
     ),
@@ -39,7 +40,7 @@ const sections = [
     id: 'uso',
     label: 'Condiciones de Uso',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
       </svg>
     ),
@@ -70,7 +71,7 @@ const sections = [
     id: 'soporte',
     label: 'Soporte y Garantías',
     icon: (
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
       </svg>
     ),
@@ -97,129 +98,111 @@ const sections = [
 
 export default function ConditionsPage() {
   const [activeSection, setActiveSection] = useState('suscripcion');
-
   const current = sections.find(s => s.id === activeSection);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', fontFamily: 'var(--font-main)' }}>
-
+    <div className="legal-page">
       {/* Header */}
-      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0.85rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10, backdropFilter: 'blur(10px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, overflow: 'hidden' }}>
-              <img src="/logoclaro.jpeg" alt="NovaAgendas" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      <header className="legal-header">
+        <div className="legal-logo-box">
+          <a href="/" className="legal-logo-link">
+            <div className="legal-logo-img-wrapper">
+              <img src="/logoclaro.jpeg" alt="NovaAgendas Logo" />
             </div>
-            <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text)' }}>NovaAgendas</span>
+            <span className="legal-logo-text">NovaAgendas</span>
           </a>
-          <span style={{ color: 'var(--border)', fontSize: '1.2rem' }}>/</span>
-          <span style={{ color: 'var(--text-4)', fontSize: '0.85rem', fontWeight: 600 }}>Condiciones de Servicio</span>
+          <span className="legal-breadcrumb-sep">/</span>
+          <span className="legal-breadcrumb-current">Condiciones de Servicio</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <ThemeToggle style={{ position: 'relative' }} />
-          <a href="/terminos" style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600, textDecoration: 'none' }}>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <ThemeToggle />
+          <a href="/terminos" style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 800, textDecoration: 'none', letterSpacing: '0.02em' }}>
             ← Términos y Privacidad
           </a>
         </div>
-      </div>
+      </header>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', padding: '4rem 2rem', textAlign: 'center' }}>
-        <div style={{ maxWidth: 640, margin: '0 auto' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 99, padding: '0.4rem 1rem', fontSize: '0.78rem', fontWeight: 700, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1.5rem' }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            Actualizado el {LAST_UPDATED}
-          </div>
-          <h1 style={{ margin: '0 0 1rem', fontSize: '2.4rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
-            Condiciones de Servicio
-          </h1>
-          <p style={{ margin: 0, fontSize: '1.05rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.7 }}>
-            Conoce las condiciones bajo las cuales ofrecemos nuestra plataforma de agendamiento para negocios de salud y bienestar.
-          </p>
+      {/* Hero Section */}
+      <section className="legal-hero legal-hero--green">
+        <div className="legal-hero-badge">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+          Actualizado el {LAST_UPDATED}
         </div>
-      </div>
+        <h1>Condiciones de Servicio</h1>
+        <p>
+          Conoce las condiciones bajo las cuales ofrecemos nuestra plataforma de agendamiento para negocios de salud y bienestar en Colombia.
+        </p>
+      </section>
 
-      {/* Content */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '3rem 2rem', display: 'flex', gap: '2.5rem', alignItems: 'flex-start' }}>
-
-        {/* Sidebar nav */}
-        <div style={{ width: 240, flexShrink: 0, position: 'sticky', top: '5rem' }}>
-          <div className="card" style={{ padding: '0.5rem', borderRadius: 16 }}>
+      {/* Main Content */}
+      <main className="legal-container">
+        {/* Navigation Sidebar */}
+        <aside className="legal-sidebar">
+          <div className="card legal-nav-card">
             {sections.map(s => (
               <button
                 key={s.id}
                 onClick={() => setActiveSection(s.id)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', textAlign: 'left',
-                  padding: '0.75rem 1rem', borderRadius: 12, border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--font-main)', fontSize: '0.87rem', fontWeight: 700,
-                  background: activeSection === s.id ? 'rgba(5,150,105,0.08)' : 'transparent',
-                  color: activeSection === s.id ? '#059669' : 'var(--text-3)',
-                  transition: 'all 0.15s',
-                  marginBottom: '0.25rem',
-                }}>
-                <span style={{ color: activeSection === s.id ? '#059669' : 'var(--text-4)' }}>{s.icon}</span>
+                className={`legal-nav-btn ${activeSection === s.id ? 'legal-nav-btn--active' : ''}`}
+              >
+                {s.icon}
                 {s.label}
               </button>
             ))}
           </div>
-          <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(5,150,105,0.06)', borderRadius: 14, border: '1px solid rgba(5,150,105,0.15)' }}>
-            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', fontWeight: 700, color: '#059669' }}>¿Necesitas ayuda?</p>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-4)', lineHeight: 1.6 }}>
-              novagendamiento@gmail.com
-            </p>
-          </div>
-        </div>
 
-        {/* Main content */}
-        <div className="animate-fade-in" style={{ flex: 1, minWidth: 0 }} key={activeSection}>
-          <div className="card" style={{ padding: '2.5rem', borderRadius: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: 'rgba(5,150,105,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#059669', flexShrink: 0 }}>
+          <div className="legal-sidebar-contact">
+            <p>¿Necesitas ayuda?</p>
+            <p>Escríbenos a:</p>
+            <p>novagendamiento@gmail.com</p>
+          </div>
+        </aside>
+
+        {/* Content Area */}
+        <article className="animate-fade-in" key={activeSection}>
+          <div className="card legal-content-card">
+            <div className="legal-section-header">
+              <div className="legal-section-icon">
                 {current?.icon}
               </div>
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--text)' }}>{current?.label}</h2>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-4)', fontWeight: 500 }}>Última actualización: {LAST_UPDATED}</p>
+              <div className="legal-section-info">
+                <h2>{current?.label}</h2>
+                <p>NovaAgendas Service Policy</p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="legal-body">
               {current?.content.map((section, i) => (
-                <div key={i}>
-                  <h3 style={{ margin: '0 0 0.75rem', fontSize: '1rem', fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-                    {section.title}
-                  </h3>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--text-3)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
-                    {section.body}
-                  </div>
-                  {i < current.content.length - 1 && (
-                    <div style={{ marginTop: '2rem', height: 1, background: 'var(--border)' }} />
-                  )}
+                <div key={i} className="legal-body-section">
+                  <h3>{section.title}</h3>
+                  <p>{section.body}</p>
+                  {i < current.content.length - 1 && <div className="legal-divider" />}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Related links */}
-          <div style={{ marginTop: '1.5rem', padding: '1.25rem 1.75rem', background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <div>
-              <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-2)' }}>También te puede interesar</p>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-4)' }}>
-                Lee nuestros <a href="/terminos" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Términos y Condiciones</a> y <a href="/terminos#privacidad" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Política de Privacidad</a>
-              </p>
+          {/* Related Info Card */}
+          <div className="legal-related-card">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <div className="legal-related-info">
+              <p>También podría interesarte</p>
+              <p>Lee nuestros <a href="/terminos" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>Términos y Condiciones</a> y <a href="/terminos#privacidad" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 700 }}>Política de Privacidad</a>.</p>
             </div>
           </div>
-        </div>
-      </div>
+        </article>
+      </main>
 
       {/* Footer */}
-      <div style={{ borderTop: '1px solid var(--border)', padding: '1.5rem 2rem', textAlign: 'center' }}>
-        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-4)' }}>
-          © {new Date().getFullYear()} NovaAgendas · <a href="/terminos" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Términos y Privacidad</a>
-        </p>
-      </div>
+      <footer className="legal-footer">
+        <p>© {new Date().getFullYear()} NovaAgendas Colombia · Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 }
+

@@ -1,0 +1,190 @@
+/* ==========================================================
+   AuditLogs.css — Vista de auditoría y movimientos
+   ========================================================== */
+
+.audit-page {
+  padding: 0.5rem;
+  animation: fadeIn 0.3s var(--ease-out) forwards;
+}
+
+.audit-card {
+  padding: 0;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* ── Cabecera ── */
+.audit-header {
+  padding: 1.75rem 2.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-overlay);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.audit-header-info h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.audit-header-info p {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-3);
+}
+
+.audit-refresh-btn {
+  padding: 0.6rem 1rem;
+}
+
+/* ── Tabla ── */
+.audit-table-wrapper {
+  overflow-x: auto;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.audit-table thead {
+  background: var(--surface-2);
+}
+
+.audit-table th {
+  padding: 1rem 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.audit-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+}
+
+.audit-table tbody tr:hover td {
+  background: var(--surface-glass);
+}
+
+.audit-date-cell {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* ── Celda usuario ── */
+.audit-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.audit-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.audit-user-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ── Badge de acción ── */
+.audit-action-badge {
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  letter-spacing: 0.03em;
+}
+
+.audit-action-badge--create {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.audit-action-badge--delete {
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.audit-action-badge--update {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.audit-entity-cell {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.audit-desc-cell {
+  font-size: 0.85rem;
+  color: var(--text-3);
+  max-width: 400px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Estado vacío ── */
+.audit-empty-cell {
+  padding: 5rem 2rem;
+  text-align: center;
+  color: var(--text-4);
+  font-weight: 500;
+  background: var(--surface);
+}
+
+.audit-empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.audit-empty-icon {
+  font-size: 2.5rem;
+  opacity: 0.5;
+}
+
+/* ── Spinner ── */
+.audit-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--primary-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: audit-spin 1s linear infinite;
+}
+
+@keyframes audit-spin {
+  to { transform: rotate(360deg); }
+}
+
