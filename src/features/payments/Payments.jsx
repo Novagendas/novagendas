@@ -114,6 +114,7 @@ export default function Payments({ user, tenant }) {
 
   const [showModal, setShowModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [detailPayment, setDetailPayment] = useState(null);
   const [form, setForm] = useState({ clientId: '', serviceId: '', amount: '', method: 'Efectivo', note: '' });
   const [filter, setFilter] = useState('all');
 
@@ -309,7 +310,7 @@ export default function Payments({ user, tenant }) {
                   const meth = methods.find(m => m.idmetodopago === p.idmetodopago);
                   const client = clients.find(c => c.idcliente === p.idcliente);
                   return (
-                    <tr key={p.idpagos}>
+                    <tr key={p.idpagos} className="payment-row-clickable" onClick={() => setDetailPayment({ ...p, client, meth })}>
                       <td>{p.fecha ? parseDate(p.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
                       <td><span className="payment-client-name">{client?.nombre || 'Desconocido'}</span></td>
                       <td><span className="payment-service-name">{p.servicios?.nombre || '—'}</span></td>
@@ -320,7 +321,7 @@ export default function Payments({ user, tenant }) {
                       </td>
                       <td><span className="payment-amount">{fmt(p.monto)}</span></td>
                       <td><span className="badge badge-success">Pagado</span></td>
-                      <td className="table-actions">
+                      <td className="table-actions" onClick={e => e.stopPropagation()}>
                         <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(p.idpagos)}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                         </button>
@@ -432,6 +433,72 @@ export default function Payments({ user, tenant }) {
           </div>
         </div>
       )}
+      {/* ── Payment Detail Modal ── */}
+      {detailPayment && (
+        <div className="modal-overlay" onClick={() => setDetailPayment(null)}>
+          <div className="modal-box animate-scale-in payment-detail-box" onClick={e => e.stopPropagation()}>
+            <div className="payment-detail-header">
+              <div className="payment-detail-header-inner">
+                <div className="payment-detail-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <div>
+                  <h3 className="payment-detail-title">Detalle del Pago</h3>
+                  <p className="payment-detail-subtitle">#{detailPayment.idpagos}</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon payment-detail-close" onClick={() => setDetailPayment(null)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="payment-detail-body">
+              <div className="payment-detail-amount-row">
+                <span className="payment-detail-amount">{fmt(detailPayment.monto)}</span>
+                <span className="badge badge-success">Pagado</span>
+              </div>
+
+              <div className="payment-detail-grid">
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Paciente</span>
+                  <span className="payment-detail-value">{detailPayment.client?.nombre} {detailPayment.client?.apellido}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Fecha</span>
+                  <span className="payment-detail-value">{detailPayment.fecha ? parseDate(detailPayment.fecha).toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Servicio</span>
+                  <span className="payment-detail-value">{detailPayment.servicios?.nombre || '—'}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Método de Pago</span>
+                  <span className="payment-detail-value">{METHOD_ICONS[detailPayment.meth?.tipo] || '💰'} {detailPayment.meth?.tipo || '—'}</span>
+                </div>
+              </div>
+
+              {detailPayment.observacion && (
+                <div className="payment-detail-notes">
+                  <span className="payment-detail-label">Notas / Observaciones</span>
+                  <p className="payment-detail-notes-text">{detailPayment.observacion}</p>
+                </div>
+              )}
+              {!detailPayment.observacion && (
+                <div className="payment-detail-notes payment-detail-notes--empty">
+                  <span className="payment-detail-label">Notas / Observaciones</span>
+                  <p className="payment-detail-notes-empty">Sin notas registradas.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="payment-detail-footer">
+              <button className="btn btn-outline btn-flex-1" onClick={() => setDetailPayment(null)}>Cerrar</button>
+              <button className="btn btn-danger" onClick={() => { setDeleteTarget(detailPayment.idpagos); setDetailPayment(null); }}>Eliminar pago</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Snackbar ── */}
       {snackbar.show && (
         <div className={`payment-snackbar payment-snackbar--${snackbar.type}`}>

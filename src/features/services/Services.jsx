@@ -31,6 +31,11 @@ export default function Services({ user, tenant }) {
     setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
   };
 
+  const ServiceDefaultIcon = () => (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </svg>
+  );
   const catIcon = { Inyectables: '💉', Aparatología: '🔬', Cosmetología: '✨', Valoraciones: '📋' };
   const catColor = { Inyectables: '#6366f1', Aparatología: '#0ea5e9', Cosmetología: '#ec4899', Valoraciones: '#f59e0b' };
 
@@ -281,7 +286,7 @@ export default function Services({ user, tenant }) {
                     '--cat-color': catColor[cat] || '#6366f1'
                   }}
                 >
-                  {catIcon[cat] || '💎'} <span className="capitalize-text">{cat}</span> <span className="service-cat-pill-dot">·</span> {count}
+                  <span className="capitalize-text">{cat}</span> <span className="service-cat-pill-dot">·</span> {count}
                 </div>
               ))}
             </div>
@@ -302,7 +307,7 @@ export default function Services({ user, tenant }) {
                     
                     <div className="service-card-banner-left">
                       <div className="service-card-icon-box">
-                        {catIcon[s.category] || '💎'}
+                        {catIcon[s.category] || <ServiceDefaultIcon />}
                       </div>
                       <span className="capitalize-text service-card-cat-badge">
                         {s.category}

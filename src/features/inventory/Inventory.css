@@ -118,6 +118,12 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--primary) 0%, #0052cc 100%);
+  border-radius: 24px 24px 0 0;
+}
+
+.inventory-modal-header.secondary {
+  background: linear-gradient(135deg, var(--secondary, #7c3aed) 0%, #5b21b6 100%);
 }
 
 .inventory-modal-header-content {
@@ -308,3 +314,44 @@
   margin-bottom: 1rem;
 }
 
+
+/* ── Lote filter pills ── */
+.inventory-lote-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 0 0.25rem;
+}
+
+.inventory-lote-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius-full);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.inventory-lote-pill.active,
+.inventory-lote-pill:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.inventory-lote-active-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.inventory-empty-hint {
+  color: var(--text-5);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}

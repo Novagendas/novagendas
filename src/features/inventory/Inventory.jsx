@@ -12,7 +12,7 @@ export default function Inventory({ user, tenant }) {
 
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ name: '', category: '', initial: '', minStock: 5, price: '', description: '' });
+  const [form, setForm] = useState({ name: '', category: '', initial: '', minStock: 5, price: '', description: '', lote: '' });
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
@@ -53,7 +53,7 @@ export default function Inventory({ user, tenant }) {
       return;
     }
     setEditId(null);
-    setForm({ name: '', category: categories[0].descripcion, initial: '', minStock: 5, price: '', description: '' });
+    setForm({ name: '', category: categories[0].descripcion, initial: '', minStock: 5, price: '', description: '', lote: '' });
     setShowModal(true);
   };
 
@@ -108,7 +108,8 @@ export default function Inventory({ user, tenant }) {
       initial: item.cantidad,
       minStock: item.cantidadminima,
       price: item.precio || '',
-      description: item.descripcion || ''
+      description: item.descripcion || '',
+      lote: item.lote || ''
     });
     setShowModal(true);
   };
@@ -135,7 +136,8 @@ export default function Inventory({ user, tenant }) {
       idcategoriaproducto: catId,
       idnegocios: tenant.id,
       precio: parseFloat(form.price) || 0,
-      descripcion: form.description
+      descripcion: form.description,
+      lote: form.lote || null
     };
     setShowModal(false);
     
@@ -181,6 +183,7 @@ export default function Inventory({ user, tenant }) {
   };
 
   const alertas = products.filter(i => i.cantidad <= i.cantidadminima).length;
+  const filteredProducts = products;
   const stockPercent = (item) => Math.min(100, (item.cantidad / Math.max(item.cantidadminima * 2, 1)) * 100);
 
   return (
@@ -222,12 +225,13 @@ export default function Inventory({ user, tenant }) {
                 <div key={i} className="skeleton" style={{ height: '60px', marginBottom: '1rem', opacity: 1 - (i * 0.15) }} />
               ))}
             </div>
-          ) : products.length > 0 ? (
+          ) : filteredProducts.length > 0 ? (
             <div className="table-scroll-wrap">
             <table className="data-table">
               <thead>
                 <tr>
                   <th>Producto</th>
+                  <th>Lote</th>
                   <th>Categoría</th>
                   <th>Valor Unitario</th>
                   <th className="text-center">Nivel de Stock</th>
@@ -236,7 +240,7 @@ export default function Inventory({ user, tenant }) {
                 </tr>
               </thead>
               <tbody>
-                {products.map((item) => {
+                {filteredProducts.map((item) => {
                   const pct = stockPercent(item);
                   const isLow = item.cantidad <= item.cantidadminima;
                   const barColor = isLow ? 'var(--danger)' : pct < 60 ? 'var(--warning)' : 'var(--success)';
@@ -244,6 +248,7 @@ export default function Inventory({ user, tenant }) {
                   return (
                     <tr key={item.idproducto}>
                       <td><span className="font-bold text-main">{item.nombre}</span></td>
+                      <td>{item.lote ? <span className="badge badge-neutral">{item.lote}</span> : <span style={{ color: 'var(--text-5)', fontSize: '0.78rem' }}>—</span>}</td>
                       <td><span className="badge badge-neutral">{catName}</span></td>
                       <td><span className="font-semibold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.precio || 0)}</span></td>
                       <td className="stock-level-container">
@@ -324,6 +329,11 @@ export default function Inventory({ user, tenant }) {
                 <select className="input-field input-rounded" value={form.category} onChange={e => update('category', e.target.value)} required>
                   {categories.map(c => <option key={c.idcategoriaproducto} value={c.descripcion}>{c.descripcion}</option>)}
                 </select>
+              </div>
+
+              <div className="input-group">
+                <label className="inventory-input-label">Lote (opcional)</label>
+                <input type="text" className="input-field input-rounded" placeholder="Ej. L-2024-01" value={form.lote} onChange={e => update('lote', e.target.value)} />
               </div>
 
               <div className="inventory-grid-inputs">
@@ -466,6 +476,8 @@ export default function Inventory({ user, tenant }) {
           </div>
         </div>
       )}
+
+
 
       {/* ── Snackbar ── */}
       {snackbar.show && (

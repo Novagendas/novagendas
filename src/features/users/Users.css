@@ -588,22 +588,23 @@
 }
 
 .modal-close-btn {
-  color: #fff;
-  background: rgba(255,255,255,0.1);
-  border-radius: 12px;
-  width: 38px;
-  height: 38px;
-  border: none;
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.15);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255,255,255,0.25);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s var(--ease);
+  transition: background 0.18s, color 0.18s;
+  flex-shrink: 0;
 }
 
 .modal-close-btn:hover {
-  background: rgba(255,255,255,0.2);
-  transform: rotate(90deg);
+  background: rgba(255,255,255,0.3);
+  color: #fff;
 }
 
 .modal-form {
@@ -737,4 +738,40 @@
 @keyframes slideInBottom {
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+.user-item-card--clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.user-item-card--clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.user-item-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-item-btn-perms {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.user-item-btn-perms:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary);
 }

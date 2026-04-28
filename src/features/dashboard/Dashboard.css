@@ -450,3 +450,38 @@
   color: var(--btn-color);
   transform: translateX(3px);
 }
+
+.dashboard-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+.btn-gcal-sync {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.gcal-connected {
+  border-color: #34A853;
+  color: #34A853;
+}
+
+.gcal-dot-connected {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34A853;
+  display: inline-block;
+  animation: pulse-gcal 2s ease-in-out infinite;
+}
+
+@keyframes pulse-gcal {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}

@@ -171,6 +171,8 @@ export default function Users({ user, tenant }) {
   const [deleteId, setDeleteId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [permEditUser, setPermEditUser] = useState(null);
+  const [permEditPerms, setPermEditPerms] = useState([]);
 
   const showSnack = (message, type = 'success') => {
     setSnackbar({ show: true, message, type });
@@ -245,6 +247,31 @@ export default function Users({ user, tenant }) {
     setEditId(u.id);
     setFormError('');
     setModalOpen(true);
+  };
+
+  const openPermEdit = (u) => {
+    setPermEditUser(u);
+    setPermEditPerms([...u.permissions]);
+  };
+
+  const savePermissions = async () => {
+    if (!permEditUser) return;
+    setSaving(true);
+    const userId = permEditUser.id;
+    const roleId = permEditUser.role === 'admin' ? 1 : permEditUser.role === 'especialista' ? 3 : 2;
+    await supabase.from('rolpermisos').delete().eq('idusuario', userId);
+    const rows = permEditPerms.map(p => ({
+      idusuario: userId,
+      idrol: roleId,
+      idpermiso: MODULE_LABELS[p]?.id
+    })).filter(r => r.idpermiso);
+    if (rows.length > 0) {
+      await supabase.from('rolpermisos').insert(rows);
+    }
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, permissions: permEditPerms } : u));
+    showSnack('Permisos actualizados');
+    setPermEditUser(null);
+    setSaving(false);
   };
 
   const cancelEdit = (e) => {
@@ -404,10 +431,12 @@ export default function Users({ user, tenant }) {
             users.map((u, idx) => {
               const isAdmin = u.role === 'admin';
               return (
-                <div 
-                  key={u.id} 
-                  className={`user-item-card animate-fade-in ${isAdmin ? 'user-item-card--admin' : ''}`}
+                <div
+                  key={u.id}
+                  className={`user-item-card animate-fade-in ${isAdmin ? 'user-item-card--admin' : ''} ${!isAdmin ? 'user-item-card--clickable' : ''}`}
                   style={{ animationDelay: `${idx * 50}ms` }}
+                  onClick={() => !isAdmin && openPermEdit(u)}
+                  title={!isAdmin ? 'Editar permisos' : undefined}
                 >
                   {isAdmin && <div className="user-item-admin-tag">👑 CUENTA PRINCIPAL</div>}
 
@@ -434,15 +463,26 @@ export default function Users({ user, tenant }) {
                   </div>
 
                   <div className="user-item-actions">
-                    <div onClick={() => !isAdmin && toggleActive(u)}>
-                      <span className={`badge ${u.active ? 'badge-success' : 'badge-danger'} user-item-status-badge`}>
-                        {u.active ? 'Activo' : 'Inactivo'}
-                      </span>
+                    <div className="user-item-status-row">
+                      <div onClick={e => { e.stopPropagation(); !isAdmin && toggleActive(u); }}>
+                        <span className={`badge ${u.active ? 'badge-success' : 'badge-danger'} user-item-status-badge`}>
+                          {u.active ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </div>
+                      {!isAdmin && (
+                        <button
+                          className="user-item-btn-perms"
+                          title="Editar permisos"
+                          onClick={e => { e.stopPropagation(); openPermEdit(u); }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        </button>
+                      )}
                     </div>
 
                     <div className="user-item-actions-group">
                       {!isAdmin && (
-                        <button onClick={() => confirmDelete(u.id)} className="user-item-btn-delete">
+                        <button onClick={(e) => { e.stopPropagation(); confirmDelete(u.id); }} className="user-item-btn-delete">
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                         </button>
                       )}
@@ -573,6 +613,50 @@ export default function Users({ user, tenant }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {permEditUser && (
+        <div className="modal-overlay" onClick={() => !saving && setPermEditUser(null)}>
+          <div className="modal-box animate-fade-in" onClick={e => e.stopPropagation()}>
+            <div className="modal-header-gradient">
+              <div className="modal-header-info">
+                <div className="modal-header-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                </div>
+                <div className="modal-header-text">
+                  <h3>Permisos de Acceso</h3>
+                  <p>{permEditUser.name} &nbsp;·&nbsp; <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{ROLES[permEditUser.role]?.label || permEditUser.role}</span></p>
+                </div>
+              </div>
+              <button type="button" className="modal-close-btn" onClick={() => setPermEditUser(null)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="modal-form">
+              <div className="modal-scroll-area">
+                <div className="input-group">
+                  <label className="label-caps">Módulos Permitidos</label>
+                  <PermissionGrid
+                    permissions={permEditPerms}
+                    onToggle={p => setPermEditPerms(prev =>
+                      prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer-actions">
+                <button type="button" className="btn btn-outline modal-footer-btn-cancel" onClick={() => setPermEditUser(null)} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="button" className="btn btn-primary modal-footer-btn-submit" onClick={savePermissions} disabled={saving}>
+                  {saving ? 'Guardando...' : 'Guardar Permisos'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
