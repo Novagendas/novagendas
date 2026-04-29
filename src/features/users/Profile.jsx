@@ -51,7 +51,7 @@ export default function Profile({ user, tenant, onUserUpdate }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPass, setChangingPass] = useState(false);
-  const [openSections, setOpenSections] = useState({ intro: true, info: true, locations: false, security: false });
+  const [openSections, setOpenSections] = useState({ intro: false, info: false, locations: false, security: false });
 
   useEffect(() => {
     const fetchUser = async () => {

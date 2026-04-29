@@ -431,6 +431,125 @@
   letter-spacing: 0.05em;
 }
 
+/* ── Modal card (replaces old inline styles) ── */
+.super-modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+}
+
+/* ── Action buttons ── */
+.super-action-btn {
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: var(--font-main);
+  border: none;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.super-action-btn:hover { opacity: 0.82; }
+
+.super-action-btn--edit {
+  background: var(--primary-light);
+  border: 1px solid rgba(59,130,246,0.25);
+  color: var(--primary);
+}
+
+.super-action-btn--del {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+}
+
+.super-action-btn--link {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* ── Location chip ── */
+.super-loc-chip {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Empty cell ── */
+.super-empty-cell {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-4);
+}
+
+/* ── KPI grid (Monitoreo) ── */
+.super-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.super-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: box-shadow 0.2s;
+}
+
+.super-stat-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.super-stat-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.super-stat-card-value {
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.super-stat-card-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-2);
+  margin-top: 0.2rem;
+}
+
+.super-stat-card-sub {
+  font-size: 0.7rem;
+  color: var(--text-4);
+  margin-top: 0.1rem;
+}
+
 /* ── Confirm Dialog ── */
 .super-confirm-overlay {
   position: fixed;
@@ -452,6 +571,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.super-confirm-card {
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  border-radius: 20px;
+  text-align: center;
 }
 
 .super-confirm-title {

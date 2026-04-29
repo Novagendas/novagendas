@@ -231,7 +231,7 @@ export default function Clients({ user, tenant }) {
     <div className="animate-fade-in clients-container">
 
       {/* ── LEFT: Directory + Register ── */}
-      <div className="clients-directory">
+      <div className={`clients-directory${selectedId ? '' : ' clients-directory--expanded'}`}>
         {/* Search */}
         <div className="clients-search-card-wrapper">
           <div className="clients-search-card">

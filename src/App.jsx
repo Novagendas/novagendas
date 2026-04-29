@@ -168,7 +168,9 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const hasCode = params.has('code');
     const hasRecoveryHash = window.location.hash.includes('type=recovery');
-    if (hasCode || hasRecoveryHash) {
+    const isGcalRedirect = params.has('gcal') && params.get('gcal') === 'connected';
+    // No activar reset si el code viene del OAuth de Google Calendar
+    if ((hasCode && !isGcalRedirect) || hasRecoveryHash) {
       setResetTrigger(true);
     }
 

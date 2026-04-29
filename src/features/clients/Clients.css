@@ -24,6 +24,12 @@
   gap: 0.75rem;
   height: 100%;
   flex-shrink: 0;
+  transition: width 0.3s ease;
+}
+
+.clients-directory--expanded {
+  width: 480px;
+  min-width: 380px;
 }
 
 /* Buscador */
