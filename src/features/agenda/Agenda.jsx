@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SelectableInput from '../../components/inputs/SelectableInput';
+import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
-import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth } from '../../services/googleCalendar';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth, connectCalendar } from '../../services/googleCalendar';
 import {
   addDays,
   startOf,
@@ -38,8 +39,13 @@ export default function Agenda({ user, tenant }) {
   const [appointments, setAppointments] = useState([]);
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [specialists, setSpecialists] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [productQty, setProductQty] = useState(1);
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
   
@@ -59,27 +65,33 @@ export default function Agenda({ user, tenant }) {
 
   /* ------ Google Calendar connection state ------ */
   const [calConnected, setCalConnected] = useState(() => isCalendarConnected());
+  const [showGcalDisconnectModal, setShowGcalDisconnectModal] = useState(false);
+  const [showGcalConnectModal, setShowGcalConnectModal] = useState(false);
 
   const handleCalSync = async () => {
     if (calConnected) {
-      clearCalendarAuth();
-      setCalConnected(false);
-      showSnack('Desconectado de Google Calendar');
-    } else {
-      try {
-        await createCalendarEvent({
-          summary: 'Conexión probada',
-          description: 'Verificación de conexión desde Novagendas',
-          startDateTime: new Date().toISOString(),
-          endDateTime: new Date(Date.now() + 60000).toISOString(),
-          attendeeEmails: []
-        }).catch(() => null);
-        setCalConnected(isCalendarConnected());
-        if (isCalendarConnected()) showSnack('¡Conectado a Google Calendar!');
-      } catch {
-        setCalConnected(false);
-      }
+      setShowGcalDisconnectModal(true);
+      return;
     }
+    setShowGcalConnectModal(true);
+  };
+
+  const confirmConnectGcal = async () => {
+    setShowGcalConnectModal(false);
+    try {
+      await connectCalendar(supabase);
+      // La página redirige; el flujo continúa en App.jsx al volver
+    } catch (err) {
+      setCalConnected(false);
+      showSnack('Error: ' + (err.message || 'No se pudo conectar'), 'error');
+    }
+  };
+
+  const confirmDisconnectGcal = () => {
+    clearCalendarAuth();
+    setCalConnected(false);
+    setShowGcalDisconnectModal(false);
+    showSnack('Desconectado de Google Calendar');
   };
 
   const [hoveredAppt, setHoveredAppt] = useState(null);
@@ -90,7 +102,20 @@ export default function Agenda({ user, tenant }) {
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [tempWorkHours, setTempWorkHours] = useState({ start: 6, end: 21 });
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ clientId: '', serviceIds: [], specialistId: '', date: '', time: '09:00', gcalEventId: null });
+  const emptyForm = () => ({
+    clientId: '',
+    serviceIds: [],
+    specialistId: '',
+    date: '',
+    time: '09:00',
+    gcalEventId: null,
+    locationId: '',
+    additionalClientIds: [],
+    isGroup: false,
+    productsUsed: [],
+    abonoToApply: 0,
+  });
+  const [form, setForm] = useState(emptyForm());
   const [showServiceMenu, setShowServiceMenu] = useState(false);
   const [serviceSearch, setServiceSearch] = useState('');
 
@@ -126,8 +151,13 @@ export default function Agenda({ user, tenant }) {
     setLoading(true);
 
     try {
-      const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
-      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
+      const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
+      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
+      const { data: locData } = await supabase.from('ubicacion').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).order('nombre');
+      setLocations(locData || []);
+
+      const { data: prodData } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).gt('cantidad', 0).order('nombre');
+      setProducts(prodData || []);
       
       // Fetch users with 'profesional' role (idrol = 3) via junction table
       const { data: specData } = await supabase
@@ -158,9 +188,13 @@ export default function Agenda({ user, tenant }) {
           citaservicios (
             idservicios,
             servicios (*)
-          )
+          ),
+          detallecitagrupal ( idcliente ),
+          citaproducto ( idproducto, cantidad ),
+          abonoaplicacion ( idabono, monto_aplicado )
         `)
-        .eq('idnegocios', tenant.id);
+        .eq('idnegocios', tenant.id)
+        .is('deleted_at', null);
 
       if (!error && apptData) {
         const mapped = apptData.map(a => {
@@ -176,6 +210,8 @@ export default function Agenda({ user, tenant }) {
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
 
+          const totalAbono = (a.abonoaplicacion || []).reduce((sum, x) => sum + Number(x.monto_aplicado || 0), 0);
+          const totalPrice = apptServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
           return {
             id: a.idcita,
             clientId: a.idcliente,
@@ -188,6 +224,12 @@ export default function Agenda({ user, tenant }) {
             status: a.estadocita?.descripcion || 'Pendiente',
             doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : 'Pendiente',
             gcalEventId: a.gcal_event_id || null,
+            locationId: a.idubicacion || null,
+            isGroup: !!a.escitagrupal,
+            additionalClientIds: (a.detallecitagrupal || []).map(d => d.idcliente).filter(Boolean),
+            productsUsed: (a.citaproducto || []).map(p => ({ idproducto: p.idproducto, cantidad: Number(p.cantidad) })),
+            totalAbono,
+            totalPrice,
           };
         }).filter(Boolean);
         setAppointments(mapped);
@@ -236,8 +278,9 @@ export default function Agenda({ user, tenant }) {
       const gcalEventId = detailAppt.gcalEventId;
       const clientName = clients.find(c => c.idcliente === detailAppt.clientId)?.nombre || 'Paciente';
 
-      await supabase.from('citaservicios').delete().eq('idcita', detailAppt.id);
-      const { error } = await supabase.from('cita').delete().eq('idcita', detailAppt.id);
+      const { error } = await supabase.from('cita')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('idcita', detailAppt.id);
       if (error) throw error;
 
       await insertLog({
@@ -297,11 +340,11 @@ export default function Agenda({ user, tenant }) {
   const openCreate = (date = '', time = '') => {
     setEditId(null);
     setForm({
-      clientId: '',
-      serviceIds: [],
+      ...emptyForm(),
       specialistId: specialists.length ? specialists[0].idusuario : '',
       date: date || todayStr,
-      time: time || '09:00'
+      time: time || '09:00',
+      locationId: locations.length === 1 ? String(locations[0].idubicacion) : '',
     });
     setShowModal(true);
   };
@@ -309,12 +352,18 @@ export default function Agenda({ user, tenant }) {
   const startEdit = (appt) => {
     setEditId(appt.id);
     setForm({
+      ...emptyForm(),
       clientId: appt.clientId,
       serviceIds: appt.serviceIds || [],
       specialistId: appt.specialistId || '',
       date: appt.date,
       time: appt.time,
       gcalEventId: appt.gcalEventId || null,
+      locationId: appt.locationId ? String(appt.locationId) : '',
+      isGroup: !!appt.isGroup,
+      additionalClientIds: appt.additionalClientIds || [],
+      productsUsed: appt.productsUsed || [],
+      abonoToApply: 0,
     });
     closeDetail();
     setShowModal(true);
@@ -354,13 +403,15 @@ export default function Agenda({ user, tenant }) {
 
       const payload = {
         idcliente: parseInt(form.clientId),
-        idservicio: form.serviceIds[0] || null, // Keep first for legacy/compatibility
+        idservicio: form.serviceIds[0] || null,
         idusuario: form.specialistId ? parseInt(form.specialistId) : null,
         fechahorainicio: startStr,
         fechahorafin: formattedEnd,
-        idestadocita: 2, // En Espera (Default)
-        idtipocita: 1,   // Valoracion default
-        idnegocios: tenant.id
+        idestadocita: 2,
+        idtipocita: 1,
+        idnegocios: tenant.id,
+        idubicacion: form.locationId ? parseInt(form.locationId) : null,
+        escitagrupal: form.isGroup || form.additionalClientIds.length > 0,
       };
 
       // ── Overlap Validation ──
@@ -403,6 +454,37 @@ export default function Agenda({ user, tenant }) {
           idservicios: sid
         }));
         await supabase.from('citaservicios').insert(serviceEntries);
+      }
+
+      // Sync additional clients (group cita)
+      await supabase.from('detallecitagrupal').delete().eq('idcita', appointmentId);
+      if (form.additionalClientIds.length > 0) {
+        const groupEntries = form.additionalClientIds.map(cid => ({
+          idcita: appointmentId,
+          idcliente: cid
+        }));
+        await supabase.from('detallecitagrupal').insert(groupEntries);
+      }
+
+      // Sync product consumption
+      if (form.productsUsed.length > 0) {
+        await supabase.from('citaproducto').delete().eq('idcita', appointmentId);
+        const productEntries = form.productsUsed.map(u => ({
+          idcita: appointmentId,
+          idproducto: u.idproducto,
+          cantidad: u.cantidad,
+        }));
+        await supabase.from('citaproducto').insert(productEntries);
+        // Decrement stock (only on create, not on edit to avoid double-decrement)
+        if (!editId) {
+          for (const u of form.productsUsed) {
+            const prod = products.find(p => p.idproducto === u.idproducto);
+            if (prod) {
+              const newQty = Math.max(0, Number(prod.cantidad) - u.cantidad);
+              await supabase.from('producto').update({ cantidad: newQty }).eq('idproducto', u.idproducto);
+            }
+          }
+        }
       }
       
       showSnack(editId ? 'Cita actualizada correctamente' : 'Cita agendada correctamente');
@@ -591,7 +673,8 @@ export default function Agenda({ user, tenant }) {
     const dayAppts = appointments.filter(a => {
       const isCorrectDate = a.date === dateStr && a.status !== 'Cancelada';
       const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
-      return isCorrectDate && isCorrectSpec;
+      const isCorrectLoc = selectedLocationId ? String(a.locationId) === String(selectedLocationId) : true;
+      return isCorrectDate && isCorrectSpec && isCorrectLoc;
     });
     return (
       <div className="calendar-day-column">
@@ -807,12 +890,43 @@ export default function Agenda({ user, tenant }) {
             </div>
 
             {user.role !== 'especialista' && (
-              <button 
+              <button
                 className={`btn btn-outline btn-filter-specialist ${selectedSpecialistId ? 'filter-active' : ''}`}
                 onClick={() => setShowFilterModal(true)}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 {selectedSpecialistId ? specialists.find(s => String(s.idusuario) === String(selectedSpecialistId))?.nombre || 'Filtrado' : 'Todos los Especialistas'}
+              </button>
+            )}
+
+            {locations.length > 0 && (
+              <select
+                className={`agenda-location-filter ${selectedLocationId ? 'filter-active' : ''}`}
+                value={selectedLocationId || ''}
+                onChange={e => setSelectedLocationId(e.target.value || null)}
+                title="Filtrar por sede"
+              >
+                <option value="">Todas las sedes</option>
+                {locations.map(l => (
+                  <option key={l.idubicacion} value={l.idubicacion}>{l.nombre}</option>
+                ))}
+              </select>
+            )}
+
+            {(user.role === 'admin' || user.role === 'recepcion') && (
+              <button
+                className={`btn btn-outline btn-gcal-sync ${calConnected ? 'gcal-connected' : ''}`}
+                onClick={handleCalSync}
+                title={calConnected ? 'Conectado — clic para desincronizar' : 'Conectar con Google Calendar'}
+              >
+                <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                  <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                  <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                  <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                </svg>
+                <span>Google Calendar</span>
+                {calConnected && <span className="gcal-dot-connected" />}
               </button>
             )}
 
@@ -1011,12 +1125,89 @@ export default function Agenda({ user, tenant }) {
                 Por favor, elige un horario diferente o cambia de profesional asignado.
               </p>
 
-              <button 
-                className="btn btn-primary btn-conflict-confirm" 
+              <button
+                className="btn btn-primary btn-conflict-confirm"
                 onClick={() => setConflictModal({ show: false, message: '', details: null })}
               >
                 Entendido
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showGcalConnectModal && (
+        <div className="appt-modal-overlay high-z" onClick={() => setShowGcalConnectModal(false)}>
+          <div className="appt-modal animate-scale-in modal-gcal-connect" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="gcal-disconnect-icon">
+                <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                  <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                  <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                  <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                </svg>
+              </div>
+              <h3 className="conflict-modal-title">Conectar Google Calendar</h3>
+              <p className="conflict-modal-text">
+                Se recomienda iniciar sesión con <strong>la cuenta de Google del negocio</strong> para que las citas se sincronicen en ese calendario.
+              </p>
+             
+
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setShowGcalConnectModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-modal-action-bold"
+                  onClick={confirmConnectGcal}
+                >
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showGcalDisconnectModal && (
+        <div className="appt-modal-overlay high-z" onClick={() => setShowGcalDisconnectModal(false)}>
+          <div className="appt-modal animate-scale-in modal-gcal-disconnect" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="gcal-disconnect-icon">
+                <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                  <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                  <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                  <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                </svg>
+              </div>
+              <h3 className="conflict-modal-title">¿Desincronizar Google Calendar?</h3>
+              <p className="conflict-modal-text">
+                A partir de ahora las citas <strong>solo se guardarán en Novagendas</strong>. Las citas existentes en Google Calendar no se eliminarán, pero las nuevas no se sincronizarán hasta que vuelvas a conectar tu cuenta.
+              </p>
+
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setShowGcalDisconnectModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-modal-action-bold"
+                  onClick={confirmDisconnectGcal}
+                >
+                  Sí, desincronizar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1129,6 +1320,126 @@ export default function Agenda({ user, tenant }) {
                     <input type="time" className="input-field input-rounded-lg" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} required />
                   </div>
                 </div>
+
+                {locations.length > 0 && (
+                  <SelectableInput
+                    label={`Sede${locations.length > 1 ? ' *' : ''}`}
+                    placeholder="Selecciona una sede..."
+                    icon="📍"
+                    options={locations.map(l => ({ value: l.idubicacion, label: l.nombre }))}
+                    value={form.locationId}
+                    onChange={val => setForm({ ...form, locationId: val })}
+                  />
+                )}
+
+                <div className="cita-toggle-row">
+                  <label className="cita-toggle-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={form.isGroup}
+                      onChange={e => setForm({ ...form, isGroup: e.target.checked, additionalClientIds: e.target.checked ? form.additionalClientIds : [] })}
+                    />
+                    <span>Cita grupal</span>
+                  </label>
+                  <p className="cita-toggle-hint">Marca esta opción si la cita incluye varios pacientes a la vez.</p>
+                </div>
+
+                {form.isGroup && (
+                  <div className="cita-group-section">
+                    <label className="searchable-select-label">Pacientes adicionales</label>
+                    <SelectableInput
+                      placeholder="Buscar paciente para añadir..."
+                      icon="👥"
+                      options={clients
+                        .filter(c => c.idcliente !== Number(form.clientId) && !form.additionalClientIds.includes(c.idcliente))
+                        .map(c => ({ value: c.idcliente, label: `${c.nombre} ${c.apellido} (${c.cedula || 'N/A'})` }))}
+                      value=""
+                      onChange={val => {
+                        if (val) setForm({ ...form, additionalClientIds: [...form.additionalClientIds, Number(val)] });
+                      }}
+                    />
+                    {form.additionalClientIds.length > 0 && (
+                      <div className="service-tags-container">
+                        {form.additionalClientIds.map(cid => {
+                          const c = clients.find(cl => cl.idcliente === cid);
+                          return (
+                            <div key={cid} className="service-tag service-tag--client">
+                              {c ? `${c.nombre} ${c.apellido}` : `Paciente #${cid}`}
+                              <span
+                                className="service-tag-remove"
+                                onClick={() => setForm({ ...form, additionalClientIds: form.additionalClientIds.filter(id => id !== cid) })}
+                              >×</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {products.length > 0 && (
+                  <div className="cita-group-section">
+                    <label className="searchable-select-label">Productos utilizados (opcional)</label>
+                    <div className="appt-modal-row">
+                      <select
+                        className="input-field"
+                        value={productSearch}
+                        onChange={e => setProductSearch(e.target.value)}
+                      >
+                        <option value="">Selecciona un producto...</option>
+                        {products
+                          .filter(p => !form.productsUsed.find(u => u.idproducto === p.idproducto))
+                          .map(p => (
+                            <option key={p.idproducto} value={p.idproducto}>
+                              {p.nombre} (stock: {p.cantidad})
+                            </option>
+                          ))}
+                      </select>
+                      <input
+                        type="number"
+                        className="input-field"
+                        style={{ width: 80, flexShrink: 0 }}
+                        min="1"
+                        value={productQty}
+                        onChange={e => setProductQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        placeholder="Cant."
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ flexShrink: 0 }}
+                        onClick={() => {
+                          if (!productSearch) return;
+                          const prod = products.find(p => p.idproducto === parseInt(productSearch));
+                          if (!prod) return;
+                          if (productQty > prod.cantidad) {
+                            showSnack(`Stock insuficiente (disponible: ${prod.cantidad})`, 'error');
+                            return;
+                          }
+                          setForm({ ...form, productsUsed: [...form.productsUsed, { idproducto: prod.idproducto, cantidad: productQty }] });
+                          setProductSearch('');
+                          setProductQty(1);
+                        }}
+                      >+ Agregar</button>
+                    </div>
+                    {form.productsUsed.length > 0 && (
+                      <div className="service-tags-container">
+                        {form.productsUsed.map(u => {
+                          const prod = products.find(p => p.idproducto === u.idproducto);
+                          return (
+                            <div key={u.idproducto} className="service-tag">
+                              {prod?.nombre || `Producto #${u.idproducto}`} × {u.cantidad}
+                              <span
+                                className="service-tag-remove"
+                                onClick={() => setForm({ ...form, productsUsed: form.productsUsed.filter(x => x.idproducto !== u.idproducto) })}
+                              >×</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="appt-modal-footer">
@@ -1148,11 +1459,11 @@ export default function Agenda({ user, tenant }) {
       )}
 
       {/* Notification Snackbar */}
-      <div className={`snackbar ${snackbar.show ? 'visible' : ''}`}>
+      <div className={`snackbar ${snackbar.show ? 'visible' : ''} snackbar--${snackbar.type || 'success'}`}>
         <div className="snackbar-icon">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+          {snackbar.type === 'error' ? '✕' : snackbar.type === 'warning' ? '⚠' : '✓'}
         </div>
-        {snackbar.msg}
+        {snackbar.message}
       </div>
 
       {detailAppt && (() => {
@@ -1161,7 +1472,7 @@ export default function Agenda({ user, tenant }) {
         
         return (
           <div className="appt-modal-overlay" onClick={closeDetail}>
-            <div className="modal-box modal-sm" onClick={e => e.stopPropagation()}>
+            <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
               {/* Premium Header */}
               <div className="appt-details-header">
                 <button className="appt-details-close" onClick={closeDetail}>

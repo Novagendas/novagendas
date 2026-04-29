@@ -21,6 +21,7 @@ import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
 import { supabase } from './Supabase/supabaseClient';
+import { captureProviderToken } from './services/googleCalendar';
 
 function LoadingScreen() {
   return (
@@ -107,7 +108,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'payments': return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
       case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
-      case 'profile': return <Profile user={user} onUserUpdate={handleUserUpdate} />;
+      case 'profile': return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
       case 'logs': return <AuditLogs tenant={tenant} user={user} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
@@ -169,6 +170,26 @@ export default function App() {
     const hasRecoveryHash = window.location.hash.includes('type=recovery');
     if (hasCode || hasRecoveryHash) {
       setResetTrigger(true);
+    }
+
+    // Capturar provider_token de Google Calendar OAuth después del redirect
+    if (params.has('gcal') && params.get('gcal') === 'connected') {
+      captureProviderToken(supabase).then(success => {
+        if (success) {
+          const snackbar = document.createElement('div');
+          snackbar.className = 'snackbar visible snackbar--success';
+          snackbar.innerHTML = '<div class="snackbar-icon">✓</div>¡Google Calendar conectado!';
+          snackbar.style.position = 'fixed';
+          snackbar.style.bottom = '2rem';
+          snackbar.style.left = '50%';
+          snackbar.style.transform = 'translateX(-50%)';
+          snackbar.style.zIndex = '9999';
+          document.body.appendChild(snackbar);
+          setTimeout(() => snackbar.remove(), 3000);
+        }
+        // Limpiar URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      });
     }
 
     const host = window.location.hostname;

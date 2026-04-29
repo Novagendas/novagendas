@@ -5,7 +5,7 @@
 /* ── Layout principal ── */
 .clients-container {
   display: flex;
-  gap: 1.25rem;
+  gap: 2rem;
   flex: 1;
   min-height: 0;
   height: 100%;

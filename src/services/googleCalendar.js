@@ -1,8 +1,5 @@
-// Google Calendar integration via Google Identity Services (GIS) + Calendar REST API
-// Requires: VITE_CALENDAR_API = OAuth2 Client ID in .env
-// First use triggers an OAuth popup — the admin must authorize with novagendamiento@gmail.com
-//juan
-const CLIENT_ID = import.meta.env.VITE_CALENDAR_API || '932063321082-ape53frieamcjjcm6flthd0saccfa2bd.apps.googleusercontent.com';
+// Google Calendar integration via Supabase Auth OAuth + Calendar REST API
+// Requires: Supabase Provider (Google) configured with calendar.events scope
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 const STORAGE_KEY = 'ng_gcal_token';
 const BASE_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
@@ -30,29 +27,10 @@ const cache = (token, expiresIn) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: _token, expiry: _expiry }));
 };
 
-const requestToken = () =>
-  new Promise((resolve, reject) => {
-    if (!window.google?.accounts?.oauth2) {
-      reject(new Error('Google Identity Services no cargado'));
-      return;
-    }
-    window.google.accounts.oauth2
-      .initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        callback: (r) => {
-          if (r.error) { reject(new Error(r.error_description || r.error)); return; }
-          cache(r.access_token, r.expires_in);
-          resolve(r.access_token);
-        },
-      })
-      .requestAccessToken({ prompt: '' });
-  });
-
 const getToken = async () => {
   if (isValid()) return _token;
   if (loadCached()) return _token;
-  return requestToken();
+  throw new Error('No token disponible. Conecta Google Calendar primero.');
 };
 
 export const clearCalendarAuth = () => {
@@ -63,9 +41,37 @@ export const clearCalendarAuth = () => {
 
 export const isCalendarConnected = () => isValid() || loadCached();
 
-export const connectCalendar = async () => {
-  await requestToken();
-  return isValid();
+// Captura el provider_token después del OAuth redirect desde Supabase
+export const captureProviderToken = async (supabase) => {
+  try {
+    const { data } = await supabase.auth.getSession();
+    const session = data?.session;
+    if (session?.provider_token) {
+      cache(session.provider_token, session.expires_in || 3600);
+      // Desconectar sesión Supabase para que no interfiera con login custom
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => null);
+      return true;
+    }
+  } catch (error) {
+    console.warn('No provider_token en sesión:', error);
+  }
+  return false;
+};
+
+// Inicia el flujo OAuth vía Supabase Auth
+export const connectCalendar = async (supabase) => {
+  const redirectPath = window.location.pathname + '?gcal=connected';
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      scopes: SCOPE,
+      redirectTo: `${window.location.origin}${redirectPath}`,
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+    },
+  });
 };
 
 const buildEvent = ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => ({
@@ -81,17 +87,10 @@ const buildEvent = ({ summary, description, startDateTime, endDateTime, attendee
       { method: 'popup', minutes: 30 },
     ],
   },
-  // Permite que los invitados vean la lista de asistentes
   guestsCanSeeOtherGuests: true,
 });
 
-/**
- * Crea un evento en Google Calendar con invitados.
- * Retorna el ID del evento creado o null si falla silenciosamente.
- */
 export const createCalendarEvent = async ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => {
-  if (!CLIENT_ID) return null;
-
   const token = await getToken();
   const res = await fetch(`${BASE_URL}?sendUpdates=all`, {
     method: 'POST',
@@ -104,16 +103,10 @@ export const createCalendarEvent = async ({ summary, description, startDateTime,
     throw new Error(err.error?.message || `HTTP ${res.status}`);
   }
   const data = await res.json();
-  return data.id || null; // Retorna el ID del evento para guardarlo en BD
+  return data.id || null;
 };
 
-/**
- * Actualiza un evento existente en Google Calendar.
- * Usa PATCH para solo actualizar los campos enviados.
- */
 export const updateCalendarEvent = async (eventId, { summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => {
-  if (!CLIENT_ID || !eventId) return null;
-
   const token = await getToken();
   const res = await fetch(`${BASE_URL}/${eventId}?sendUpdates=all`, {
     method: 'PATCH',
@@ -128,19 +121,13 @@ export const updateCalendarEvent = async (eventId, { summary, description, start
   return eventId;
 };
 
-/**
- * Elimina un evento de Google Calendar y notifica a los invitados.
- */
 export const deleteCalendarEvent = async (eventId) => {
-  if (!CLIENT_ID || !eventId) return;
-
   const token = await getToken();
   const res = await fetch(`${BASE_URL}/${eventId}?sendUpdates=all`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  // 204 No Content = éxito; 410 Gone = ya fue eliminado (ambos son OK)
   if (!res.ok && res.status !== 410) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error?.message || `HTTP ${res.status}`);

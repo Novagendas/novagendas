@@ -47,6 +47,7 @@ export default function Clients({ user, tenant }) {
         )
       `)
       .eq('idnegocios', tenant.id)
+      .is('deleted_at', null)
       .order('fecharegistro', { ascending: false });
 
     if (error) {

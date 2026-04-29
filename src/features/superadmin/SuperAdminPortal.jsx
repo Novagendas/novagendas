@@ -531,11 +531,13 @@ export default function SuperAdminPortal() {
           </button>
         </form>
 
-        <div className="super-login-footer">
-          <button type="button" onClick={() => { setIsRegistering(!isRegistering); setLoginError(''); }} className="super-text-link">
-            {isRegistering ? '← Volver al Login' : '¿Eres nuevo? Crear SuperAdmin'}
-          </button>
-        </div>
+        {isRegistering && (
+          <div className="super-login-footer">
+            <button type="button" onClick={() => { setIsRegistering(false); setLoginError(''); }} className="super-text-link">
+              ← Volver al Login
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -721,7 +723,7 @@ export default function SuperAdminPortal() {
             <div className="super-table-wrapper">
               <table className="super-table">
                 <thead><tr>
-                  {['ID', 'Nombre', 'Email', 'Negocio', 'Rol', 'Super', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}
+                  {['ID', 'Nombre', 'Email', 'Negocio', 'Rol', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}
                 </tr></thead>
                 <tbody>
                   {userLoad ? (
@@ -779,11 +781,6 @@ export default function SuperAdminPortal() {
                             </select>
                           );
                         })()}
-                      </TD>
-                      <TD style={{ textAlign: 'center' }}>
-                        {u.issuperadmin
-                          ? <span style={{ background: '#ede9fe', color: '#7c3aed', borderRadius: 99, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>SA</span>
-                          : <span style={{ color: '#9ca3af', fontSize: '0.75rem' }}>—</span>}
                       </TD>
                       <TD>
                         <span style={{ background: u.idestado === 1 ? '#dcfce7' : '#fee2e2', color: u.idestado === 1 ? '#16a34a' : '#dc2626', padding: '3px 10px', borderRadius: 99, fontSize: '0.72rem', fontWeight: 700, whiteSpace: 'nowrap' }}>

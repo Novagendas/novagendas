@@ -48,23 +48,30 @@ const QuickBtn = ({ label, emoji, color, onClick }) => (
 /* ── Dashboard ──────────────────────────────────────────── */
 export default function Dashboard({ user, tenant, onNavigate }) {
   const [calConnected, setCalConnected] = useState(() => isCalendarConnected());
-  const [calLoading, setCalLoading] = useState(false);
+  const [showGcalConnectModal, setShowGcalConnectModal] = useState(false);
+  const [showGcalDisconnectModal, setShowGcalDisconnectModal] = useState(false);
 
   const handleCalSync = async () => {
     if (calConnected) {
-      clearCalendarAuth();
-      setCalConnected(false);
+      setShowGcalDisconnectModal(true);
       return;
     }
-    setCalLoading(true);
+    setShowGcalConnectModal(true);
+  };
+
+  const confirmConnectGcal = async () => {
+    setShowGcalConnectModal(false);
     try {
-      const ok = await connectCalendar();
-      setCalConnected(ok);
-    } catch {
+      await connectCalendar(supabase);
+    } catch (err) {
       setCalConnected(false);
-    } finally {
-      setCalLoading(false);
     }
+  };
+
+  const confirmDisconnectGcal = () => {
+    clearCalendarAuth();
+    setCalConnected(false);
+    setShowGcalDisconnectModal(false);
   };
 
   const [data, setData] = useState({
@@ -136,7 +143,6 @@ export default function Dashboard({ user, tenant, onNavigate }) {
           <button
             className={`btn btn-outline btn-gcal-sync ${calConnected ? 'gcal-connected' : ''}`}
             onClick={handleCalSync}
-            disabled={calLoading}
             title={calConnected ? 'Google Calendar conectado — clic para desconectar' : 'Conectar Google Calendar'}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" strokeWidth="0">
@@ -145,7 +151,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            {calLoading ? 'Conectando...' : calConnected ? 'Calendar conectado' : 'Sincronizar Google Calendar'}
+            {calConnected ? 'Calendar conectado' : 'Sincronizar Google Calendar'}
             {calConnected && <span className="gcal-dot-connected" />}
           </button>
           <button className="btn btn-primary" onClick={() => onNavigate('agenda')}>
@@ -263,6 +269,80 @@ export default function Dashboard({ user, tenant, onNavigate }) {
         </div>
 
       </div>
+
+      {/* Modal: Conectar Google Calendar */}
+      {showGcalConnectModal && (
+        <div className="appt-modal-overlay high-z" onClick={() => setShowGcalConnectModal(false)}>
+          <div className="appt-modal animate-scale-in modal-gcal-connect" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="gcal-disconnect-icon">
+                <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                  <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                  <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                  <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                </svg>
+              </div>
+              <h3 className="conflict-modal-title">Conectar Google Calendar</h3>
+              <p className="conflict-modal-text">
+                Se recomienda iniciar sesión con <strong>la cuenta de Google del negocio</strong> para que las citas se sincronicen en ese calendario.
+              </p>
+              
+
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setShowGcalConnectModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-modal-action-bold"
+                  onClick={confirmConnectGcal}
+                >
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Desconectar Google Calendar */}
+      {showGcalDisconnectModal && (
+        <div className="appt-modal-overlay high-z" onClick={() => setShowGcalDisconnectModal(false)}>
+          <div className="appt-modal animate-scale-in modal-gcal-disconnect" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="gcal-disconnect-icon" style={{ color: 'var(--warning)' }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 6 13.5 15.5 6 8 1 12"/><polyline points="17 6 23 6 23 12"/></svg>
+              </div>
+              <h3 className="conflict-modal-title">¿Desconectar Google Calendar?</h3>
+              <p className="conflict-modal-text">
+                Las nuevas citas no se sincronizarán con tu calendario de Google, pero los eventos existentes permanecerán.
+              </p>
+
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setShowGcalDisconnectModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-modal-action-bold"
+                  onClick={confirmDisconnectGcal}
+                >
+                  Sí, Desconectar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

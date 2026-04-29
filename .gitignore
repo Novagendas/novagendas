@@ -17,6 +17,8 @@ tasks.md
 stack.md
 CLAUDE.md
 .mcp.json
+scripts/db.mjs
+supabase/migrations/
 
 # Editor directories and files
 .vscode/*

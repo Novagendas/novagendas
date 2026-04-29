@@ -1,0 +1,172 @@
+.locations-card {
+  margin-top: 1.5rem;
+  padding: 1.75rem;
+}
+
+.locations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.locations-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem !important;
+  border-radius: 12px !important;
+  font-weight: 700;
+  height: 38px;
+}
+
+.locations-loading {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-4);
+}
+
+.locations-empty {
+  background: var(--bg-subtle);
+  border: 2px dashed var(--border);
+  border-radius: 18px;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--text-4);
+}
+
+.locations-empty-icon {
+  font-size: 2.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.locations-empty h4 {
+  margin: 0 0 0.3rem;
+  color: var(--text-2);
+  font-weight: 800;
+}
+
+.locations-empty p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.locations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.location-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.95rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.location-item:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.location-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+}
+
+.location-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.location-name {
+  font-weight: 800;
+  color: var(--text);
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+}
+
+.location-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  font-size: 0.78rem;
+  color: var(--text-4);
+}
+
+.location-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.location-edit-btn,
+.location-delete-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.location-edit-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.location-delete-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-light);
+}
+
+.locations-modal-box {
+  max-width: 560px;
+}
+
+.color-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding: 0.5rem 0;
+}
+
+.color-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.18s, border-color 0.18s;
+  padding: 0;
+}
+
+.color-swatch:hover {
+  transform: scale(1.1);
+}
+
+.color-swatch--active {
+  border-color: var(--text);
+  transform: scale(1.15);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+@media (max-width: 720px) {
+  .location-actions { flex-direction: row; }
+  .location-meta { font-size: 0.72rem; gap: 0.5rem; }
+}

@@ -122,6 +122,13 @@ const MODULE_LABELS = {
   users: { id: 6, label: 'Gestión de Usuarios', icon: '🔑' },
 };
 
+const formatRegistration = (raw) => {
+  if (!raw) return '—';
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+};
+
 const RoleBadge = ({ role }) => {
   const r = ROLES[role] || { label: role, color: 'var(--text-4)' };
   return (
@@ -188,7 +195,8 @@ export default function Users({ user, tenant }) {
         *,
         rolpermisos (idrol, idpermiso)
       `)
-      .eq('idnegocios', tenant.id);
+      .eq('idnegocios', tenant.id)
+      .is('deleted_at', null);
 
     if (!error && rawUsers) {
       setUsers(rawUsers.map(u => {
@@ -211,7 +219,7 @@ export default function Users({ user, tenant }) {
           role: role,
           permissions: permissions,
           active: u.idestado === 1,
-          created: u.fecharegistro ? new Date(u.fecharegistro).toLocaleDateString() : 'Desconocido'
+          created: formatRegistration(u.fechainicio || u.fechaactualizacion)
         };
       }).sort((a, b) => (a.role === 'admin' ? -1 : b.role === 'admin' ? 1 : 0)));
     }
@@ -390,7 +398,7 @@ export default function Users({ user, tenant }) {
 
   const doDelete = async () => {
     const target = users.find(u => u.id === deleteId);
-    const { error } = await supabase.from('usuario').delete().eq('idusuario', deleteId);
+    const { error } = await supabase.from('usuario').update({ deleted_at: new Date().toISOString() }).eq('idusuario', deleteId);
     if (!error) {
       await insertLog({
         accion: 'DELETE',

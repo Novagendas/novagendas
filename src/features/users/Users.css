@@ -550,10 +550,11 @@
 
 .modal-header-gradient {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
-  padding: 2rem 2rem 1.75rem;
+  padding: 2rem 2.25rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 120px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
@@ -588,23 +589,28 @@
 }
 
 .modal-close-btn {
-  color: rgba(255,255,255,0.9);
-  background: rgba(255,255,255,0.15);
-  border-radius: 50%;
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+  background: rgba(255,255,255,0.12);
+  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255,255,255,0.2);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.18s, color 0.18s;
+  transition: background 0.18s ease, border-color 0.18s ease;
   flex-shrink: 0;
+  padding: 0;
 }
 
 .modal-close-btn:hover {
-  background: rgba(255,255,255,0.3);
-  color: #fff;
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.4);
+}
+
+.modal-close-btn:active {
+  background: rgba(255,255,255,0.32);
 }
 
 .modal-form {
