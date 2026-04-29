@@ -1,8 +1,9 @@
-// Google Calendar integration via Supabase Auth OAuth + Calendar REST API
-// Requires: Supabase Provider (Google) configured with calendar.events scope
+// Google Calendar integration via GIS Token Client (popup, no redirect)
+// Requires VITE_CALENDAR_API = OAuth2 Client ID with calendar.events scope
 const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
 const STORAGE_KEY = 'ng_gcal_token';
 const BASE_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+const CLIENT_ID = import.meta.env.VITE_CALENDAR_API;
 
 let _token = null;
 let _expiry = 0;
@@ -27,12 +28,6 @@ const cache = (token, expiresIn) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: _token, expiry: _expiry }));
 };
 
-const getToken = async () => {
-  if (isValid()) return _token;
-  if (loadCached()) return _token;
-  throw new Error('No token disponible. Conecta Google Calendar primero.');
-};
-
 export const clearCalendarAuth = () => {
   _token = null;
   _expiry = 0;
@@ -41,37 +36,54 @@ export const clearCalendarAuth = () => {
 
 export const isCalendarConnected = () => isValid() || loadCached();
 
-// Captura el provider_token después del OAuth redirect desde Supabase
-export const captureProviderToken = async (supabase) => {
-  try {
-    const { data } = await supabase.auth.getSession();
-    const session = data?.session;
-    if (session?.provider_token) {
-      cache(session.provider_token, session.expires_in || 3600);
-      // Desconectar sesión Supabase para que no interfiera con login custom
-      await supabase.auth.signOut({ scope: 'local' }).catch(() => null);
-      return true;
-    }
-  } catch (error) {
-    console.warn('No provider_token en sesión:', error);
+// Carga el script de GIS una sola vez
+const loadGIS = () => new Promise((resolve, reject) => {
+  if (window.google?.accounts?.oauth2) { resolve(); return; }
+  const existing = document.getElementById('gis-script');
+  if (existing) {
+    existing.addEventListener('load', resolve);
+    existing.addEventListener('error', reject);
+    return;
   }
-  return false;
-};
+  const script = document.createElement('script');
+  script.id = 'gis-script';
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.async = true;
+  script.defer = true;
+  script.onload = resolve;
+  script.onerror = () => reject(new Error('No se pudo cargar Google Identity Services'));
+  document.head.appendChild(script);
+});
 
-// Inicia el flujo OAuth vía Supabase Auth
-export const connectCalendar = async (supabase) => {
-  const redirectPath = window.location.pathname + '?gcal=connected';
-  await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      scopes: SCOPE,
-      redirectTo: `${window.location.origin}${redirectPath}`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
+// Abre popup de consentimiento de Calendar (sin redirect, sin sesión Supabase)
+export const connectCalendar = () => new Promise(async (resolve, reject) => {
+  try {
+    await loadGIS();
+    const client = window.google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      callback: (response) => {
+        if (response.error) {
+          reject(new Error(response.error_description || response.error));
+          return;
+        }
+        cache(response.access_token, response.expires_in || 3600);
+        resolve(true);
       },
-    },
-  });
+      error_callback: (err) => {
+        reject(new Error(err.message || 'Permiso denegado'));
+      },
+    });
+    client.requestToken();
+  } catch (err) {
+    reject(err);
+  }
+});
+
+const getToken = async () => {
+  if (isValid()) return _token;
+  if (loadCached()) return _token;
+  throw new Error('No token disponible. Conecta Google Calendar primero.');
 };
 
 const buildEvent = ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => ({

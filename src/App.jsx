@@ -21,7 +21,6 @@ import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
 import { supabase } from './Supabase/supabaseClient';
-import { captureProviderToken } from './services/googleCalendar';
 
 function LoadingScreen() {
   return (
@@ -168,30 +167,8 @@ export default function App() {
     const params = new URLSearchParams(window.location.search);
     const hasCode = params.has('code');
     const hasRecoveryHash = window.location.hash.includes('type=recovery');
-    const isGcalRedirect = params.has('gcal') && params.get('gcal') === 'connected';
-    // No activar reset si el code viene del OAuth de Google Calendar
-    if ((hasCode && !isGcalRedirect) || hasRecoveryHash) {
+    if (hasCode || hasRecoveryHash) {
       setResetTrigger(true);
-    }
-
-    // Capturar provider_token de Google Calendar OAuth después del redirect
-    if (params.has('gcal') && params.get('gcal') === 'connected') {
-      captureProviderToken(supabase).then(success => {
-        if (success) {
-          const snackbar = document.createElement('div');
-          snackbar.className = 'snackbar visible snackbar--success';
-          snackbar.innerHTML = '<div class="snackbar-icon">✓</div>¡Google Calendar conectado!';
-          snackbar.style.position = 'fixed';
-          snackbar.style.bottom = '2rem';
-          snackbar.style.left = '50%';
-          snackbar.style.transform = 'translateX(-50%)';
-          snackbar.style.zIndex = '9999';
-          document.body.appendChild(snackbar);
-          setTimeout(() => snackbar.remove(), 3000);
-        }
-        // Limpiar URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-      });
     }
 
     const host = window.location.hostname;

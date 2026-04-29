@@ -80,11 +80,12 @@ export default function Agenda({ user, tenant }) {
   const confirmConnectGcal = async () => {
     setShowGcalConnectModal(false);
     try {
-      await connectCalendar(supabase);
-      // La página redirige; el flujo continúa en App.jsx al volver
+      await connectCalendar();
+      setCalConnected(true);
+      showSnack('¡Google Calendar conectado correctamente!', 'success');
     } catch (err) {
       setCalConnected(false);
-      showSnack('Error: ' + (err.message || 'No se pudo conectar'), 'error');
+      showSnack('Error al conectar: ' + (err.message || 'No se pudo conectar'), 'error');
     }
   };
 
