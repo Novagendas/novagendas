@@ -29,8 +29,9 @@ export default function Payments({ user, tenant }) {
   const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailPayment, setDetailPayment] = useState(null);
+  const [detailAbono, setDetailAbono] = useState(null);
   const [form, setForm] = useState({ clientId: '', serviceId: '', amount: '', method: 'Efectivo', note: '' });
-  const [abonoForm, setAbonoForm] = useState({ clientId: '', monto: '', method: 'Efectivo', note: '' });
+  const [abonoForm, setAbonoForm] = useState({ clientId: '', monto: '', method: 'Efectivo', note: '', serviceId: '' });
   const [filter, setFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('pagos');
 
@@ -64,7 +65,7 @@ export default function Payments({ user, tenant }) {
     // Abonos (advance payments)
     const { data: abonoData } = await supabase
       .from('abono')
-      .select('*, cliente(nombre, apellido), metodopago(tipo)')
+      .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
       .eq('idnegocios', tenant.id)
       .is('deleted_at', null)
       .order('idabono', { ascending: false });
@@ -158,6 +159,7 @@ export default function Payments({ user, tenant }) {
       idcliente: parseInt(abonoForm.clientId),
       idusuario: user.idusuario || user.id,
       idmetodopago: meth?.idmetodopago || null,
+      idservicios: abonoForm.serviceId ? parseInt(abonoForm.serviceId) : null,
       monto,
       saldo_disponible: monto,
       observacion: abonoForm.note || null,
@@ -173,7 +175,7 @@ export default function Payments({ user, tenant }) {
         idNegocios: tenant.id,
       });
       showSnack('Abono registrado correctamente');
-      setAbonoForm({ clientId: '', monto: '', method: methods[0]?.tipo || 'Efectivo', note: '' });
+      setAbonoForm({ clientId: '', monto: '', method: methods[0]?.tipo || 'Efectivo', note: '', serviceId: '' });
       setShowAbonoModal(false);
       fetchData();
     } else {
@@ -274,14 +276,15 @@ export default function Payments({ user, tenant }) {
               <table className="data-table">
                 <thead>
                   <tr>
-                    {['Fecha', 'Paciente', 'Monto', 'Saldo Disponible', 'Método', 'Nota'].map(h => <th key={h}>{h}</th>)}
+                    {['Fecha', 'Paciente', 'Servicio', 'Monto', 'Saldo Disponible', 'Método'].map(h => <th key={h}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {abonos.map(a => (
-                    <tr key={a.idabono}>
+                    <tr key={a.idabono} className="payment-row-clickable" onClick={() => setDetailAbono(a)}>
                       <td>{a.fecha_abono ? new Date(a.fecha_abono).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
                       <td><span className="payment-client-name">{a.cliente?.nombre || '—'} {a.cliente?.apellido || ''}</span></td>
+                      <td><span className="payment-service-name">{a.servicios?.nombre || '—'}</span></td>
                       <td><span className="payment-amount">{fmt(a.monto)}</span></td>
                       <td>
                         <span className={`badge ${Number(a.saldo_disponible) > 0 ? 'badge-success' : 'badge-neutral'}`}>
@@ -289,7 +292,6 @@ export default function Payments({ user, tenant }) {
                         </span>
                       </td>
                       <td>{a.metodopago?.tipo || '—'}</td>
-                      <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.observacion || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -322,7 +324,7 @@ export default function Payments({ user, tenant }) {
             <table className="data-table">
               <thead>
                 <tr>
-                  {['Fecha', 'Paciente', 'Servicio', 'Método', 'Monto', 'Estado', ''].map(h => <th key={h}>{h}</th>)}
+                  {['Fecha', 'Paciente', 'Servicio', 'Método', 'Monto', 'Estado'].map(h => <th key={h}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -343,11 +345,6 @@ export default function Payments({ user, tenant }) {
                       </td>
                       <td><span className="payment-amount">{fmt(p.monto)}</span></td>
                       <td><span className="badge badge-success">Pagado</span></td>
-                      <td className="table-actions" onClick={e => e.stopPropagation()}>
-                        <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(p.idpagos)}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                        </button>
-                      </td>
                     </tr>
                   );
                 })}
@@ -418,6 +415,13 @@ export default function Payments({ user, tenant }) {
                       {methods.map(m => <option key={m.idmetodopago} value={m.tipo}>{m.tipo}</option>)}
                     </select>
                   </div>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Servicio (Opcional)</label>
+                  <select className="input-field" value={abonoForm.serviceId} onChange={e => updateAbono('serviceId', e.target.value)}>
+                    <option value="">— Sin servicio específico —</option>
+                    {services.map(s => <option key={s.idservicios} value={s.idservicios}>{s.nombre}</option>)}
+                  </select>
                 </div>
                 <div className="input-group">
                   <label className="input-label">Nota u Observación (Opcional)</label>
@@ -599,7 +603,72 @@ export default function Payments({ user, tenant }) {
 
             <div className="payment-detail-footer">
               <button className="btn btn-outline btn-flex-1" onClick={() => setDetailPayment(null)}>Cerrar</button>
-              <button className="btn btn-danger" onClick={() => { setDeleteTarget(detailPayment.idpagos); setDetailPayment(null); }}>Eliminar pago</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Abono Detail Modal ── */}
+      {detailAbono && (
+        <div className="modal-overlay" onClick={() => setDetailAbono(null)}>
+          <div className="modal-box animate-scale-in payment-detail-box" onClick={e => e.stopPropagation()}>
+            <div className="payment-detail-header">
+              <div className="payment-detail-header-inner">
+                <div className="payment-detail-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </div>
+                <div>
+                  <h3 className="payment-detail-title">Detalle del Abono</h3>
+                  <p className="payment-detail-subtitle">#{detailAbono.idabono}</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon payment-detail-close" onClick={() => setDetailAbono(null)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="payment-detail-body">
+              <div className="payment-detail-amount-row">
+                <span className="payment-detail-amount">{fmt(detailAbono.monto)}</span>
+                <span className={`badge ${Number(detailAbono.saldo_disponible) > 0 ? 'badge-success' : 'badge-neutral'}`}>
+                  Saldo: {fmt(detailAbono.saldo_disponible)}
+                </span>
+              </div>
+
+              <div className="payment-detail-grid">
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Paciente</span>
+                  <span className="payment-detail-value">{detailAbono.cliente?.nombre} {detailAbono.cliente?.apellido}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Fecha</span>
+                  <span className="payment-detail-value">{detailAbono.fecha_abono ? new Date(detailAbono.fecha_abono).toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Servicio</span>
+                  <span className="payment-detail-value">{detailAbono.servicios?.nombre || '—'}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Método de Pago</span>
+                  <span className="payment-detail-value">{detailAbono.metodopago?.tipo || '—'}</span>
+                </div>
+              </div>
+
+              {detailAbono.observacion ? (
+                <div className="payment-detail-notes">
+                  <span className="payment-detail-label">Notas / Observaciones</span>
+                  <p className="payment-detail-notes-text">{detailAbono.observacion}</p>
+                </div>
+              ) : (
+                <div className="payment-detail-notes payment-detail-notes--empty">
+                  <span className="payment-detail-label">Notas / Observaciones</span>
+                  <p className="payment-detail-notes-empty">Sin notas registradas.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="payment-detail-footer">
+              <button className="btn btn-outline btn-flex-1" onClick={() => setDetailAbono(null)}>Cerrar</button>
             </div>
           </div>
         </div>

@@ -62,15 +62,65 @@ src/
 
 ## Google Calendar
 
-- Variable: `VITE_CALENDAR_API` = OAuth2 Client ID
-- Flujo: GIS token client (popup OAuth en primer uso, token cacheado en localStorage)
-- Se crea el evento en el calendar primario del admin autorizado (`novagendamiento@gmail.com`)
+Integración server-side via Supabase Edge Functions. **No usa GIS/popup de browser.**
+
+### Arquitectura
+
+- Flujo: Authorization Code OAuth2 → tokens almacenados en DB por `idnegocios`
+- El token es del negocio (no del usuario), guardado en `google_integrations`
+- Refresh automático en el servidor cuando el token expira (con buffer de 60s)
+
+### Edge Functions (proyecto `aulddrljywoigivxugqf`)
+
+| Función | Ruta | JWT | Qué hace |
+|---|---|---|---|
+| `google-calendar-login` | `/functions/v1/google-calendar-login?idnegocios=N` | No | Redirige a Google OAuth consent |
+| `google-calendar-callback` | `/functions/v1/google-calendar-callback` | No | Recibe `?code=&state=`, guarda tokens en DB, redirige a `dominio.novagendas.com?google_connected=true` |
+| `google-calendar-event` | `/functions/v1/google-calendar-event` (POST) | No | CRUD de eventos en Google Calendar con auto-refresh |
+
+### Tabla DB
+
+```sql
+google_integrations (id, idnegocios UNIQUE FK→negocios, access_token, refresh_token, expiry_date BIGINT, created_at, updated_at)
+-- RLS habilitado, solo service_role accede directamente
+-- RPCs para frontend: has_google_integration(p_idnegocios), disconnect_google_integration(p_idnegocios)
+```
+
+### Frontend (`src/services/googleCalendar.js`)
+
+```js
+connectCalendar(idnegocios)          // window.location.href → google-calendar-login
+isCalendarConnected(idnegocios)      // supabase.rpc('has_google_integration')
+clearCalendarAuth(idnegocios)        // supabase.rpc('disconnect_google_integration')
+createCalendarEvent(idnegocios, eventArgs)
+updateCalendarEvent(idnegocios, eventId, eventArgs)
+deleteCalendarEvent(idnegocios, eventId)
+```
+
+### Comportamiento en Agenda.jsx
+
+- Al cargar: `isCalendarConnected(tenant.id)` → `setCalConnected`
+- Detecta `?google_connected=true` / `?google_error=` en URL → snack + `replaceState` para limpiar URL
+- Crear cita: llama `createCalendarEvent(tenant.id, {...})` — fallo es silencioso
+- Editar cita: llama `updateCalendarEvent` si `form.gcalEventId` existe
+- Eliminar cita: llama `deleteCalendarEvent` si `gcalEventId` existe
+
+### Secrets en Edge Functions (Supabase Dashboard)
+
+- `GOOGLE_CLIENT_ID` — OAuth2 Client ID
+- `GOOGLE_CLIENT_SECRET` — OAuth2 Client Secret
+
+### Redirect URI autorizado en Google Cloud
+
+```
+https://aulddrljywoigivxugqf.supabase.co/functions/v1/google-calendar-callback
+```
+
+### Eventos creados
+
 - Invitados: email del cliente + email del especialista
 - Recordatorios: email 24h antes + popup 30 min antes
-- Se llama en `Agenda.jsx → handleSubmit` solo al crear (no al editar)
-- Fallo es silencioso (no bloquea el guardado de la cita)
-
-**Para activar:** el administrador debe autorizar con la cuenta `novagendamiento@gmail.com` en el popup que aparece la primera vez que crea una cita.
+- `sendUpdates=all` en create/update/delete
 
 ## Tablas principales
 
@@ -101,7 +151,7 @@ logsnegocio      — auditoría (INSERT via insertLog())
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_CALENDAR_API=          # Google OAuth2 Client ID
+# VITE_CALENDAR_API ya no se usa — Google OAuth es server-side via Edge Functions
 ```
 
 ## Comandos
