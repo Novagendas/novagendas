@@ -65,9 +65,22 @@ export default function Agenda({ user, tenant }) {
   const [pivot, setPivot] = useState(new Date());
 
   /* ------ Google Calendar connection state ------ */
-  const [calConnected, setCalConnected] = useState(() => isCalendarConnected());
+  const [calConnected, setCalConnected] = useState(false);
   const [showGcalDisconnectModal, setShowGcalDisconnectModal] = useState(false);
   const [showGcalConnectModal, setShowGcalConnectModal] = useState(false);
+
+  useEffect(() => {
+    isCalendarConnected(tenant.id).then(setCalConnected);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google_connected') === 'true') {
+      setCalConnected(true);
+      showSnack('¡Google Calendar conectado correctamente!', 'success');
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('google_error')) {
+      showSnack('Error al conectar Google Calendar', 'error');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCalSync = async () => {
     if (calConnected) {
@@ -77,20 +90,13 @@ export default function Agenda({ user, tenant }) {
     setShowGcalConnectModal(true);
   };
 
-  const confirmConnectGcal = async () => {
+  const confirmConnectGcal = () => {
     setShowGcalConnectModal(false);
-    try {
-      await connectCalendar();
-      setCalConnected(true);
-      showSnack('¡Google Calendar conectado correctamente!', 'success');
-    } catch (err) {
-      setCalConnected(false);
-      showSnack('Error al conectar: ' + (err.message || 'No se pudo conectar'), 'error');
-    }
+    connectCalendar(tenant.id);
   };
 
-  const confirmDisconnectGcal = () => {
-    clearCalendarAuth();
+  const confirmDisconnectGcal = async () => {
+    await clearCalendarAuth(tenant.id);
     setCalConnected(false);
     setShowGcalDisconnectModal(false);
     showSnack('Desconectado de Google Calendar');
@@ -289,7 +295,7 @@ export default function Agenda({ user, tenant }) {
 
       if (gcalEventId) {
         try {
-          await deleteCalendarEvent(gcalEventId);
+          await deleteCalendarEvent(tenant.id, gcalEventId);
         } catch (calErr) {
           console.warn('No se pudo eliminar el evento de Google Calendar:', calErr.message);
         }
@@ -577,10 +583,10 @@ export default function Agenda({ user, tenant }) {
 
         if (editId && form.gcalEventId) {
           // Actualizar evento existente
-          await updateCalendarEvent(form.gcalEventId, calArgs);
+          await updateCalendarEvent(tenant.id, form.gcalEventId, calArgs);
         } else if (!editId) {
           // Crear nuevo evento y guardar su ID en la cita
-          const newEventId = await createCalendarEvent(calArgs);
+          const newEventId = await createCalendarEvent(tenant.id, calArgs);
           if (newEventId) {
             await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
           }

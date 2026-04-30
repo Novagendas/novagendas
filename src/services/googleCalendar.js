@@ -1,89 +1,33 @@
-// Google Calendar integration via GIS Token Client (popup, no redirect)
-// Requires VITE_CALENDAR_API = OAuth2 Client ID with calendar.events scope
-const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
-const STORAGE_KEY = 'ng_gcal_token';
-const BASE_URL = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
-const CLIENT_ID = import.meta.env.VITE_CALENDAR_API;
+import { supabase } from '../Supabase/supabaseClient';
 
-let _token = null;
-let _expiry = 0;
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '')}/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const isValid = () => _token && Date.now() < _expiry;
-
-const loadCached = () => {
-  try {
-    const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
-    if (s && Date.now() < s.expiry) {
-      _token = s.token;
-      _expiry = s.expiry;
-      return true;
-    }
-  } catch { }
-  return false;
+export const connectCalendar = (idnegocios) => {
+  window.location.href = `${FUNCTIONS_URL}/google-calendar-login?idnegocios=${idnegocios}`;
 };
 
-const cache = (token, expiresIn) => {
-  _token = token;
-  _expiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: _token, expiry: _expiry }));
+export const isCalendarConnected = async (idnegocios) => {
+  const { data, error } = await supabase.rpc('has_google_integration', { p_idnegocios: idnegocios });
+  return !error && data === true;
 };
 
-export const clearCalendarAuth = () => {
-  _token = null;
-  _expiry = 0;
-  localStorage.removeItem(STORAGE_KEY);
+export const clearCalendarAuth = async (idnegocios) => {
+  await supabase.rpc('disconnect_google_integration', { p_idnegocios: idnegocios });
 };
 
-export const isCalendarConnected = () => isValid() || loadCached();
-
-// Carga el script de GIS una sola vez
-const loadGIS = () => new Promise((resolve, reject) => {
-  if (window.google?.accounts?.oauth2) { resolve(); return; }
-  const existing = document.getElementById('gis-script');
-  if (existing) {
-    existing.addEventListener('load', resolve);
-    existing.addEventListener('error', reject);
-    return;
-  }
-  const script = document.createElement('script');
-  script.id = 'gis-script';
-  script.src = 'https://accounts.google.com/gsi/client';
-  script.async = true;
-  script.defer = true;
-  script.onload = resolve;
-  script.onerror = () => reject(new Error('No se pudo cargar Google Identity Services'));
-  document.head.appendChild(script);
-});
-
-// Abre popup de consentimiento de Calendar (sin redirect, sin sesión Supabase)
-export const connectCalendar = () => new Promise(async (resolve, reject) => {
-  try {
-    await loadGIS();
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      callback: (response) => {
-        if (response.error) {
-          reject(new Error(response.error_description || response.error));
-          return;
-        }
-        cache(response.access_token, response.expires_in || 3600);
-        resolve(true);
-      },
-      error_callback: (err) => {
-        reject(new Error(err.message || 'Permiso denegado'));
-      },
-    });
-    client.requestToken();
-  } catch (err) {
-    reject(err);
-  }
-});
-
-const getToken = async () => {
-  if (isValid()) return _token;
-  if (loadCached()) return _token;
-  throw new Error('No token disponible. Conecta Google Calendar primero.');
+const callEventFunction = async (payload) => {
+  const res = await fetch(`${FUNCTIONS_URL}/google-calendar-event`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${ANON_KEY}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!data.success) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
 };
 
 const buildEvent = ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => ({
@@ -102,46 +46,25 @@ const buildEvent = ({ summary, description, startDateTime, endDateTime, attendee
   guestsCanSeeOtherGuests: true,
 });
 
-export const createCalendarEvent = async ({ summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => {
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}?sendUpdates=all`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildEvent({ summary, description, startDateTime, endDateTime, attendeeEmails })),
+export const createCalendarEvent = async (idnegocios, eventArgs) => {
+  const { eventId } = await callEventFunction({
+    idnegocios,
+    action: 'create',
+    eventData: buildEvent(eventArgs),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
-  }
-  const data = await res.json();
-  return data.id || null;
+  return eventId ?? null;
 };
 
-export const updateCalendarEvent = async (eventId, { summary, description, startDateTime, endDateTime, attendeeEmails = [] }) => {
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}/${eventId}?sendUpdates=all`, {
-    method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(buildEvent({ summary, description, startDateTime, endDateTime, attendeeEmails })),
+export const updateCalendarEvent = async (idnegocios, eventId, eventArgs) => {
+  await callEventFunction({
+    idnegocios,
+    action: 'update',
+    eventId,
+    eventData: buildEvent(eventArgs),
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
-  }
   return eventId;
 };
 
-export const deleteCalendarEvent = async (eventId) => {
-  const token = await getToken();
-  const res = await fetch(`${BASE_URL}/${eventId}?sendUpdates=all`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (!res.ok && res.status !== 410) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error?.message || `HTTP ${res.status}`);
-  }
+export const deleteCalendarEvent = async (idnegocios, eventId) => {
+  await callEventFunction({ idnegocios, action: 'delete', eventId });
 };
