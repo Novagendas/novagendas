@@ -1,105 +1,18 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import SelectableInput from '../../components/inputs/SelectableInput';
+import { PAYMENT_METHODS, PAYMENT_METHOD_ICONS } from '../../utils/constants';
+import { fmt } from '../../utils/formatters';
+import { parseDate } from '../../utils/dateHelpers';
 import './Payments.css';
 
-const METHODS = ['Efectivo', 'Tarjeta', 'Transferencia', 'Nequi / Daviplata'];
+const METHOD_ICONS = PAYMENT_METHOD_ICONS;
 
-const METHOD_ICONS = {
-  'Efectivo': '💵',
-  'Tarjeta': '💳',
-  'Transferencia': '🏦',
-  'Nequi / Daviplata': '📱',
-};
 
-const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
-
-// Helper to handle potential day-shifts from UTC to Local
-const parseDate = (dateStr) => {
-  if (!dateStr) return new Date();
-  // Ensure the string is treated as UTC if it's missing the Z suffix (common with TIMESTAMP columns)
-  let normalized = dateStr;
-  if (!normalized.includes('Z') && !normalized.includes('+')) {
-    normalized = normalized.replace(' ', 'T') + 'Z';
-  }
-  return new Date(normalized);
-};
-
-/* ─── Buscador de pacientes ─────────────────────────────────── */
-const ClientSearchSelect = ({ clients, value, onChange }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const wrapRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setIsOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const filtered = clients.filter(c =>
-    `${c.nombre} ${c.apellido} ${c.cedula}`.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const selected = clients.find(c => String(c.idcliente) === String(value));
-
-  return (
-    <div ref={wrapRef} className="client-search-wrapper">
-      <div
-        onClick={() => setIsOpen(o => !o)}
-        className="client-search-trigger"
-        style={{ border: `1.5px solid ${isOpen ? 'var(--primary)' : 'var(--border-strong)'}`, boxShadow: isOpen ? '0 0 0 4px var(--primary-light)' : 'var(--shadow-sm)' }}
-      >
-        <span className="client-search-icon-text">👤</span>
-        <div className="client-search-placeholder" style={{ color: selected ? 'var(--text)' : 'var(--text-5)', fontWeight: selected ? 700 : 500 }}>
-          {selected ? `${selected.nombre} ${selected.apellido}` : 'Busca un paciente...'}
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="3" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s' }}><polyline points="6 9 12 15 18 9" /></svg>
-      </div>
-
-      {isOpen && (
-        <div className="client-search-dropdown animate-scale-in">
-          <div className="client-search-header">
-            <div className="client-search-input-box">
-              <input
-                autoFocus
-                type="text"
-                placeholder="Escribe nombre o cédula..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="input-field client-search-input"
-              />
-              <svg className="client-search-input-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            </div>
-          </div>
-          <div className="client-search-results">
-            {filtered.length > 0 ? filtered.map(c => (
-              <div
-                key={c.idcliente}
-                className="client-result-item"
-                onClick={() => { onChange(String(c.idcliente)); setIsOpen(false); setSearch(''); }}
-                style={{
-                  background: String(value) === String(c.idcliente) ? 'var(--primary-light)' : 'transparent',
-                  color: String(value) === String(c.idcliente) ? 'var(--primary)' : 'var(--text-2)'
-                }}
-              >
-                <span>{c.nombre} {c.apellido}</span>
-                <span className="client-result-id">CC {c.cedula}</span>
-              </div>
-            )) : (
-              <div className="client-no-results">
-                <div className="client-no-results-emoji">🔍</div>
-                No se encontraron resultados
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default function Payments({ user, tenant }) {
   const [payments, setPayments] = useState([]);
+  const [abonos, setAbonos] = useState([]);
   const [methods, setMethods] = useState([]);
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
@@ -113,10 +26,14 @@ export default function Payments({ user, tenant }) {
   };
 
   const [showModal, setShowModal] = useState(false);
+  const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailPayment, setDetailPayment] = useState(null);
+  const [detailAbono, setDetailAbono] = useState(null);
   const [form, setForm] = useState({ clientId: '', serviceId: '', amount: '', method: 'Efectivo', note: '' });
+  const [abonoForm, setAbonoForm] = useState({ clientId: '', monto: '', method: 'Efectivo', note: '', serviceId: '' });
   const [filter, setFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('pagos');
 
   const fetchData = async () => {
     if (!tenant?.id) return;
@@ -140,9 +57,20 @@ export default function Payments({ user, tenant }) {
       .from('pagos')
       .select('*, cliente(nombre, apellido), servicios(nombre)')
       .eq('idnegocios', tenant.id)
+      .is('deleted_at', null)
       .order('idpagos', { ascending: false });
 
     if (!error) setPayments(payData || []);
+
+    // Abonos (advance payments)
+    const { data: abonoData } = await supabase
+      .from('abono')
+      .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
+      .eq('idnegocios', tenant.id)
+      .is('deleted_at', null)
+      .order('idabono', { ascending: false });
+
+    setAbonos(abonoData || []);
     setLoading(false);
   };
 
@@ -201,7 +129,7 @@ export default function Payments({ user, tenant }) {
   };
 
   const handleDelete = async (id) => {
-    const { error } = await supabase.from('pagos').delete().eq('idpagos', id);
+    const { error } = await supabase.from('pagos').update({ deleted_at: new Date().toISOString() }).eq('idpagos', id);
     if (!error) {
       await insertLog({
         accion: 'DELETE',
@@ -214,6 +142,46 @@ export default function Payments({ user, tenant }) {
       fetchData();
     }
     setDeleteTarget(null);
+  };
+
+  const updateAbono = (k, v) => setAbonoForm(f => ({ ...f, [k]: v }));
+
+  const handleAbonoSubmit = async (e) => {
+    e.preventDefault();
+    if (!abonoForm.clientId || !abonoForm.monto || Number(abonoForm.monto) <= 0) {
+      showSnack('Paciente y monto son obligatorios', 'error');
+      return;
+    }
+    setSaving(true);
+    const meth = methods.find(m => m.tipo === abonoForm.method) || methods[0];
+    const monto = parseFloat(abonoForm.monto);
+    const { error } = await supabase.from('abono').insert([{
+      idcliente: parseInt(abonoForm.clientId),
+      idusuario: user.idusuario || user.id,
+      idmetodopago: meth?.idmetodopago || null,
+      idservicios: abonoForm.serviceId ? parseInt(abonoForm.serviceId) : null,
+      monto,
+      saldo_disponible: monto,
+      observacion: abonoForm.note || null,
+      idnegocios: tenant.id,
+    }]);
+    if (!error) {
+      const client = clients.find(c => c.idcliente === parseInt(abonoForm.clientId));
+      await insertLog({
+        accion: 'CREATE',
+        entidad: 'Abono',
+        descripcion: `Abono de ${fmt(monto)} para ${client?.nombre || 'Paciente'} vía ${abonoForm.method}`,
+        idUsuario: user.idusuario || user.id,
+        idNegocios: tenant.id,
+      });
+      showSnack('Abono registrado correctamente');
+      setAbonoForm({ clientId: '', monto: '', method: methods[0]?.tipo || 'Efectivo', note: '', serviceId: '' });
+      setShowAbonoModal(false);
+      fetchData();
+    } else {
+      showSnack('Error al registrar abono', 'error');
+    }
+    setSaving(false);
   };
 
   const filtered = filter === 'all' ? payments : payments.filter(p => {
@@ -239,10 +207,16 @@ export default function Payments({ user, tenant }) {
           <h2>Registro de Pagos</h2>
           <p className="payments-subtitle">{payments.length} transacciones registradas</p>
         </div>
-        <button className="btn btn-primary" onClick={() => { fetchData(); setShowModal(true); }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-          Registrar Pago
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <button className="btn btn-outline" onClick={() => { fetchData(); setShowAbonoModal(true); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Nuevo Abono
+          </button>
+          <button className="btn btn-primary" onClick={() => { fetchData(); setShowModal(true); }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            Registrar Pago
+          </button>
+        </div>
       </div>
 
       {/* ── Summary Cards ── */}
@@ -283,6 +257,56 @@ export default function Payments({ user, tenant }) {
           <p>Por favor póngase en contacto con soporte para la configuración de sus métodos de pago.</p>
         </div>
       )}
+      {/* ── Tab Switcher ── */}
+      <div className="payments-filter-bar">
+        <button
+          className={`filter-btn ${activeTab === 'pagos' ? 'filter-btn--active' : ''}`}
+          onClick={() => setActiveTab('pagos')}
+        >💳 Pagos</button>
+        <button
+          className={`filter-btn ${activeTab === 'abonos' ? 'filter-btn--active' : ''}`}
+          onClick={() => setActiveTab('abonos')}
+        >🏦 Abonos ({abonos.filter(a => Number(a.saldo_disponible) > 0).length} con saldo)</button>
+      </div>
+
+      {activeTab === 'abonos' ? (
+        <div className="card payments-table-card">
+          {abonos.length > 0 ? (
+            <div className="table-responsive">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    {['Fecha', 'Paciente', 'Servicio', 'Monto', 'Saldo Disponible', 'Método'].map(h => <th key={h}>{h}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {abonos.map(a => (
+                    <tr key={a.idabono} className="payment-row-clickable" onClick={() => setDetailAbono(a)}>
+                      <td>{a.fecha_abono ? new Date(a.fecha_abono).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
+                      <td><span className="payment-client-name">{a.cliente?.nombre || '—'} {a.cliente?.apellido || ''}</span></td>
+                      <td><span className="payment-service-name">{a.servicios?.nombre || '—'}</span></td>
+                      <td><span className="payment-amount">{fmt(a.monto)}</span></td>
+                      <td>
+                        <span className={`badge ${Number(a.saldo_disponible) > 0 ? 'badge-success' : 'badge-neutral'}`}>
+                          {fmt(a.saldo_disponible)}
+                        </span>
+                      </td>
+                      <td>{a.metodopago?.tipo || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <h4>Sin abonos registrados</h4>
+              <p>Crea el primer abono con el botón "Nuevo Abono".</p>
+            </div>
+          )}
+        </div>
+      ) : (
+      <>
       <div className="payments-filter-bar">
         {['all', ...methods.map(m => m.tipo)].map(m => (
           <button key={m} onClick={() => setFilter(m)}
@@ -300,7 +324,7 @@ export default function Payments({ user, tenant }) {
             <table className="data-table">
               <thead>
                 <tr>
-                  {['Fecha', 'Paciente', 'Servicio', 'Método', 'Monto', 'Estado', ''].map(h => <th key={h}>{h}</th>)}
+                  {['Fecha', 'Paciente', 'Servicio', 'Método', 'Monto', 'Estado'].map(h => <th key={h}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -321,11 +345,6 @@ export default function Payments({ user, tenant }) {
                       </td>
                       <td><span className="payment-amount">{fmt(p.monto)}</span></td>
                       <td><span className="badge badge-success">Pagado</span></td>
-                      <td className="table-actions" onClick={e => e.stopPropagation()}>
-                        <button className="btn btn-ghost btn-icon" onClick={() => setDeleteTarget(p.idpagos)}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                        </button>
-                      </td>
                     </tr>
                   );
                 })}
@@ -340,6 +359,85 @@ export default function Payments({ user, tenant }) {
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {/* ── Abono Modal ── */}
+      {showAbonoModal && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAbonoModal(false)}>
+          <div className="modal-box animate-scale-in payment-modal-box">
+            <div className="payment-modal-header" style={{ '--payment-modal-bg': 'linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%)' }}>
+              <div className="payment-modal-inner-row">
+                <div className="payment-modal-icon-box">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </div>
+                <div>
+                  <h3 className="payment-modal-title">Registrar Abono</h3>
+                  {abonoForm.monto ? (
+                    <div className="payment-modal-summary-pill">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>
+                      {fmt(parseFloat(abonoForm.monto) || 0)} · saldo disponible
+                    </div>
+                  ) : (
+                    <p className="payment-modal-hint">Pago anticipado para aplicar en citas.</p>
+                  )}
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon payment-modal-close-btn" onClick={() => setShowAbonoModal(false)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+            <form onSubmit={handleAbonoSubmit} className="modal-form">
+              <div className="payment-modal-scroll">
+                <div className="input-group">
+                  <label className="input-label">Paciente / Cliente</label>
+                  <SelectableInput
+                    label="Paciente"
+                    options={clients.map(c => ({ value: c.idcliente, label: `${c.nombre} ${c.apellido}`, cedula: c.cedula }))}
+                    value={abonoForm.clientId}
+                    onChange={v => updateAbono('clientId', v)}
+                    placeholder="Busca un paciente..."
+                    icon="👤"
+                    isClientSearch={true}
+                  />
+                </div>
+                <div className="grid-2">
+                  <div className="payment-amount-box">
+                    <label className="input-label">Monto del Abono (COP)</label>
+                    <div className="amount-input-wrapper">
+                      <span className="amount-currency-symbol">$</span>
+                      <input type="number" className="input-field amount-input" placeholder="0" value={abonoForm.monto} onChange={e => updateAbono('monto', e.target.value)} required min="1" />
+                    </div>
+                  </div>
+                  <div className="input-group">
+                    <label className="input-label">Método de Pago</label>
+                    <select className="input-field" value={abonoForm.method} onChange={e => updateAbono('method', e.target.value)}>
+                      {methods.map(m => <option key={m.idmetodopago} value={m.tipo}>{m.tipo}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Servicio (Opcional)</label>
+                  <select className="input-field" value={abonoForm.serviceId} onChange={e => updateAbono('serviceId', e.target.value)}>
+                    <option value="">— Sin servicio específico —</option>
+                    {services.map(s => <option key={s.idservicios} value={s.idservicios}>{s.nombre}</option>)}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label className="input-label">Nota u Observación (Opcional)</label>
+                  <input className="input-field" placeholder="Ej. Abono para paquete de sesiones..." value={abonoForm.note} onChange={e => updateAbono('note', e.target.value)} />
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="btn btn-outline btn-flex-1" onClick={() => setShowAbonoModal(false)}>Cancelar</button>
+                  <button type="submit" className="btn btn-primary btn-flex-2" disabled={saving}>
+                    {saving ? 'Guardando...' : 'Registrar Abono'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* ── Register Payment Modal ── */}
       {showModal && (
@@ -372,7 +470,19 @@ export default function Payments({ user, tenant }) {
               <div className="payment-modal-scroll">
                 <div className="input-group">
                   <label className="input-label">Paciente / Cliente</label>
-                  <ClientSearchSelect clients={clients} value={form.clientId} onChange={v => update('clientId', v)} />
+                  <SelectableInput
+                    label="Paciente"
+                    options={clients.map(c => ({
+                      value: c.idcliente,
+                      label: `${c.nombre} ${c.apellido}`,
+                      cedula: c.cedula,
+                    }))}
+                    value={form.clientId}
+                    onChange={v => update('clientId', v)}
+                    placeholder="Busca un paciente..."
+                    icon="👤"
+                    isClientSearch={true}
+                  />
                 </div>
 
                 <div className="grid-2">
@@ -493,7 +603,72 @@ export default function Payments({ user, tenant }) {
 
             <div className="payment-detail-footer">
               <button className="btn btn-outline btn-flex-1" onClick={() => setDetailPayment(null)}>Cerrar</button>
-              <button className="btn btn-danger" onClick={() => { setDeleteTarget(detailPayment.idpagos); setDetailPayment(null); }}>Eliminar pago</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Abono Detail Modal ── */}
+      {detailAbono && (
+        <div className="modal-overlay" onClick={() => setDetailAbono(null)}>
+          <div className="modal-box animate-scale-in payment-detail-box" onClick={e => e.stopPropagation()}>
+            <div className="payment-detail-header">
+              <div className="payment-detail-header-inner">
+                <div className="payment-detail-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </div>
+                <div>
+                  <h3 className="payment-detail-title">Detalle del Abono</h3>
+                  <p className="payment-detail-subtitle">#{detailAbono.idabono}</p>
+                </div>
+              </div>
+              <button className="btn btn-ghost btn-icon payment-detail-close" onClick={() => setDetailAbono(null)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              </button>
+            </div>
+
+            <div className="payment-detail-body">
+              <div className="payment-detail-amount-row">
+                <span className="payment-detail-amount">{fmt(detailAbono.monto)}</span>
+                <span className={`badge ${Number(detailAbono.saldo_disponible) > 0 ? 'badge-success' : 'badge-neutral'}`}>
+                  Saldo: {fmt(detailAbono.saldo_disponible)}
+                </span>
+              </div>
+
+              <div className="payment-detail-grid">
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Paciente</span>
+                  <span className="payment-detail-value">{detailAbono.cliente?.nombre} {detailAbono.cliente?.apellido}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Fecha</span>
+                  <span className="payment-detail-value">{detailAbono.fecha_abono ? new Date(detailAbono.fecha_abono).toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Servicio</span>
+                  <span className="payment-detail-value">{detailAbono.servicios?.nombre || '—'}</span>
+                </div>
+                <div className="payment-detail-field">
+                  <span className="payment-detail-label">Método de Pago</span>
+                  <span className="payment-detail-value">{detailAbono.metodopago?.tipo || '—'}</span>
+                </div>
+              </div>
+
+              {detailAbono.observacion ? (
+                <div className="payment-detail-notes">
+                  <span className="payment-detail-label">Notas / Observaciones</span>
+                  <p className="payment-detail-notes-text">{detailAbono.observacion}</p>
+                </div>
+              ) : (
+                <div className="payment-detail-notes payment-detail-notes--empty">
+                  <span className="payment-detail-label">Notas / Observaciones</span>
+                  <p className="payment-detail-notes-empty">Sin notas registradas.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="payment-detail-footer">
+              <button className="btn btn-outline btn-flex-1" onClick={() => setDetailAbono(null)}>Cerrar</button>
             </div>
           </div>
         </div>

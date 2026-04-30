@@ -1,5 +1,5 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
 import './Inventory.css';
@@ -26,6 +26,14 @@ export default function Inventory({ user, tenant }) {
   const [catName, setCatName] = useState('');
   const [editCatId, setEditCatId] = useState(null);
 
+  // Filtros y búsqueda
+  const [search, setSearch] = useState('');
+  const [orderBy, setOrderBy] = useState('recent');
+  const [dateField, setDateField] = useState('fechacreacion');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [showDateFilter, setShowDateFilter] = useState(false);
+
   const [alertConfig, setAlertConfig] = useState({ show: false, title: '', message: '', type: 'alert', onConfirm: null });
   const showAlert = (title, message) => setAlertConfig({ show: true, title, message, type: 'alert', onConfirm: null });
   const showConfirm = (title, message, onConfirm) => setAlertConfig({ show: true, title, message, type: 'confirm', onConfirm });
@@ -36,7 +44,7 @@ export default function Inventory({ user, tenant }) {
     setLoading(true);
     const { data: catData } = await supabase.from('categoriaproducto').select('*').eq('idnegocios', tenant.id);
     setCategories(catData || []);
-    const { data: prodData, error } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id);
+    const { data: prodData, error } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
     if (!error) setProducts(prodData || []);
     setLoading(false);
   };
@@ -170,7 +178,7 @@ export default function Inventory({ user, tenant }) {
   const handleDeleteProduct = async (id) => {
     showConfirm('Eliminar Producto', '¿Seguro que deseas eliminar este producto permanentemente?', async () => {
       setSaving(true);
-      const { error } = await supabase.from('producto').delete().eq('idproducto', id);
+      const { error } = await supabase.from('producto').update({ deleted_at: new Date().toISOString() }).eq('idproducto', id);
       if (!error) {
         showSnack('Producto eliminado', 'error');
         fetchData();
@@ -183,7 +191,53 @@ export default function Inventory({ user, tenant }) {
   };
 
   const alertas = products.filter(i => i.cantidad <= i.cantidadminima).length;
-  const filteredProducts = products;
+
+  const filteredProducts = useMemo(() => {
+    let list = products;
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(p =>
+        [p.nombre, p.descripcion, p.lote]
+          .some(v => (v || '').toString().toLowerCase().includes(q))
+      );
+    }
+    if (dateFrom) {
+      const from = new Date(dateFrom).getTime();
+      list = list.filter(p => p[dateField] && new Date(p[dateField]).getTime() >= from);
+    }
+    if (dateTo) {
+      // incluir todo el día final
+      const to = new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 - 1;
+      list = list.filter(p => p[dateField] && new Date(p[dateField]).getTime() <= to);
+    }
+    const sorted = [...list];
+    switch (orderBy) {
+      case 'recent':
+        sorted.sort((a, b) =>
+          new Date(b.fechacreacion || 0).getTime() - new Date(a.fechacreacion || 0).getTime()
+          || (b.idproducto || 0) - (a.idproducto || 0)
+        );
+        break;
+      case 'oldest':
+        sorted.sort((a, b) =>
+          new Date(a.fechacreacion || 0).getTime() - new Date(b.fechacreacion || 0).getTime()
+          || (a.idproducto || 0) - (b.idproducto || 0)
+        );
+        break;
+      case 'updated':
+        sorted.sort((a, b) =>
+          new Date(b.fechaactualizacion || b.fechacreacion || 0).getTime()
+          - new Date(a.fechaactualizacion || a.fechacreacion || 0).getTime()
+        );
+        break;
+      case 'name':
+        sorted.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+        break;
+      default:
+    }
+    return sorted;
+  }, [products, search, orderBy, dateField, dateFrom, dateTo]);
+
   const stockPercent = (item) => Math.min(100, (item.cantidad / Math.max(item.cantidadminima * 2, 1)) * 100);
 
   return (
@@ -192,7 +246,7 @@ export default function Inventory({ user, tenant }) {
       {/* ── Page Header ── */}
       <div className="page-header">
         <div>
-          <h2 className="inventory-header-title">Inventario de Insumos</h2>
+          <h2 className="inventory-header-title">Inventario</h2>
           <p className="inventory-header-subtitle">
             {products.length} productos registrados · {alertas} con stock bajo
           </p>
@@ -211,12 +265,87 @@ export default function Inventory({ user, tenant }) {
 
       {/* ── Main Inventory Table ── */}
       <div className="card w-full inventory-table-card">
-        <div className="inventory-table-header">
-          <span className="inventory-table-header-title">Existencias actuales</span>
-          <span className={`badge ${alertas > 0 ? 'badge-danger' : 'badge-success'}`}>
-             {alertas > 0 ? `${alertas} Alertas Críticas` : '✓ Stock Saludable'}
-          </span>
+        <div className="inventory-table-header inventory-table-header--with-filters">
+          <div className="inventory-table-header-info">
+            <span className="inventory-table-header-title">Existencias actuales</span>
+            <span className={`badge ${alertas > 0 ? 'badge-danger' : 'badge-success'}`}>
+              {alertas > 0 ? `${alertas} Alertas Críticas` : '✓ Stock Saludable'}
+            </span>
+          </div>
+
+          <div className="inventory-table-filters">
+            <div className="inventory-search-wrap">
+              <svg className="inventory-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="search"
+                className="inventory-search-input"
+                placeholder="Buscar por nombre, lote o descripción"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button type="button" className="inventory-search-clear" onClick={() => setSearch('')} aria-label="Limpiar búsqueda">×</button>
+              )}
+            </div>
+
+            <select
+              className="inventory-filter-select"
+              value={orderBy}
+              onChange={e => setOrderBy(e.target.value)}
+              title="Ordenar por"
+            >
+              <option value="recent">Más recientes</option>
+              <option value="updated">Editados recientemente</option>
+              <option value="oldest">Más antiguos</option>
+              <option value="name">Nombre A–Z</option>
+            </select>
+
+            <button
+              type="button"
+              className={`inventory-filter-btn ${showDateFilter ? 'inventory-filter-btn--active' : ''}`}
+              onClick={() => setShowDateFilter(v => !v)}
+              title="Filtrar por fechas"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Fechas
+              {(dateFrom || dateTo) && <span className="inventory-filter-dot" />}
+            </button>
+          </div>
         </div>
+
+        {showDateFilter && (
+          <div className="inventory-date-filter-row">
+            <select
+              className="inventory-filter-select"
+              value={dateField}
+              onChange={e => setDateField(e.target.value)}
+            >
+              <option value="fechacreacion">Por creación</option>
+              <option value="fechaactualizacion">Por edición</option>
+            </select>
+            <label className="inventory-date-input">
+              Desde
+              <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+            </label>
+            <label className="inventory-date-input">
+              Hasta
+              <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+            </label>
+            {(dateFrom || dateTo) && (
+              <button type="button" className="inventory-filter-clear-btn" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+                Limpiar
+              </button>
+            )}
+          </div>
+        )}
 
         <div>
           {loading ? (

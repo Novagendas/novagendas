@@ -29,7 +29,7 @@ function LoadingScreen() {
       <div className="loading-logo">
         <img
           src="/logoclaro.jpeg"
-          alt="NovaAgendas"
+          alt="Novagendas"
           onError={e => {
             e.target.classList.add('hidden-img');
             e.target.parentElement.innerHTML = '<span>NA</span>';
@@ -39,7 +39,7 @@ function LoadingScreen() {
 
       {/* Nombre y tagline */}
       <div className="loading-info">
-        <p className="loading-brand">NovaAgendas</p>
+        <p className="loading-brand">Novagendas</p>
         <p className="loading-tagline">Preparando tu plataforma</p>
       </div>
 
@@ -107,7 +107,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'payments': return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
       case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
-      case 'profile': return <Profile user={user} onUserUpdate={handleUserUpdate} />;
+      case 'profile': return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
       case 'logs': return <AuditLogs tenant={tenant} user={user} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }

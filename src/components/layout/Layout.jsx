@@ -2,19 +2,8 @@ import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import ThemeToggle from '../ThemeToggle';
 import NotificationsPopover from '../NotificationsPopover';
+import { ROUTE_META } from '../../utils/constants';
 import './Layout.css';
-
-/* ── Route label map ─────────────────────────────────────── */
-const ROUTE_META = {
-  dashboard: { label: 'Vista General',        emoji: '📊' },
-  agenda:    { label: 'Agenda de Citas',       emoji: '📅' },
-  clients:   { label: 'Pacientes',             emoji: '👥' },
-  services:  { label: 'Catálogo de Servicios', emoji: '💉' },
-  payments:  { label: 'Registro de Pagos',     emoji: '💳' },
-  inventory: { label: 'Inventario',            emoji: '📦' },
-  users:     { label: 'Gestión de Usuarios',   emoji: '🔑' },
-  audit:     { label: 'Registro de Auditoría', emoji: '📜' },
-};
 
 export default function Layout({ children, user, tenant, currentRoute, onNavigate, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -88,11 +77,12 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
             <NotificationsPopover user={user} tenant={tenant} />
 
             <div className="layout-user-section">
-              <div
+              <button
+                type="button"
                 className="layout-profile"
                 onClick={() => onNavigate('profile')}
-                role="button"
-                tabIndex={0}
+                title="Ver perfil"
+                aria-label="Abrir perfil del usuario"
               >
                 <div className="layout-avatar">
                   {(user?.name || 'U').substring(0, 1).toUpperCase()}
@@ -101,7 +91,7 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
                   <p className="layout-profile-name">{user?.name || 'Usuario'}</p>
                   <p className="layout-profile-role">{user?.role || 'Administrador'}</p>
                 </div>
-              </div>
+              </button>
 
               <button
                 className="layout-logout-icon-btn"

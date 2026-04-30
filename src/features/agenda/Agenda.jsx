@@ -1,32 +1,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import SelectableInput from '../../components/inputs/SelectableInput';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
-import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth } from '../../services/googleCalendar';
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth, connectCalendar } from '../../services/googleCalendar';
+import {
+  addDays,
+  startOf,
+  toDateStr,
+  toTimeStr,
+  timeToDec,
+} from '../../utils/dateHelpers';
+import {
+  DAY_LABELS,
+  CALENDAR_CONFIG,
+  STATUS_COLORS,
+  APPOINTMENT_STATUSES,
+} from '../../utils/constants';
 import './Agenda.css';
 
-/* ─── Helpers ──────────────────────────────────────────── */
-const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
-const startOf = (date, unit) => {
-  const d = new Date(date);
-  if (unit === 'week') {
-    const day = d.getDay(); // 0=Sun
-    d.setDate(d.getDate() - (day === 0 ? 6 : day - 1)); // Mon
-  }
-  if (unit === 'month') { d.setDate(1); }
-  d.setHours(0, 0, 0, 0);
-  return d;
-};
-const toDateStr = (d) => {
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-const toTimeStr = (h, m = 0) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-const timeToDec = (t) => { const [h, m] = t.split(':').map(Number); return h + m / 60; };
-const SLOT_H = 72; // px per hour
-const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-const statusColor = { 'Confirmada': 'var(--success)', 'En Espera': 'var(--warning)', 'Pendiente': 'var(--text-3)', 'Cancelada': 'var(--danger)', 'Completada': 'var(--primary)' };
+const { SLOT_HEIGHT: SLOT_H, MIN_HOUR: START_H_MIN, MAX_HOUR: END_H_MAX } = CALENDAR_CONFIG;
+const statusColor = STATUS_COLORS;
 
 /* ─── Month mini calendar helper ─────────────────────────── */
 function buildMonthGrid(pivot) {
@@ -41,86 +35,18 @@ function buildMonthGrid(pivot) {
   return cells;
 }
 
-/* ─── Searchable Select Component ─────────────────────────── */
-const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setIsOpen(false);
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const filtered = options.filter(opt => 
-    opt.label.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const selectedOpt = options.find(o => String(o.value) === String(value));
-
-  return (
-    <div className="input-group searchable-select-wrapper" ref={wrapperRef}>
-      <label className="searchable-select-label">{label}</label>
-      <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className={`searchable-select-trigger ${isOpen ? 'open' : ''}`}
-      >
-        <span className="searchable-select-icon">{icon}</span>
-        <div className={`searchable-select-text ${selectedOpt ? 'selected' : 'placeholder'}`}>
-          {selectedOpt ? selectedOpt.label : placeholder}
-        </div>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeWidth="3" className={`searchable-select-arrow ${isOpen ? 'open' : ''}`}><polyline points="6 9 12 15 18 9" /></svg>
-      </div>
-
-      {isOpen && (
-        <div className="animate-scale-in searchable-select-dropdown">
-          <div className="searchable-select-search-container">
-            <div className="searchable-select-search-wrapper">
-                <SuggestionInput 
-                  autoFocus
-                  placeholder="Escribe para buscar..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="searchable-select-search-input"
-                  spellCheck={true} 
-                  lang="es" 
-                  suggestions={[...new Set([...options.map(o => o.label), ...commonTerms])]} 
-                />
-              <svg className="searchable-select-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            </div>
-          </div>
-          <div className="searchable-select-options">
-            {filtered.length > 0 ? filtered.map(opt => (
-              <div 
-                key={opt.value}
-                onClick={() => { onChange(opt.value); setIsOpen(false); setSearch(''); }}
-                className={`searchable-select-option ${String(value) === String(opt.value) ? 'selected' : ''}`}
-              >
-                {opt.label}
-                {String(value) === String(opt.value) && <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12" /></svg>}
-              </div>
-            )) : (
-              <div className="searchable-select-no-results">
-                <span>🔍</span>
-                No se encontraron resultados para "{search}"
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export default function Agenda({ user, tenant }) {
   const [appointments, setAppointments] = useState([]);
   const [clients, setClients] = useState([]);
   const [services, setServices] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [specialists, setSpecialists] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [productQty, setProductQty] = useState(1);
+  const [clientAbonos, setClientAbonos] = useState([]);
+  const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
   
@@ -139,28 +65,41 @@ export default function Agenda({ user, tenant }) {
   const [pivot, setPivot] = useState(new Date());
 
   /* ------ Google Calendar connection state ------ */
-  const [calConnected, setCalConnected] = useState(() => isCalendarConnected());
+  const [calConnected, setCalConnected] = useState(false);
+  const [showGcalDisconnectModal, setShowGcalDisconnectModal] = useState(false);
+  const [showGcalConnectModal, setShowGcalConnectModal] = useState(false);
+
+  useEffect(() => {
+    isCalendarConnected(tenant.id).then(setCalConnected);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('google_connected') === 'true') {
+      setCalConnected(true);
+      showSnack('¡Google Calendar conectado correctamente!', 'success');
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (params.get('google_error')) {
+      showSnack('Error al conectar Google Calendar', 'error');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCalSync = async () => {
     if (calConnected) {
-      clearCalendarAuth();
-      setCalConnected(false);
-      showSnack('Desconectado de Google Calendar');
-    } else {
-      try {
-        await createCalendarEvent({
-          summary: 'Conexión probada',
-          description: 'Verificación de conexión desde NovaAgendas',
-          startDateTime: new Date().toISOString(),
-          endDateTime: new Date(Date.now() + 60000).toISOString(),
-          attendeeEmails: []
-        }).catch(() => null);
-        setCalConnected(isCalendarConnected());
-        if (isCalendarConnected()) showSnack('¡Conectado a Google Calendar!');
-      } catch {
-        setCalConnected(false);
-      }
+      setShowGcalDisconnectModal(true);
+      return;
     }
+    setShowGcalConnectModal(true);
+  };
+
+  const confirmConnectGcal = () => {
+    setShowGcalConnectModal(false);
+    connectCalendar(tenant.id);
+  };
+
+  const confirmDisconnectGcal = async () => {
+    await clearCalendarAuth(tenant.id);
+    setCalConnected(false);
+    setShowGcalDisconnectModal(false);
+    showSnack('Desconectado de Google Calendar');
   };
 
   const [hoveredAppt, setHoveredAppt] = useState(null);
@@ -171,7 +110,23 @@ export default function Agenda({ user, tenant }) {
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [tempWorkHours, setTempWorkHours] = useState({ start: 6, end: 21 });
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ clientId: '', serviceIds: [], specialistId: '', date: '', time: '09:00', gcalEventId: null });
+  const emptyForm = () => ({
+    clientId: '',
+    serviceIds: [],
+    specialistId: '',
+    date: '',
+    time: '09:00',
+    gcalEventId: null,
+    locationId: '',
+    additionalClientIds: [],
+    isGroup: false,
+    productsUsed: [],
+    selectedAbonoId: null,
+    abonoToApply: 0,
+    totalAbonoApplied: 0,
+    status: 'En Espera',
+  });
+  const [form, setForm] = useState(emptyForm());
   const [showServiceMenu, setShowServiceMenu] = useState(false);
   const [serviceSearch, setServiceSearch] = useState('');
 
@@ -198,17 +153,18 @@ export default function Agenda({ user, tenant }) {
     });
   };
 
-  /* ------ Detail popover ------ */
-  const [detailAppt, setDetailAppt] = useState(null);
-  const [editStatus, setEditStatus] = useState(null);
-
   const fetchData = async () => {
     if (!tenant?.id) return;
     setLoading(true);
 
     try {
-      const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
-      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
+      const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
+      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
+      const { data: locData } = await supabase.from('ubicacion').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).order('nombre');
+      setLocations(locData || []);
+
+      const { data: prodData } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).gt('cantidad', 0).order('nombre');
+      setProducts(prodData || []);
       
       // Fetch users with 'profesional' role (idrol = 3) via junction table
       const { data: specData } = await supabase
@@ -239,9 +195,13 @@ export default function Agenda({ user, tenant }) {
           citaservicios (
             idservicios,
             servicios (*)
-          )
+          ),
+          detallecitagrupal ( idcliente ),
+          citaproducto ( idproducto, cantidad ),
+          abonoaplicacion ( idabono, monto_aplicado )
         `)
-        .eq('idnegocios', tenant.id);
+        .eq('idnegocios', tenant.id)
+        .is('deleted_at', null);
 
       if (!error && apptData) {
         const mapped = apptData.map(a => {
@@ -257,6 +217,8 @@ export default function Agenda({ user, tenant }) {
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
 
+          const totalAbono = (a.abonoaplicacion || []).reduce((sum, x) => sum + Number(x.monto_aplicado || 0), 0);
+          const totalPrice = apptServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
           return {
             id: a.idcita,
             clientId: a.idcliente,
@@ -269,6 +231,12 @@ export default function Agenda({ user, tenant }) {
             status: a.estadocita?.descripcion || 'Pendiente',
             doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : 'Pendiente',
             gcalEventId: a.gcal_event_id || null,
+            locationId: a.idubicacion || null,
+            isGroup: !!a.escitagrupal,
+            additionalClientIds: (a.detallecitagrupal || []).map(d => d.idcliente).filter(Boolean),
+            productsUsed: (a.citaproducto || []).map(p => ({ idproducto: p.idproducto, cantidad: Number(p.cantidad) })),
+            totalAbono,
+            totalPrice,
           };
         }).filter(Boolean);
         setAppointments(mapped);
@@ -284,41 +252,37 @@ export default function Agenda({ user, tenant }) {
     fetchData();
   }, [tenant]);
 
-  const openDetail = (appt, e) => { e.stopPropagation(); setDetailAppt(appt); setEditStatus(appt.status); setHoveredAppt(null); };
-  const closeDetail = () => { setDetailAppt(null); setHoveredAppt(null); };
+  useEffect(() => {
+    const clear = () => setHoveredAppt(null);
+    window.addEventListener('scroll', clear, true);
+    return () => window.removeEventListener('scroll', clear, true);
+  }, []);
 
-  const saveStatus = async () => {
-    const statusMap = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4 };
-    const statusId = statusMap[editStatus] || 1;
+  useEffect(() => {
+    if (!form.clientId || !tenant?.id) { setClientAbonos([]); return; }
+    supabase
+      .from('abono')
+      .select('*')
+      .eq('idcliente', parseInt(form.clientId))
+      .eq('idnegocios', tenant.id)
+      .gt('saldo_disponible', 0)
+      .order('idabono', { ascending: false })
+      .then(({ data }) => setClientAbonos(data || []));
+  }, [form.clientId, tenant?.id]);
 
-    const { error } = await supabase.from('cita').update({ idestadocita: statusId }).eq('idcita', detailAppt.id);
-    if (!error) {
-      await insertLog({
-        accion: 'UPDATE',
-        entidad: 'Cita',
-        descripcion: `Cambio de estado: ${detailAppt.status} → ${editStatus} (Cita paciente: ${clients.find(c => c.idcliente === detailAppt.clientId)?.nombre || ''})`,
-        idUsuario: user.idusuario || user.id,
-        idNegocios: tenant.id
-      });
-      fetchData();
-      
-      if (editStatus === 'Cancelada') {
-        closeDetail();
-        showSnack('Cita cancelada', 'error');
-      } else {
-        setDetailAppt(a => ({ ...a, status: editStatus }));
-        showSnack(`Estado actualizado a ${editStatus}`);
-      }
-    }
-  };
+  const openDetail = (appt, e) => { e.stopPropagation(); startEdit(appt); setHoveredAppt(null); };
 
-  const handleDeleteFromDetail = async () => {
+  const handleDeleteAppointment = async () => {
+    if (!editId) return;
+    const appt = appointments.find(a => a.id === editId);
+    if (!appt) return;
     try {
-      const gcalEventId = detailAppt.gcalEventId;
-      const clientName = clients.find(c => c.idcliente === detailAppt.clientId)?.nombre || 'Paciente';
+      const gcalEventId = appt.gcalEventId;
+      const clientName = clients.find(c => c.idcliente === appt.clientId)?.nombre || 'Paciente';
 
-      await supabase.from('citaservicios').delete().eq('idcita', detailAppt.id);
-      const { error } = await supabase.from('cita').delete().eq('idcita', detailAppt.id);
+      const { error } = await supabase.from('cita')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('idcita', editId);
       if (error) throw error;
 
       await insertLog({
@@ -329,17 +293,17 @@ export default function Agenda({ user, tenant }) {
         idNegocios: tenant.id
       });
 
-      // Eliminar evento de Google Calendar y notificar a los invitados
       if (gcalEventId) {
         try {
-          await deleteCalendarEvent(gcalEventId);
+          await deleteCalendarEvent(tenant.id, gcalEventId);
         } catch (calErr) {
           console.warn('No se pudo eliminar el evento de Google Calendar:', calErr.message);
         }
       }
 
       fetchData();
-      closeDetail();
+      setShowModal(false);
+      setEditId(null);
       showSnack('Cita eliminada correctamente');
     } catch (err) {
       showSnack("Error al eliminar la cita: " + (err.message || "Error desconocido"), 'error');
@@ -375,14 +339,26 @@ export default function Agenda({ user, tenant }) {
     return '';
   })();
 
+  const isPastSlot = (dateStr, h) => {
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000);
+    return new Date(`${dateStr}T${String(h).padStart(2, '0')}:00:00`) < cutoff;
+  };
+
   const openCreate = (date = '', time = '') => {
+    if (date && time) {
+      const slotTime = new Date(`${date}T${time}:00`);
+      if (slotTime < new Date(Date.now() - 60 * 60 * 1000)) {
+        showSnack('No se pueden agendar citas en el pasado', 'error');
+        return;
+      }
+    }
     setEditId(null);
     setForm({
-      clientId: '',
-      serviceIds: [],
+      ...emptyForm(),
       specialistId: specialists.length ? specialists[0].idusuario : '',
       date: date || todayStr,
-      time: time || '09:00'
+      time: time || '09:00',
+      locationId: locations.length === 1 ? String(locations[0].idubicacion) : '',
     });
     setShowModal(true);
   };
@@ -390,14 +366,21 @@ export default function Agenda({ user, tenant }) {
   const startEdit = (appt) => {
     setEditId(appt.id);
     setForm({
+      ...emptyForm(),
       clientId: appt.clientId,
       serviceIds: appt.serviceIds || [],
       specialistId: appt.specialistId || '',
       date: appt.date,
       time: appt.time,
       gcalEventId: appt.gcalEventId || null,
+      locationId: appt.locationId ? String(appt.locationId) : '',
+      isGroup: !!appt.isGroup,
+      additionalClientIds: appt.additionalClientIds || [],
+      productsUsed: appt.productsUsed || [],
+      abonoToApply: 0,
+      totalAbonoApplied: appt.totalAbono || 0,
+      status: appt.status || 'En Espera',
     });
-    closeDetail();
     setShowModal(true);
   };
 
@@ -435,13 +418,15 @@ export default function Agenda({ user, tenant }) {
 
       const payload = {
         idcliente: parseInt(form.clientId),
-        idservicio: form.serviceIds[0] || null, // Keep first for legacy/compatibility
+        idservicio: form.serviceIds[0] || null,
         idusuario: form.specialistId ? parseInt(form.specialistId) : null,
         fechahorainicio: startStr,
         fechahorafin: formattedEnd,
-        idestadocita: 2, // En Espera (Default)
-        idtipocita: 1,   // Valoracion default
-        idnegocios: tenant.id
+        idestadocita: 2,
+        idtipocita: 1,
+        idnegocios: tenant.id,
+        idubicacion: form.locationId ? parseInt(form.locationId) : null,
+        escitagrupal: form.isGroup || form.additionalClientIds.length > 0,
       };
 
       // ── Overlap Validation ──
@@ -466,9 +451,11 @@ export default function Agenda({ user, tenant }) {
       }
 
       let appointmentId = editId;
+      const STATUS_ID_MAP = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4, 'Pendiente': 2 };
 
       if (editId) {
-        const { error } = await supabase.from('cita').update(payload).eq('idcita', editId);
+        const editPayload = { ...payload, idestadocita: STATUS_ID_MAP[form.status] || 2 };
+        const { error } = await supabase.from('cita').update(editPayload).eq('idcita', editId);
         if (error) throw error;
       } else {
         const { data: newAppt, error } = await supabase.from('cita').insert([payload]).select().single();
@@ -485,7 +472,64 @@ export default function Agenda({ user, tenant }) {
         }));
         await supabase.from('citaservicios').insert(serviceEntries);
       }
+
+      // Sync additional clients (group cita)
+      await supabase.from('detallecitagrupal').delete().eq('idcita', appointmentId);
+      if (form.additionalClientIds.length > 0) {
+        const groupEntries = form.additionalClientIds.map(cid => ({
+          idcita: appointmentId,
+          idcliente: cid
+        }));
+        await supabase.from('detallecitagrupal').insert(groupEntries);
+      }
+
+      // Sync product consumption
+      if (form.productsUsed.length > 0) {
+        await supabase.from('citaproducto').delete().eq('idcita', appointmentId);
+        const productEntries = form.productsUsed.map(u => ({
+          idcita: appointmentId,
+          idproducto: u.idproducto,
+          cantidad: u.cantidad,
+        }));
+        await supabase.from('citaproducto').insert(productEntries);
+        // Decrement stock (only on create, not on edit to avoid double-decrement)
+        if (!editId) {
+          for (const u of form.productsUsed) {
+            const prod = products.find(p => p.idproducto === u.idproducto);
+            if (prod) {
+              const newQty = Math.max(0, Number(prod.cantidad) - u.cantidad);
+              await supabase.from('producto').update({ cantidad: newQty }).eq('idproducto', u.idproducto);
+            }
+          }
+        }
+      }
       
+      // ── Aplicar abono si se seleccionó (solo al crear) ──
+      if (!editId && form.selectedAbonoId && form.abonoToApply > 0) {
+        const abono = clientAbonos.find(a => a.idabono === form.selectedAbonoId);
+        if (abono) {
+          const montoAplicar = Math.min(form.abonoToApply, Number(abono.saldo_disponible));
+          const saldoAnterior = Number(abono.saldo_disponible);
+          const saldoNuevo = saldoAnterior - montoAplicar;
+          await supabase.from('abonoaplicacion').insert({
+            idabono: form.selectedAbonoId,
+            idcita: appointmentId,
+            monto_aplicado: montoAplicar,
+          });
+          await supabase.from('abono')
+            .update({ saldo_disponible: saldoNuevo })
+            .eq('idabono', form.selectedAbonoId);
+          const client = clients.find(c => c.idcliente === parseInt(form.clientId));
+          await insertLog({
+            accion: 'ABONO',
+            entidad: 'Abono',
+            descripcion: `Cita #${appointmentId} — Abono #${form.selectedAbonoId} aplicado a ${client?.nombre || 'Paciente'} ${client?.apellido || ''}: $${montoAplicar.toLocaleString('es-CO')} descontados. Saldo anterior: $${saldoAnterior.toLocaleString('es-CO')} → Saldo restante: $${saldoNuevo.toLocaleString('es-CO')}`,
+            idUsuario: user.idusuario || user.id,
+            idNegocios: tenant.id,
+          });
+        }
+      }
+
       showSnack(editId ? 'Cita actualizada correctamente' : 'Cita agendada correctamente');
 
       const client = clients.find(c => c.idcliente === payload.idcliente);
@@ -513,7 +557,7 @@ export default function Agenda({ user, tenant }) {
         const timeLabel = form.time;
 
         const description = [
-          `📅 CITA MÉDICA — ${tenant?.name || 'NovaAgendas'}`,
+          `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}`,
           '',
           `📋 Servicios: ${serviceNames}`,
           totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
@@ -531,18 +575,18 @@ export default function Agenda({ user, tenant }) {
           `🕐 Hora: ${timeLabel}`,
           '',
           `━━━━━━━━━━━━━━━━━━━━━━`,
-          `Cita gestionada por NovaAgendas`,
-          `Favor llegar 10 minutos antes de la cita.`,
+          `Cita gestionada por Novagendas`,
+          `Favor llegar 15 minutos antes de la cita.`,
         ].filter(l => l !== null).join('\n');
 
         const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
 
         if (editId && form.gcalEventId) {
           // Actualizar evento existente
-          await updateCalendarEvent(form.gcalEventId, calArgs);
+          await updateCalendarEvent(tenant.id, form.gcalEventId, calArgs);
         } else if (!editId) {
           // Crear nuevo evento y guardar su ID en la cita
-          const newEventId = await createCalendarEvent(calArgs);
+          const newEventId = await createCalendarEvent(tenant.id, calArgs);
           if (newEventId) {
             await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
           }
@@ -672,19 +716,23 @@ export default function Agenda({ user, tenant }) {
     const dayAppts = appointments.filter(a => {
       const isCorrectDate = a.date === dateStr && a.status !== 'Cancelada';
       const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
-      return isCorrectDate && isCorrectSpec;
+      const isCorrectLoc = selectedLocationId ? String(a.locationId) === String(selectedLocationId) : true;
+      return isCorrectDate && isCorrectSpec && isCorrectLoc;
     });
     return (
       <div className="calendar-day-column">
-        {HOURS.map(h => (
-          <div
-            key={h}
-            onDragOver={onDragOver}
-            onDrop={e => onDropCell(e, dateStr, h)}
-            onClick={() => openCreate(dateStr, toTimeStr(h))}
-            className="calendar-slot"
-          />
-        ))}
+        {HOURS.map(h => {
+          const past = isPastSlot(dateStr, h);
+          return (
+            <div
+              key={h}
+              onDragOver={onDragOver}
+              onDrop={e => !past && onDropCell(e, dateStr, h)}
+              onClick={() => !past && openCreate(dateStr, toTimeStr(h))}
+              className={`calendar-slot${past ? ' calendar-slot--past' : ''}`}
+            />
+          );
+        })}
         {dayAppts.map(appt => {
           const client = clients.find(c => c.idcliente === appt.clientId);
           const serviceNames = appt.services?.map(s => s.nombre).join(', ') || 'Consulta General';
@@ -782,7 +830,7 @@ export default function Agenda({ user, tenant }) {
     const grid = buildMonthGrid(pivot);
     const pivotMonth = pivot.getMonth();
     return (
-      <div className="calendar-view-container" style={{ flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="calendar-view-container" style={{ flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
         <div className="month-view-grid-header">
           {DAY_LABELS.map(d => (
             <div key={d} className="month-day-header">{d}</div>
@@ -805,8 +853,13 @@ export default function Agenda({ user, tenant }) {
                 onClick={() => { setPivot(day); setView('day'); }}
                 className={`month-day-cell ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
               >
-                <div className={`month-day-number ${isToday ? 'today' : ''}`}>
-                  {day.getDate()}
+                <div className="month-day-header-row">
+                  <div className={`month-day-number ${isToday ? 'today' : ''}`}>
+                    {day.getDate()}
+                  </div>
+                  {dayAppts.length > 0 && (
+                    <span className="month-day-count">{dayAppts.length} cita{dayAppts.length > 1 ? 's' : ''}</span>
+                  )}
                 </div>
                 {dayAppts.slice(0, 3).map(a => {
                   const client = clients.find(c => c.idcliente === a.clientId);
@@ -888,12 +941,49 @@ export default function Agenda({ user, tenant }) {
             </div>
 
             {user.role !== 'especialista' && (
-              <button 
+              <button
                 className={`btn btn-outline btn-filter-specialist ${selectedSpecialistId ? 'filter-active' : ''}`}
                 onClick={() => setShowFilterModal(true)}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 {selectedSpecialistId ? specialists.find(s => String(s.idusuario) === String(selectedSpecialistId))?.nombre || 'Filtrado' : 'Todos los Especialistas'}
+              </button>
+            )}
+
+            {locations.length > 0 && (
+              <select
+                className={`agenda-location-filter ${selectedLocationId ? 'filter-active' : ''}`}
+                value={selectedLocationId || ''}
+                onChange={e => setSelectedLocationId(e.target.value || null)}
+                title="Filtrar por sede"
+              >
+                <option value="">Todas las sedes</option>
+                {locations.map(l => (
+                  <option key={l.idubicacion} value={l.idubicacion}>{l.nombre}</option>
+                ))}
+              </select>
+            )}
+
+            {(user.role === 'admin' || user.role === 'recepcion') && (
+              <button
+                className={`btn btn-outline btn-gcal-sync ${calConnected ? 'gcal-connected' : ''}`}
+                onClick={handleCalSync}
+                title={calConnected ? 'Sincronizado con Google Calendar — clic para desconectar' : 'Conectar con Google Calendar'}
+              >
+                {calConnected ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34a853" strokeWidth="2.5" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" stroke="#34a853" fill="#34a85318" />
+                    <polyline points="7 12.5 10.5 16 17 9" stroke="#34a853" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+                    <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                    <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                    <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                    <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                  </svg>
+                )}
+                <span>{calConnected ? 'Sincronizado' : 'Google Calendar'}</span>
               </button>
             )}
 
@@ -919,9 +1009,9 @@ export default function Agenda({ user, tenant }) {
             </div>
           ) : (
             <div className="calendar-grid">
-              {view === 'day' && <ViewDay />}
-              {view === 'week' && <ViewWeek />}
-              {view === 'month' && <ViewMonth />}
+              {view === 'day' && ViewDay()}
+              {view === 'week' && ViewWeek()}
+              {view === 'month' && ViewMonth()}
             </div>
           )}
         </div>
@@ -1021,7 +1111,7 @@ export default function Agenda({ user, tenant }) {
             </div>
 
             <div className="appt-modal-form">
-              <SearchableSelect 
+              <SelectableInput 
                 label="Seleccionar Profesional"
                 placeholder="Busca por nombre..."
                 icon="👨‍⚕️"
@@ -1092,8 +1182,8 @@ export default function Agenda({ user, tenant }) {
                 Por favor, elige un horario diferente o cambia de profesional asignado.
               </p>
 
-              <button 
-                className="btn btn-primary btn-conflict-confirm" 
+              <button
+                className="btn btn-primary btn-conflict-confirm"
                 onClick={() => setConflictModal({ show: false, message: '', details: null })}
               >
                 Entendido
@@ -1103,7 +1193,84 @@ export default function Agenda({ user, tenant }) {
         </div>
       )}
 
-      {hoveredAppt && !detailAppt && !showModal && (
+      {showGcalConnectModal && (
+        <div className="appt-modal-overlay high-z" onClick={() => setShowGcalConnectModal(false)}>
+          <div className="appt-modal animate-scale-in modal-gcal-connect" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="gcal-disconnect-icon">
+                <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                  <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                  <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                  <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                </svg>
+              </div>
+              <h3 className="conflict-modal-title">Conectar Google Calendar</h3>
+              <p className="conflict-modal-text">
+                Se recomienda iniciar sesión con <strong>la cuenta de Google del negocio</strong> para que las citas se sincronicen en ese calendario.
+              </p>
+             
+
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setShowGcalConnectModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-modal-action-bold"
+                  onClick={confirmConnectGcal}
+                >
+                  Continuar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showGcalDisconnectModal && (
+        <div className="appt-modal-overlay high-z" onClick={() => setShowGcalDisconnectModal(false)}>
+          <div className="appt-modal animate-scale-in modal-gcal-disconnect" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="gcal-disconnect-icon">
+                <svg width="40" height="40" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z"/>
+                  <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z"/>
+                  <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z"/>
+                  <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z"/>
+                </svg>
+              </div>
+              <h3 className="conflict-modal-title">¿Desincronizar Google Calendar?</h3>
+              <p className="conflict-modal-text">
+                A partir de ahora las citas <strong>solo se guardarán en Novagendas</strong>. Las citas existentes en Google Calendar no se eliminarán, pero las nuevas no se sincronizarán hasta que vuelvas a conectar tu cuenta.
+              </p>
+
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setShowGcalDisconnectModal(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-modal-action-bold"
+                  onClick={confirmDisconnectGcal}
+                >
+                  Sí, desincronizar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {hoveredAppt && !showModal && (
         <div 
           className="agenda-tooltip"
           style={{
@@ -1151,7 +1318,39 @@ export default function Agenda({ user, tenant }) {
 
             <form onSubmit={handleSubmit} className="appt-modal-form">
               <div className="modal-scroll-area gap-md">
-                <SearchableSelect 
+                {editId && (
+                  <div className="cita-status-section">
+                    <label className="searchable-select-label">Estado de la Cita</label>
+                    <div className="cita-status-row">
+                      {APPOINTMENT_STATUSES.map(s => {
+                        const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Pendiente': '🕒', 'Cancelada': '❌', 'Completada': '🎉' };
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            data-status={s.toLowerCase().replace(' ', '-')}
+                            className={`cita-status-chip${form.status === s ? ' cita-status-chip--active' : ''}`}
+                            onClick={() => setForm(f => ({ ...f, status: s }))}
+                          >
+                            <span>{icons[s]}</span> {s}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {editId && form.totalAbonoApplied > 0 && (
+                  <div className="abono-applied-banner">
+                    <span className="abono-applied-icon">💳</span>
+                    <div>
+                      <span className="abono-applied-label">Abono aplicado a esta cita</span>
+                      <span className="abono-applied-amount">${form.totalAbonoApplied.toLocaleString('es-CO')}</span>
+                    </div>
+                  </div>
+                )}
+
+                <SelectableInput
                   label="Paciente Responsable"
                   placeholder="Busca un paciente..."
                   icon="👤"
@@ -1176,7 +1375,7 @@ export default function Agenda({ user, tenant }) {
                     </button>
                   </div>
 
-                  <SearchableSelect 
+                  <SelectableInput 
                     label="Profesional Asignado"
                     placeholder="Busca profesional..."
                     icon="👨‍⚕️"
@@ -1210,9 +1409,222 @@ export default function Agenda({ user, tenant }) {
                     <input type="time" className="input-field input-rounded-lg" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} required />
                   </div>
                 </div>
+
+                {locations.length > 0 && (
+                  <SelectableInput
+                    label={`Sede${locations.length > 1 ? ' *' : ''}`}
+                    placeholder="Selecciona una sede..."
+                    icon="📍"
+                    options={locations.map(l => ({ value: l.idubicacion, label: l.nombre }))}
+                    value={form.locationId}
+                    onChange={val => setForm({ ...form, locationId: val })}
+                  />
+                )}
+
+                <div className="cita-toggle-row">
+                  <label className="cita-toggle-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={form.isGroup}
+                      onChange={e => setForm({ ...form, isGroup: e.target.checked, additionalClientIds: e.target.checked ? form.additionalClientIds : [] })}
+                    />
+                    <span>Cita grupal</span>
+                  </label>
+                  <p className="cita-toggle-hint">Marca esta opción si la cita incluye varios pacientes a la vez.</p>
+                </div>
+
+                {form.isGroup && (
+                  <div className="cita-group-section">
+                    <label className="searchable-select-label">Pacientes adicionales</label>
+                    <SelectableInput
+                      placeholder="Buscar paciente para añadir..."
+                      icon="👥"
+                      options={clients
+                        .filter(c => c.idcliente !== Number(form.clientId) && !form.additionalClientIds.includes(c.idcliente))
+                        .map(c => ({ value: c.idcliente, label: `${c.nombre} ${c.apellido} (${c.cedula || 'N/A'})` }))}
+                      value=""
+                      onChange={val => {
+                        if (val) setForm({ ...form, additionalClientIds: [...form.additionalClientIds, Number(val)] });
+                      }}
+                    />
+                    {form.additionalClientIds.length > 0 && (
+                      <div className="service-tags-container">
+                        {form.additionalClientIds.map(cid => {
+                          const c = clients.find(cl => cl.idcliente === cid);
+                          return (
+                            <div key={cid} className="service-tag service-tag--client">
+                              {c ? `${c.nombre} ${c.apellido}` : `Paciente #${cid}`}
+                              <span
+                                className="service-tag-remove"
+                                onClick={() => setForm({ ...form, additionalClientIds: form.additionalClientIds.filter(id => id !== cid) })}
+                              >×</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {clientAbonos.length > 0 && !editId && (
+                  <div className="cita-group-section">
+                    <div className="abono-section-header">
+                      <div className="abono-section-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                        Abonos disponibles
+                      </div>
+                      <span className="abono-badge">{clientAbonos.length} abono{clientAbonos.length > 1 ? 's' : ''}</span>
+                    </div>
+                    <div className="abono-list">
+                      {clientAbonos.map(ab => {
+                        const isSelected = form.selectedAbonoId === ab.idabono;
+                        const totalSvc = services.filter(s => form.serviceIds.includes(s.idservicios)).reduce((sum, s) => sum + Number(s.precio || 0), 0);
+                        return (
+                          <div
+                            key={ab.idabono}
+                            className={`abono-item ${isSelected ? 'abono-item--selected' : ''}`}
+                            onClick={() => {
+                              setForm(f => ({
+                                ...f,
+                                selectedAbonoId: isSelected ? null : ab.idabono,
+                                abonoToApply: isSelected ? 0 : Math.min(Number(ab.saldo_disponible), totalSvc || Number(ab.saldo_disponible)),
+                              }));
+                            }}
+                          >
+                            <div className="abono-item-icon">
+                              {isSelected
+                                ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
+                                : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+                              }
+                            </div>
+                            <div className="abono-item-info">
+                              <span className="abono-item-id">Abono #{ab.idabono}</span>
+                              <span className="abono-item-note">
+                                {ab.fecha_abono ? new Date(ab.fecha_abono).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Sin fecha'}
+                                {ab.observacion ? ` · ${ab.observacion}` : ''}
+                              </span>
+                            </div>
+                            <div className="abono-item-saldo">
+                              <span className="abono-item-saldo-label">Saldo</span>
+                              <strong>${Number(ab.saldo_disponible).toLocaleString('es-CO')}</strong>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {form.selectedAbonoId && (() => {
+                      const selectedAbono = clientAbonos.find(a => a.idabono === form.selectedAbonoId);
+                      const totalSvc = services.filter(s => form.serviceIds.includes(s.idservicios)).reduce((sum, s) => sum + Number(s.precio || 0), 0);
+                      const saldoDisp = Number(selectedAbono?.saldo_disponible || 0);
+                      const restante = totalSvc - form.abonoToApply;
+                      return (
+                        <div className="abono-amount-card">
+                          <div className="abono-amount-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                            Monto a descontar
+                          </div>
+                          <div className="abono-amount-row">
+                            <div className="abono-amount-input-wrapper">
+                              <span className="abono-amount-prefix">$</span>
+                              <input
+                                type="number"
+                                className="input-field input-rounded-lg abono-amount-input"
+                                min="1"
+                                max={saldoDisp}
+                                value={form.abonoToApply}
+                                onChange={e => setForm(f => ({ ...f, abonoToApply: Math.min(saldoDisp, Math.max(0, Number(e.target.value))) }))}
+                              />
+                            </div>
+                            <span className="abono-desc-text">de ${saldoDisp.toLocaleString('es-CO')} disponibles</span>
+                          </div>
+                          {totalSvc > 0 && (
+                            <div className="abono-summary-bar">
+                              <span className="abono-summary-label">
+                                Total servicios: <strong>${totalSvc.toLocaleString('es-CO')}</strong>
+                              </span>
+                              <span className="abono-summary-value">
+                                {restante <= 0 ? '✓ Cubierto por abono' : `Resta: $${restante.toLocaleString('es-CO')}`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {products.length > 0 && (
+                  <div className="cita-group-section">
+                    <label className="searchable-select-label">Productos utilizados (opcional)</label>
+                    <div className="appt-modal-row">
+                      <select
+                        className="input-field"
+                        value={productSearch}
+                        onChange={e => setProductSearch(e.target.value)}
+                      >
+                        <option value="">Selecciona un producto...</option>
+                        {products
+                          .filter(p => !form.productsUsed.find(u => u.idproducto === p.idproducto))
+                          .map(p => (
+                            <option key={p.idproducto} value={p.idproducto}>
+                              {p.nombre} (stock: {p.cantidad})
+                            </option>
+                          ))}
+                      </select>
+                      <input
+                        type="number"
+                        className="input-field"
+                        style={{ width: 80, flexShrink: 0 }}
+                        min="1"
+                        value={productQty}
+                        onChange={e => setProductQty(Math.max(1, parseInt(e.target.value) || 1))}
+                        placeholder="Cant."
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline"
+                        style={{ flexShrink: 0 }}
+                        onClick={() => {
+                          if (!productSearch) return;
+                          const prod = products.find(p => p.idproducto === parseInt(productSearch));
+                          if (!prod) return;
+                          if (productQty > prod.cantidad) {
+                            showSnack(`Stock insuficiente (disponible: ${prod.cantidad})`, 'error');
+                            return;
+                          }
+                          setForm({ ...form, productsUsed: [...form.productsUsed, { idproducto: prod.idproducto, cantidad: productQty }] });
+                          setProductSearch('');
+                          setProductQty(1);
+                        }}
+                      >+ Agregar</button>
+                    </div>
+                    {form.productsUsed.length > 0 && (
+                      <div className="service-tags-container">
+                        {form.productsUsed.map(u => {
+                          const prod = products.find(p => p.idproducto === u.idproducto);
+                          return (
+                            <div key={u.idproducto} className="service-tag">
+                              {prod?.nombre || `Producto #${u.idproducto}`} × {u.cantidad}
+                              <span
+                                className="service-tag-remove"
+                                onClick={() => setForm({ ...form, productsUsed: form.productsUsed.filter(x => x.idproducto !== u.idproducto) })}
+                              >×</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="appt-modal-footer">
+                {editId && (
+                  <button type="button" className="btn btn-outline btn-danger-outline" onClick={handleDeleteAppointment} disabled={saving || form.status === 'Completada'}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                    Eliminar
+                  </button>
+                )}
                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>
                   {saving ? (
@@ -1229,128 +1641,12 @@ export default function Agenda({ user, tenant }) {
       )}
 
       {/* Notification Snackbar */}
-      <div className={`snackbar ${snackbar.show ? 'visible' : ''}`}>
+      <div className={`snackbar ${snackbar.show ? 'visible' : ''} snackbar--${snackbar.type || 'success'}`}>
         <div className="snackbar-icon">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><polyline points="20 6 9 17 4 12"/></svg>
+          {snackbar.type === 'error' ? '✕' : snackbar.type === 'warning' ? '⚠' : '✓'}
         </div>
-        {snackbar.msg}
+        {snackbar.message}
       </div>
-
-      {detailAppt && (() => {
-        const client = clients.find(c => c.idcliente === detailAppt.clientId);
-        const apptDate = detailAppt.date ? new Date(detailAppt.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—';
-        
-        return (
-          <div className="appt-modal-overlay" onClick={closeDetail}>
-            <div className="modal-box modal-sm" onClick={e => e.stopPropagation()}>
-              {/* Premium Header */}
-              <div className="appt-details-header">
-                <button className="appt-details-close" onClick={closeDetail}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                </button>
-                
-                <div className="appt-details-header-content">
-                  <div className="agenda-topbar-section">
-                    <span className="appt-details-tag">
-                      Expediente de Cita
-                    </span>
-                    <span className={`status-badge ${detailAppt.status.toLowerCase().replace(' ', '-')}`}>
-                      {detailAppt.status}
-                    </span>
-                  </div>
-                  <h2 className="appt-details-title">
-                    {client?.nombre || 'Paciente'} {client?.apellido || ''}
-                  </h2>
-                  <div className="appt-details-subtitle">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    Cédula: {client?.cedula || 'N/A'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Body Content */}
-              <div className="modal-scroll-area padded-lg gap-md">
-                {/* Horizontal Info Grid */}
-                <div className="appt-details-grid">
-                  <div className="input-group">
-                    <label className="appt-details-label">Fecha Programada</label>
-                    <div className="appt-details-value">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                      {apptDate}
-                    </div>
-                  </div>
-                  <div className="input-group">
-                    <label className="appt-details-label">Bloque Horario</label>
-                    <div className="appt-details-value">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                      {detailAppt.time} — {getEndTime(detailAppt)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Professional Info */}
-                <div className="appt-details-pro-card">
-                  <div className="appt-details-pro-icon">👨‍⚕️</div>
-                  <div className="appt-details-pro-info">
-                    <label className="appt-details-label">Profesional Asignado</label>
-                    <div className="appt-details-pro-name">{detailAppt.doctor}</div>
-                  </div>
-                </div>
-
-                {/* Services List Card */}
-                <div className="appt-details-services-container">
-                  <div className="appt-details-services-header">
-                    <span className="modal-subtitle">Servicios Contratados</span>
-                    <span className="service-selection-info">
-                      {detailAppt.services?.length || 0} ITEMS
-                    </span>
-                  </div>
-                  <div className="appt-details-services-list">
-                    {detailAppt.services?.map((s, i) => (
-                      <div key={i} className="appt-details-service-item">
-                        <div className="appt-details-service-name">{s.nombre}</div>
-                        <div className="appt-details-service-duration">{s.duracion} min</div>
-                      </div>
-                    ))}
-                    {(!detailAppt.services || detailAppt.services.length === 0) && (
-                      <div className="modal-subtitle centered padded">No hay servicios específicos</div>
-                    )}
-                  </div>
-                  <div className="appt-details-services-footer">
-                    <span className="appt-details-service-name">DURACIÓN TOTAL</span>
-                    <span className="appt-details-service-duration font-lg primary">{detailAppt.duration} MINUTOS</span>
-                  </div>
-                </div>
-
-                {/* Status Selection */}
-                <SearchableSelect 
-                  label="Cambiar Estado de la Cita"
-                  placeholder="Elige un estado..."
-                  icon="🏷️"
-                  options={[
-                    { value: 'Confirmada', label: '✅ Confirmada' },
-                    { value: 'En Espera', label: '⏳ En Espera' },
-                    { value: 'Pendiente', label: '🕒 Pendiente' },
-                    { value: 'Cancelada', label: '❌ Cancelada' }
-                  ]}
-                  value={editStatus}
-                  onChange={val => setEditStatus(val)}
-                />
-              </div>
-
-              <div className="appt-modal-footer padded-lg no-border">
-                <button className="btn btn-outline btn-danger-outline" onClick={handleDeleteFromDetail}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-                  Eliminar
-                </button>
-                <button className="btn btn-primary" onClick={saveStatus}>
-                  Actualizar Cita
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Service Selection Overlay */}
       {showServiceMenu && (

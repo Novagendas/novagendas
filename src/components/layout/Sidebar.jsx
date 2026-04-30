@@ -33,26 +33,35 @@ const ADMIN_NAV = [
 /* ── Nav button ─────────────────────────────────────────── */
 function NavBtn({ item, active, onNavigate }) {
   return (
-    <button
-      onClick={() => onNavigate(item.id)}
-      className={`nav-btn${active ? ' active' : ''}`}
-    >
-      <div className="nav-btn-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round">
-          {ICONS[item.id]}
-        </svg>
-      </div>
-      <span className="nav-btn-label">{item.label}</span>
-      <div className="nav-btn-indicator" />
-    </button>
+    <li className="nav-item">
+      <button
+        type="button"
+        onClick={() => onNavigate(item.id)}
+        className={`nav-btn${active ? ' active' : ''}`}
+        aria-current={active ? 'page' : undefined}
+        title={item.label}
+      >
+        <div className="nav-btn-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            {ICONS[item.id]}
+          </svg>
+        </div>
+        <span className="nav-btn-label">{item.label}</span>
+        <div className="nav-btn-indicator" aria-hidden="true" />
+      </button>
+    </li>
   );
 }
 
 /* ── Section label ──────────────────────────────────────── */
 function SectionLabel({ label }) {
-  return <p className="sidebar-section-label">{label}</p>;
+  return (
+    <li className="sidebar-section-label-item">
+      <h4 className="sidebar-section-label">{label}</h4>
+    </li>
+  );
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
@@ -72,71 +81,73 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogo
   }, []);
 
   return (
-    <div className="sidebar">
+    <aside className="sidebar">
 
       {/* ── Brand ── */}
       <div className="sidebar-brand">
         <div className="sidebar-logo">
           <img
             src={isDark ? '/logodark.jpeg' : '/logoclaro.jpeg'}
-            alt="Logo"
+            alt="Logo Novagendas"
             className="sidebar-logo-img"
             onError={e => { e.target.classList.add('hidden-img'); e.target.parentElement.innerHTML = 'NA'; }}
           />
         </div>
         <div className="sidebar-brand-info">
-          <h3 className="sidebar-brand-name">NovAgendas</h3>
+          <h2 className="sidebar-brand-name">Novagendas</h2>
           <p className="sidebar-tenant-name">{tenant?.name || 'Administración'}</p>
         </div>
       </div>
 
       {/* ── Nav ── */}
-      <nav className="sidebar-nav">
-        <SectionLabel label="Principal" />
-        {MAIN_NAV.map(item => {
-          if (uRole === 'especialista' && item.id === 'dashboard') return null;
-          return (
-            <NavBtn
-              key={item.id}
-              item={item}
-              active={currentRoute === item.id}
-              onNavigate={onNavigate}
-            />
-          );
-        })}
-
-        {uRole !== 'especialista' && (
-          <>
-            <SectionLabel label="Negocio" />
-            {BUSINESS_NAV.map(item => {
-              if (uRole === 'recepcion' && item.id === 'payments') return null;
-              return (
-                <NavBtn
-                  key={item.id}
-                  item={item}
-                  active={currentRoute === item.id}
-                  onNavigate={onNavigate}
-                />
-              );
-            })}
-          </>
-        )}
-
-        {uRole === 'admin' && (
-          <>
-            <SectionLabel label="Administración" />
-            {ADMIN_NAV.map(item => (
+      <nav className="sidebar-nav" aria-label="Navegación principal">
+        <ul>
+          <SectionLabel label="Principal" />
+          {MAIN_NAV.map(item => {
+            if (uRole === 'especialista' && item.id === 'dashboard') return null;
+            return (
               <NavBtn
                 key={item.id}
                 item={item}
                 active={currentRoute === item.id}
                 onNavigate={onNavigate}
               />
-            ))}
-          </>
-        )}
+            );
+          })}
+
+          {uRole !== 'especialista' && (
+            <>
+              <SectionLabel label="Negocio" />
+              {BUSINESS_NAV.map(item => {
+                if (uRole === 'recepcion' && item.id === 'payments') return null;
+                return (
+                  <NavBtn
+                    key={item.id}
+                    item={item}
+                    active={currentRoute === item.id}
+                    onNavigate={onNavigate}
+                  />
+                );
+              })}
+            </>
+          )}
+
+          {uRole === 'admin' && (
+            <>
+              <SectionLabel label="Administración" />
+              {ADMIN_NAV.map(item => (
+                <NavBtn
+                  key={item.id}
+                  item={item}
+                  active={currentRoute === item.id}
+                  onNavigate={onNavigate}
+                />
+              ))}
+            </>
+          )}
+        </ul>
       </nav>
 
-    </div>
+    </aside>
   );
 }

@@ -25,58 +25,91 @@
   border-radius: 30px;
 }
 
-/* ── Grid de secciones ── */
-.profile-grid {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .profile-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ── Tarjeta de Identidad (Sticky) ── */
-.profile-left-col {
+/* ── Column layout para acordeón ── */
+.profile-column {
+  max-width: 700px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  position: sticky;
-  top: 1.5rem;
+  gap: 1.5rem;
 }
 
-.profile-identity-card {
-  text-align: center;
-  padding: 2.5rem 1.5rem !important;
-  background: var(--surface);
+/* ── Accordion Cards ── */
+.accordion-card {
   border: 1px solid var(--border);
-  position: relative;
+  border-radius: var(--radius-2xl);
+  padding: 0 !important;
   overflow: hidden;
 }
 
-.profile-identity-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 100px;
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  opacity: 0.15;
-  z-index: 0;
+.accordion-header {
+  padding: 1.75rem;
+  background: var(--surface-2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
 }
 
-.profile-avatar-wrapper {
-  position: relative;
-  z-index: 1;
-  margin-bottom: 1.25rem;
-  display: inline-flex;
+.accordion-header:hover {
+  background: var(--surface-3);
 }
 
-.profile-avatar {
-  width: 100px;
-  height: 100px;
+.accordion-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.accordion-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(37, 99, 235, 0.1);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.accordion-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.accordion-chevron {
+  color: var(--text-4);
+  flex-shrink: 0;
+}
+
+.accordion-body {
+  padding: 1.75rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 1000px; }
+}
+
+/* ── Intro Card (Perfil) ── */
+.profile-card-intro {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.profile-avatar-large {
+  width: 120px;
+  height: 120px;
   border-radius: 30px;
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color: #fff;
@@ -84,16 +117,9 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 2.5rem;
-  margin: 0 auto;
+  font-size: 3rem;
   border: 5px solid var(--surface);
   box-shadow: var(--shadow-lg);
-  position: relative;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.profile-avatar:hover {
-  transform: scale(1.05) rotate(2deg);
 }
 
 .profile-display-name {

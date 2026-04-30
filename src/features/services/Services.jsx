@@ -71,6 +71,7 @@ export default function Services({ user, tenant }) {
         idcategoriaservicio, categoriaservicio(descripcion)
       `)
       .eq('idnegocios', tenant.id)
+      .is('deleted_at', null)
       .order('idservicios');
 
     if (srvData) {
@@ -210,7 +211,7 @@ export default function Services({ user, tenant }) {
     e.stopPropagation(); 
     showConfirm('Eliminar Servicio', '¿Seguro que deseas eliminar este servicio permanentemente?', async () => {
       setLoading(true);
-      const { error } = await supabase.from('servicios').delete().eq('idservicios', id);
+      const { error } = await supabase.from('servicios').update({ deleted_at: new Date().toISOString() }).eq('idservicios', id);
       if (error) showAlert('Eliminación Rechazada', "Este servicio probablemente está siendo usado en Citas activas.\nError: " + error.message);
       else {
         showSnack('Servicio eliminado', 'error');
