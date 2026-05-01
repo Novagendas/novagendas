@@ -215,7 +215,7 @@ export default function Agenda({ user, tenant }) {
         .from('rolpermisos')
         .select(`
           idusuario,
-          usuario:idusuario (idusuario, nombre, apellido, idnegocios)
+          usuario:idusuario (idusuario, nombre, apellido, email, profesion, idnegocios)
         `)
         .eq('idrol', 3);
 
@@ -583,58 +583,66 @@ export default function Agenda({ user, tenant }) {
         idNegocios: tenant.id
       });
 
-      // ── Sincronizar con Google Calendar (fire & forget) ──
-      try {
-        const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
-        const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
-        const serviceNames = selectedServices.map(s => s.nombre).join(', ');
-        const totalPrice = selectedServices.reduce((sum, s) => sum + (s.precio || 0), 0);
-        const totalDurMin = selectedServices.reduce((sum, s) => sum + (s.duracion || 0), 0);
+      // ── Sincronizar con Google Calendar ──
+      if (calConnected) {
+        try {
+          const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
+          const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
+          const serviceNames = selectedServices.map(s => s.nombre).join(', ');
+          const totalPrice = selectedServices.reduce((sum, s) => sum + (s.precio || 0), 0);
+          const totalDurMin = selectedServices.reduce((sum, s) => sum + (s.duracion || 0), 0);
 
-        const attendees = [];
-        if (client?.email) attendees.push(client.email);
-        if (specialist?.email) attendees.push(specialist.email);
+          const attendees = [];
+          if (client?.email) attendees.push(client.email);
+          if (specialist?.email) attendees.push(specialist.email);
 
-        const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const timeLabel = form.time;
+          const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          const timeLabel = form.time;
 
-        const description = [
-          `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}`,
-          '',
-          `📋 Servicios: ${serviceNames}`,
-          totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
-          totalPrice ? `💰 Precio estimado: $${totalPrice.toLocaleString('es-CO')} COP` : null,
-          '',
-          `👤 Paciente: ${client?.nombre || ''} ${client?.apellido || ''}`,
-          client?.telefono ? `📞 Teléfono: ${client.telefono}` : null,
-          client?.email ? `📧 Email: ${client.email}` : null,
-          client?.cedula ? `🪪 Documento: ${client.cedula}` : null,
-          '',
-          `👨‍⚕️ Especialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Por asignar'}`,
-          specialist?.profesion ? `   Especialidad: ${specialist.profesion}` : null,
-          '',
-          `📆 Fecha: ${dateLabel}`,
-          `🕐 Hora: ${timeLabel}`,
-          '',
-          `━━━━━━━━━━━━━━━━━━━━━━`,
-          `Cita gestionada por Novagendas`,
-          `Favor llegar 15 minutos antes de la cita.`,
-        ].filter(l => l !== null).join('\n');
+          const description = [
+            `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}`,
+            '',
+            `📋 Servicios: ${serviceNames}`,
+            totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
+            totalPrice ? `💰 Precio estimado: $${totalPrice.toLocaleString('es-CO')} COP` : null,
+            '',
+            `👤 Paciente: ${client?.nombre || ''} ${client?.apellido || ''}`,
+            client?.telefono ? `📞 Teléfono: ${client.telefono}` : null,
+            client?.email ? `📧 Email: ${client.email}` : null,
+            client?.cedula ? `🪪 Documento: ${client.cedula}` : null,
+            '',
+            `👨‍⚕️ Especialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Por asignar'}`,
+            specialist?.profesion ? `   Especialidad: ${specialist.profesion}` : null,
+            '',
+            `📆 Fecha: ${dateLabel}`,
+            `🕐 Hora: ${timeLabel}`,
+            '',
+            `━━━━━━━━━━━━━━━━━━━━━━`,
+            `Cita gestionada por Novagendas`,
+            `Favor llegar 15 minutos antes de la cita.`,
+          ].filter(l => l !== null).join('\n');
 
-        const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
+          const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
 
-        if (editId && form.gcalEventId) {
-          // Actualizar evento existente
-          await updateCalendarEvent(tenant.id, form.gcalEventId, calArgs);
-        } else if (!editId) {
-          // Crear nuevo evento y guardar su ID en la cita
-          const newEventId = await createCalendarEvent(tenant.id, calArgs);
-          if (newEventId) {
-            await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
+          if (editId && form.gcalEventId) {
+            if (form.status === 'Cancelada') {
+              // Eliminar el evento de Google Calendar al cancelar la cita
+              await deleteCalendarEvent(tenant.id, form.gcalEventId);
+              await supabase.from('cita').update({ gcal_event_id: null }).eq('idcita', appointmentId);
+            } else {
+              await updateCalendarEvent(tenant.id, form.gcalEventId, calArgs);
+            }
+          } else if (!editId) {
+            // Nueva cita → crear evento y guardar su ID
+            const newEventId = await createCalendarEvent(tenant.id, calArgs);
+            if (newEventId) {
+              await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
+            }
           }
+        } catch (calErr) {
+          console.warn('Google Calendar no sincronizado:', calErr.message);
+          showSnack('⚠️ Google Calendar no pudo sincronizar', 'error');
         }
-      } catch (calErr) {
-        console.warn('Google Calendar no sincronizado:', calErr.message);
       }
 
       fetchData();
@@ -723,6 +731,27 @@ export default function Agenda({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
+
+      if (calConnected && appt.gcalEventId) {
+        try {
+          const client = clients.find(c => c.idcliente === appt.clientId);
+          const specialist = specialists.find(s => s.idusuario === appt.specialistId);
+          const selectedServices = services.filter(s => appt.serviceIds.includes(s.idservicios));
+          const serviceNames = selectedServices.map(s => s.nombre).join(', ');
+          const attendees = [client?.email, specialist?.email].filter(Boolean);
+          const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          await updateCalendarEvent(tenant.id, appt.gcalEventId, {
+            summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`,
+            description: `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}\n📆 Fecha: ${dateLabel}\n🕐 Hora: ${dropTime}\n━━━━━━━━━━━━━━━━━━━━━━\nCita gestionada por Novagendas`,
+            startDateTime: startStr,
+            endDateTime: endStr,
+            attendeeEmails: attendees,
+          });
+        } catch (calErr) {
+          console.warn('No se pudo actualizar el evento de Google Calendar:', calErr.message);
+        }
+      }
+
       fetchData();
     }
     dragging.current = null;
@@ -816,7 +845,7 @@ export default function Agenda({ user, tenant }) {
         {/* Overflow pagination buttons */}
         {Object.entries(overflowGroups).map(([groupKey, { totalCols, groupEndMin, page }]) => {
           const maxPage = Math.ceil(totalCols / maxCols) - 1;
-          const computedTop = (groupEndMin / 60 - START_H) * SLOT_H + 4;
+          const computedTop = (groupEndMin / 60 - START_H) * SLOT_H - 28;
           const maxTop = Math.max(6, HOURS.length * SLOT_H - 32);
           const top = Math.min(maxTop, Math.max(6, computedTop));
           return (
