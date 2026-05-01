@@ -153,6 +153,7 @@ export default function Agenda({ user, tenant }) {
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [tempWorkHours, setTempWorkHours] = useState({ start: 6, end: 21 });
   const [editId, setEditId] = useState(null);
+  const [groupPages, setGroupPages] = useState({});
   const emptyForm = () => ({
     clientId: '',
     serviceIds: [],
@@ -249,13 +250,11 @@ export default function Agenda({ user, tenant }) {
       if (!error && apptData) {
         const mapped = apptData.map(a => {
           const startStr = a.fechahorainicio || '';
-          const endStr = a.fechahorafin || '';
           
           if (!startStr) return null;
 
           // Parse to local date object
           const startD = new Date(startStr.replace(' ', 'T'));
-          const endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + 30 * 60000);
 
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
@@ -702,7 +701,7 @@ export default function Agenda({ user, tenant }) {
 
     if (conflict) {
       const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
-      showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
+      showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime} con ${conflictClient?.nombre || 'otro paciente'}`, 'error');
       dragging.current = null;
       return;
     }
@@ -756,8 +755,6 @@ export default function Agenda({ user, tenant }) {
 
 
   const DayColumn = ({ dateStr, maxCols = MAX_VISIBLE_COLS }) => {
-    const [groupPages, setGroupPages] = useState({});
-
     const rawAppts = appointments.filter(a => {
       const isCorrectDate = a.date === dateStr && a.status !== 'Cancelada';
       const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
@@ -770,24 +767,27 @@ export default function Agenda({ user, tenant }) {
     // Collect groups that overflow maxCols
     const overflowGroups = {};
     layoutAppts.forEach(a => {
-      if (a.totalCols > maxCols && !overflowGroups[a.groupId]) {
-        overflowGroups[a.groupId] = {
-          totalCols: a.totalCols,
-          groupStartTime: a.groupStartTime,
-          groupEndMin: a.groupEndMin,
-          page: groupPages[a.groupId] || 0,
-        };
+      if (a.totalCols > maxCols) {
+        const groupKey = `${dateStr}-${a.groupStartTime}-${a.groupEndMin}`;
+        if (!overflowGroups[groupKey]) {
+          overflowGroups[groupKey] = {
+            totalCols: a.totalCols,
+            groupEndMin: a.groupEndMin,
+            page: groupPages[groupKey] || 0,
+          };
+        }
       }
     });
 
-    const setGroupPage = (gid, page) => setGroupPages(prev => ({ ...prev, [gid]: page }));
+    const setGroupPage = (groupKey, page) => setGroupPages(prev => ({ ...prev, [groupKey]: page }));
 
     // Filter & assign display columns
     const displayAppts = layoutAppts.flatMap(appt => {
       if (appt.totalCols <= maxCols) {
         return [{ ...appt, displayCol: appt.col, displayTotalCols: appt.totalCols }];
       }
-      const page = groupPages[appt.groupId] || 0;
+      const groupKey = `${dateStr}-${appt.groupStartTime}-${appt.groupEndMin}`;
+      const page = groupPages[groupKey] || 0;
       const visStart = page * maxCols;
       const visEnd = visStart + maxCols;
       if (appt.col < visStart || appt.col >= visEnd) return [];
@@ -814,18 +814,18 @@ export default function Agenda({ user, tenant }) {
         })}
 
         {/* Overflow pagination buttons */}
-        {Object.entries(overflowGroups).map(([gid, { totalCols, groupEndMin, page }]) => {
+        {Object.entries(overflowGroups).map(([groupKey, { totalCols, groupEndMin, page }]) => {
           const maxPage = Math.ceil(totalCols / maxCols) - 1;
           const computedTop = (groupEndMin / 60 - START_H) * SLOT_H + 4;
           const maxTop = Math.max(6, HOURS.length * SLOT_H - 32);
           const top = Math.min(maxTop, Math.max(6, computedTop));
           return (
-            <div key={gid} className="day-col-page-nav" style={{ top }} onClick={e => e.stopPropagation()}>
+            <div key={groupKey} className="day-col-page-nav" style={{ top }} onClick={e => e.stopPropagation()}>
               <button className="day-col-page-btn" disabled={page === 0}
-                onClick={e => { e.stopPropagation(); setGroupPage(Number(gid), page - 1); }}>‹</button>
+                onClick={e => { e.stopPropagation(); setGroupPage(groupKey, page - 1); }}>‹</button>
               <span className="day-col-page-label">{page + 1}/{maxPage + 1}</span>
               <button className="day-col-page-btn" disabled={page === maxPage}
-                onClick={e => { e.stopPropagation(); setGroupPage(Number(gid), page + 1); }}>›</button>
+                onClick={e => { e.stopPropagation(); setGroupPage(groupKey, page + 1); }}>›</button>
             </div>
           );
         })}
