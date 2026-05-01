@@ -22,6 +22,49 @@ import './Agenda.css';
 const { SLOT_HEIGHT: SLOT_H, MIN_HOUR: START_H_MIN, MAX_HOUR: END_H_MAX } = CALENDAR_CONFIG;
 const statusColor = STATUS_COLORS;
 
+/* ─── Day view column layout (overlap detection) ─────────── */
+const MAX_VISIBLE_COLS = 5;
+
+function computeColumnLayout(appts) {
+  if (!appts.length) return [];
+
+  const withTimes = appts.map(a => {
+    const [h, m] = a.time.split(':').map(Number);
+    const startMin = h * 60 + m;
+    const endMin = startMin + Math.max(a.duration || 60, 1);
+    return { ...a, startMin, endMin };
+  }).sort((a, b) => a.startMin - b.startMin);
+
+  const result = [];
+  let groupId = 0;
+  let i = 0;
+
+  while (i < withTimes.length) {
+    let groupEnd = withTimes[i].endMin;
+    let j = i;
+    while (j < withTimes.length && withTimes[j].startMin < groupEnd) {
+      groupEnd = Math.max(groupEnd, withTimes[j].endMin);
+      j++;
+    }
+
+    const group = withTimes.slice(i, j);
+    const gStartTime = group[0].time;
+    const cols = [];
+    const groupItems = group.map(appt => {
+      let col = cols.findIndex(end => end <= appt.startMin);
+      if (col === -1) col = cols.length;
+      cols[col] = appt.endMin;
+      return { ...appt, col, groupId, groupStartTime: gStartTime, groupEndMin: groupEnd };
+    });
+
+    result.push(...groupItems.map(a => ({ ...a, totalCols: cols.length })));
+    groupId++;
+    i = j;
+  }
+
+  return result;
+}
+
 /* ─── Month mini calendar helper ─────────────────────────── */
 function buildMonthGrid(pivot) {
   const y = pivot.getFullYear(), m = pivot.getMonth();
@@ -712,13 +755,49 @@ export default function Agenda({ user, tenant }) {
   };
 
 
-  const DayColumn = ({ dateStr }) => {
-    const dayAppts = appointments.filter(a => {
+  const DayColumn = ({ dateStr, maxCols = MAX_VISIBLE_COLS }) => {
+    const [groupPages, setGroupPages] = useState({});
+
+    const rawAppts = appointments.filter(a => {
       const isCorrectDate = a.date === dateStr && a.status !== 'Cancelada';
       const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
       const isCorrectLoc = selectedLocationId ? String(a.locationId) === String(selectedLocationId) : true;
       return isCorrectDate && isCorrectSpec && isCorrectLoc;
     });
+
+    const layoutAppts = computeColumnLayout(rawAppts);
+
+    // Collect groups that overflow maxCols
+    const overflowGroups = {};
+    layoutAppts.forEach(a => {
+      if (a.totalCols > maxCols && !overflowGroups[a.groupId]) {
+        overflowGroups[a.groupId] = {
+          totalCols: a.totalCols,
+          groupStartTime: a.groupStartTime,
+          groupEndMin: a.groupEndMin,
+          page: groupPages[a.groupId] || 0,
+        };
+      }
+    });
+
+    const setGroupPage = (gid, page) => setGroupPages(prev => ({ ...prev, [gid]: page }));
+
+    // Filter & assign display columns
+    const displayAppts = layoutAppts.flatMap(appt => {
+      if (appt.totalCols <= maxCols) {
+        return [{ ...appt, displayCol: appt.col, displayTotalCols: appt.totalCols }];
+      }
+      const page = groupPages[appt.groupId] || 0;
+      const visStart = page * maxCols;
+      const visEnd = visStart + maxCols;
+      if (appt.col < visStart || appt.col >= visEnd) return [];
+      return [{
+        ...appt,
+        displayCol: appt.col - visStart,
+        displayTotalCols: Math.min(maxCols, appt.totalCols - visStart),
+      }];
+    });
+
     return (
       <div className="calendar-day-column">
         {HOURS.map(h => {
@@ -733,19 +812,45 @@ export default function Agenda({ user, tenant }) {
             />
           );
         })}
-        {dayAppts.map(appt => {
+
+        {/* Overflow pagination buttons */}
+        {Object.entries(overflowGroups).map(([gid, { totalCols, groupEndMin, page }]) => {
+          const maxPage = Math.ceil(totalCols / maxCols) - 1;
+          const computedTop = (groupEndMin / 60 - START_H) * SLOT_H + 4;
+          const maxTop = Math.max(6, HOURS.length * SLOT_H - 32);
+          const top = Math.min(maxTop, Math.max(6, computedTop));
+          return (
+            <div key={gid} className="day-col-page-nav" style={{ top }} onClick={e => e.stopPropagation()}>
+              <button className="day-col-page-btn" disabled={page === 0}
+                onClick={e => { e.stopPropagation(); setGroupPage(Number(gid), page - 1); }}>‹</button>
+              <span className="day-col-page-label">{page + 1}/{maxPage + 1}</span>
+              <button className="day-col-page-btn" disabled={page === maxPage}
+                onClick={e => { e.stopPropagation(); setGroupPage(Number(gid), page + 1); }}>›</button>
+            </div>
+          );
+        })}
+
+        {displayAppts.map(appt => {
           const client = clients.find(c => c.idcliente === appt.clientId);
           const serviceNames = appt.services?.map(s => s.nombre).join(', ') || 'Consulta General';
+          const colW = 1 / appt.displayTotalCols;
+          const leftPct = appt.displayCol * colW * 100;
+          const widthPct = colW * 100;
+          const colStyle = appt.displayTotalCols > 1 ? {
+            left: `calc(${leftPct}% + 2px)`,
+            right: 'auto',
+            width: `calc(${widthPct}% - 4px)`,
+          } : {};
           return (
             <div
               key={appt.id}
               className="calendar-appt"
-              style={apptStyle(appt)}
+              style={{ ...apptStyle(appt), ...colStyle }}
               draggable
               onDragStart={e => onDragStart(e, appt)}
               onDragEnd={onDragEnd}
               onClick={e => openDetail(appt, e)}
-              onMouseEnter={e => { 
+              onMouseEnter={e => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 setHoveredAppt({ ...appt, client, serviceNames, endTime: getEndTime(appt) });
                 setMousePos({ x: rect.left + rect.width / 2, y: rect.top });
@@ -756,7 +861,7 @@ export default function Agenda({ user, tenant }) {
                 <div className="calendar-appt-title">
                   {client?.nombre || 'Paciente'} {client?.apellido || ''}
                 </div>
-                <button 
+                <button
                   className="calendar-appt-edit-btn"
                   onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
                 >
@@ -785,7 +890,7 @@ export default function Agenda({ user, tenant }) {
           </div>
         ))}
       </div>
-      <DayColumn dateStr={toDateStr(pivot)} />
+      <DayColumn dateStr={toDateStr(pivot)} maxCols={5} />
     </div>
   );
 
@@ -820,7 +925,7 @@ export default function Agenda({ user, tenant }) {
           ))}
         </div>
         {weekDays.map((d, i) => (
-          <DayColumn key={i} dateStr={toDateStr(d)} />
+          <DayColumn key={i} dateStr={toDateStr(d)} maxCols={2} />
         ))}
       </div>
     </div>
@@ -830,7 +935,7 @@ export default function Agenda({ user, tenant }) {
     const grid = buildMonthGrid(pivot);
     const pivotMonth = pivot.getMonth();
     return (
-      <div className="calendar-view-container" style={{ flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
+      <div className="calendar-view-container calendar-view-month">
         <div className="month-view-grid-header">
           {DAY_LABELS.map(d => (
             <div key={d} className="month-day-header">{d}</div>
