@@ -4,7 +4,7 @@ import ParticleBackground from '../../components/ParticleBackground';
 import ThemeToggle from '../../components/ThemeToggle';
 import './Auth.css';
 
-export default function ForgotPassword({ tenant, onBack }) {
+export default function ForgotPassword({ onBack }) {
   const [email,   setEmail]   = useState('');
   const [loading, setLoading] = useState(false);
   const [sent,    setSent]    = useState(false);

@@ -65,10 +65,9 @@ function SectionLabel({ label }) {
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
-export default function Sidebar({ user, tenant, currentRoute, onNavigate, onLogout }) {
-  const uName     = user?.name || 'Administrador';
+export default function Sidebar({ user, tenant, currentRoute, onNavigate }) {
+    // User info display
   const uRole     = user?.role || 'admin';
-  const uInitials = uName.substring(0, 2).toUpperCase();
 
   const [isDark, setIsDark] = React.useState(false);
   React.useEffect(() => {

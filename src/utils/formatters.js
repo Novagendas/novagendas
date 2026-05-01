@@ -104,7 +104,14 @@ export const formatFullName = (nombre = '', apellido = '') => {
 export const formatCedula = (cedula) => {
   if (!cedula) return '';
   // Ejemplo: 1234567890 -> 1.234.567.890
-  return cedula.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return cedula
+    .split('')
+    .reverse()
+    .join('')
+    .replace(/(\d{3})(?=\d)/g, '$1.')
+    .split('')
+    .reverse()
+    .join('');
 };
 
 /**
@@ -135,7 +142,7 @@ export const formatBytes = (bytes) => {
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes.at(i);
 };
 
 /**

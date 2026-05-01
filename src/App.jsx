@@ -69,7 +69,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
         const parsed = JSON.parse(saved);
         if (new Date().getTime() < parsed.exp) return parsed.user;
         else localStorage.removeItem('novagendas_user');
-      } catch (e) { }
+      } catch { /* error ignorado intencionalmente al parsear caché */ }
     }
     return null;
   });
@@ -87,7 +87,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
         const parsed = JSON.parse(saved);
         parsed.user = newUser;
         localStorage.setItem('novagendas_user', JSON.stringify(parsed));
-      } catch (e) { }
+      } catch { /* error ignorado intencionalmente al actualizar caché */ }
     }
   };
 

@@ -7,7 +7,9 @@ import './Layout.css';
 
 export default function Layout({ children, user, tenant, currentRoute, onNavigate, onLogout }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const meta  = ROUTE_META[currentRoute] || { label: currentRoute, emoji: '🏠' };
+  // Acceso seguro: usamos Object.entries para obtener el metadato de ruta sin acceso dinámico por corchetes
+  const routeEntry = Object.entries(ROUTE_META).find(([key]) => key === currentRoute);
+  const meta = routeEntry ? routeEntry[1] : { label: currentRoute, emoji: '🏠' };
   const today = new Date().toLocaleDateString('es-CO', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });

@@ -1,10 +1,10 @@
-import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '../../Supabase/supabaseClient';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
 import './Inventory.css';
 
-export default function Inventory({ user, tenant }) {
+export default function Inventory({ tenant }) {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function Inventory({ user, tenant }) {
   const showConfirm = (title, message, onConfirm) => setAlertConfig({ show: true, title, message, type: 'confirm', onConfirm });
   const closeAlert = () => setAlertConfig({ ...alertConfig, show: false });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
     const { data: catData } = await supabase.from('categoriaproducto').select('*').eq('idnegocios', tenant.id);
@@ -47,11 +47,14 @@ export default function Inventory({ user, tenant }) {
     const { data: prodData, error } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
     if (!error) setProducts(prodData || []);
     setLoading(false);
-  };
+  }, [tenant.id]);
 
   useEffect(() => {
-    fetchData();
-  }, [tenant]);
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [tenant, fetchData]);
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -193,6 +196,14 @@ export default function Inventory({ user, tenant }) {
   const alertas = products.filter(i => i.cantidad <= i.cantidadminima).length;
 
   const filteredProducts = useMemo(() => {
+    // Acceso seguro: usamos función extractor con switch en lugar de corchetes dinámicos
+    const CAMPOS_FECHA_PERMITIDOS = ['fechacreacion', 'fechaactualizacion'];
+    const campoFechaSeguro = CAMPOS_FECHA_PERMITIDOS.includes(dateField) ? dateField : 'fechacreacion';
+    const getFechaProducto = (p) => {
+      if (campoFechaSeguro === 'fechaactualizacion') return p.fechaactualizacion;
+      return p.fechacreacion;
+    };
+
     let list = products;
     const q = search.trim().toLowerCase();
     if (q) {
@@ -203,12 +214,14 @@ export default function Inventory({ user, tenant }) {
     }
     if (dateFrom) {
       const from = new Date(dateFrom).getTime();
-      list = list.filter(p => p[dateField] && new Date(p[dateField]).getTime() >= from);
+      // Acceso seguro: usamos la función extractor que evita corchetes dinámicos
+      list = list.filter(p => getFechaProducto(p) && new Date(getFechaProducto(p)).getTime() >= from);
     }
     if (dateTo) {
-      // incluir todo el día final
+      // Incluir todo el día final
       const to = new Date(dateTo).getTime() + 24 * 60 * 60 * 1000 - 1;
-      list = list.filter(p => p[dateField] && new Date(p[dateField]).getTime() <= to);
+      // Acceso seguro: usamos la función extractor que evita corchetes dinámicos
+      list = list.filter(p => getFechaProducto(p) && new Date(getFechaProducto(p)).getTime() <= to);
     }
     const sorted = [...list];
     switch (orderBy) {

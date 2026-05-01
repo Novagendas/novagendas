@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
@@ -42,18 +42,7 @@ export default function Services({ user, tenant }) {
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
 
-  useEffect(() => {
-    if (tenant?.id) {
-      fetchData();
-    }
-  }, [tenant]);
-
-  // -- Custom Modal Helpers --
-  const showAlert = (title, message) => setAlertConfig({ show: true, title, message, type: 'alert', onConfirm: null });
-  const showConfirm = (title, message, onConfirm) => setAlertConfig({ show: true, title, message, type: 'confirm', onConfirm });
-  const closeAlert = () => setAlertConfig({ ...alertConfig, show: false });
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
 
     const { data: catData } = await supabase
@@ -88,7 +77,21 @@ export default function Services({ user, tenant }) {
       setServices(mapped);
     }
     setLoading(false);
-  };
+  }, [tenant.id]);
+
+  useEffect(() => {
+    if (tenant?.id) {
+      const init = async () => {
+        await fetchData();
+      };
+      init();
+    }
+  }, [tenant, fetchData]);
+
+  // -- Custom Modal Helpers --
+  const showAlert = (title, message) => setAlertConfig({ show: true, title, message, type: 'alert', onConfirm: null });
+  const showConfirm = (title, message, onConfirm) => setAlertConfig({ show: true, title, message, type: 'confirm', onConfirm });
+  const closeAlert = () => setAlertConfig({ ...alertConfig, show: false });
 
   const openCreate = () => {
     if (categories.length === 0) {
@@ -282,9 +285,10 @@ export default function Services({ user, tenant }) {
                   key={cat} 
                   className="service-cat-pill"
                   style={{ 
-                    '--cat-bg': `${catColor[cat] || '#6366f1'}12`, 
-                    '--cat-border': `${catColor[cat] || '#6366f1'}28`,
-                    '--cat-color': catColor[cat] || '#6366f1'
+                    // Acceso seguro: usamos Object.entries para leer el color sin acceso dinámico por corchetes
+                    '--cat-bg': `${(Object.entries(catColor).find(([k]) => k === cat) || [null, '#6366f1'])[1]}12`, 
+                    '--cat-border': `${(Object.entries(catColor).find(([k]) => k === cat) || [null, '#6366f1'])[1]}28`,
+                    '--cat-color': (Object.entries(catColor).find(([k]) => k === cat) || [null, '#6366f1'])[1]
                   }}
                 >
                   <span className="capitalize-text">{cat}</span> <span className="service-cat-pill-dot">·</span> {count}

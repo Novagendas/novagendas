@@ -1,7 +1,5 @@
-import React, { createContext, useContext } from 'react';
-
-const GlobalContext = createContext();
-export const useGlobalState = () => useContext(GlobalContext);
+import React from 'react';
+import { GlobalContext } from './GlobalContext';
 
 /**
  * GlobalProvider

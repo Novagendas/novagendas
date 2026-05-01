@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../Supabase/supabaseClient';
 import './AuditLogs.css';
 
@@ -15,7 +15,7 @@ export default function LogsView({ tenant, user }) {
   const [logs,    setLogs]    = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     let query = supabase
       .from('logsnegocio')
@@ -33,9 +33,14 @@ export default function LogsView({ tenant, user }) {
     if (error) console.error('Error fetching logs:', error);
     else setLogs(data || []);
     setLoading(false);
-  };
+  }, [tenant.id, user.idusuario, user.id, user.name, user.role]);
 
-  useEffect(() => { fetchLogs(); }, [tenant.id]);
+  useEffect(() => {
+    const init = async () => {
+      await fetchLogs();
+    };
+    init();
+  }, [tenant.id, fetchLogs]);
 
   return (
     <div className="audit-page">

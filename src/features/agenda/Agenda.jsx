@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SelectableInput from '../../components/inputs/SelectableInput';
 import SuggestionInput from '../../components/SuggestionInput';
@@ -153,7 +153,7 @@ export default function Agenda({ user, tenant }) {
     });
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
 
@@ -212,7 +212,8 @@ export default function Agenda({ user, tenant }) {
 
           // Parse to local date object
           const startD = new Date(startStr.replace(' ', 'T'));
-          const endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + 30 * 60000);
+          // endD se usa para calcular la duración, si no existe fechahorafin se asume 30 min
+          const _endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + 30 * 60000);
 
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
@@ -246,11 +247,11 @@ export default function Agenda({ user, tenant }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenant.id]);
 
   useEffect(() => {
     fetchData();
-  }, [tenant]);
+  }, [tenant, fetchData]);
 
   useEffect(() => {
     const clear = () => setHoveredAppt(null);
@@ -658,7 +659,6 @@ export default function Agenda({ user, tenant }) {
     }
 
     if (conflict) {
-      const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
       showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
       dragging.current = null;
       return;
@@ -1324,6 +1324,9 @@ export default function Agenda({ user, tenant }) {
                     <div className="cita-status-row">
                       {APPOINTMENT_STATUSES.map(s => {
                         const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Pendiente': '🕒', 'Cancelada': '❌', 'Completada': '🎉' };
+                        // Acceso seguro: usamos Object.entries para leer el icono sin corchetes dinámicos
+                        const iconEntry = Object.entries(icons).find(([key]) => key === s);
+                        const icono = iconEntry ? iconEntry[1] : '';
                         return (
                           <button
                             key={s}
@@ -1332,7 +1335,7 @@ export default function Agenda({ user, tenant }) {
                             className={`cita-status-chip${form.status === s ? ' cita-status-chip--active' : ''}`}
                             onClick={() => setForm(f => ({ ...f, status: s }))}
                           >
-                            <span>{icons[s]}</span> {s}
+                            <span>{icono}</span> {s}
                           </button>
                         );
                       })}
