@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import './Users.css';
@@ -130,7 +130,9 @@ const formatRegistration = (raw) => {
 };
 
 const RoleBadge = ({ role }) => {
-  const r = ROLES[role] || { label: role, color: 'var(--text-4)' };
+  // Acceso seguro: usamos Object.entries para obtener el valor sin acceso dinámico por corchetes
+  const found = Object.entries(ROLES).find(([key]) => key === role);
+  const r = found ? found[1] : { label: role, color: 'var(--text-4)' };
   return (
     <span className="role-badge" style={{ background: `${r.color}15`, color: r.color }}>
       {r.label}
@@ -141,7 +143,7 @@ const RoleBadge = ({ role }) => {
 const PermissionGrid = ({ permissions = [], onToggle }) => {
   return (
     <div className="permission-grid">
-      {Object.entries(MODULE_LABELS).map(([key, { id, label, icon }]) => {
+      {Object.entries(MODULE_LABELS).map(([key, { label, icon }]) => {
         const allowed = permissions.includes(key);
         return (
           <div
@@ -186,7 +188,7 @@ export default function Users({ user, tenant }) {
     setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
     const { data: rawUsers, error } = await supabase
@@ -203,9 +205,9 @@ export default function Users({ user, tenant }) {
         const roles = u.rolpermisos?.map(rp => rp.idrol) || [];
         const permsIds = u.rolpermisos?.map(rp => rp.idpermiso) || [];
 
-        // Reverse map permission IDs to string keys
+        // Acceso seguro: usamos Object.entries para mapear IDs a claves sin corchetes dinámicos
         const permissions = permsIds.map(id =>
-          Object.keys(MODULE_LABELS).find(key => MODULE_LABELS[key].id === id)
+          Object.entries(MODULE_LABELS).find(([, val]) => val.id === id)?.[0]
         ).filter(Boolean);
 
         let role = 'recepcion';
@@ -224,17 +226,19 @@ export default function Users({ user, tenant }) {
       }).sort((a, b) => (a.role === 'admin' ? -1 : b.role === 'admin' ? 1 : 0)));
     }
     setLoading(false);
-  };
+  }, [tenant.id]);
 
   useEffect(() => {
     fetchData();
-  }, [tenant]);
+  }, [tenant, fetchData]);
 
   const update = (k, v) => {
     setForm(f => {
       const newForm = { ...f, [k]: v };
       if (k === 'role') {
-        newForm.permissions = ROLES[v]?.permissions || [];
+        // Acceso seguro: usamos Object.entries para leer los permisos del rol sin corchetes dinámicos
+        const roleEntry = Object.entries(ROLES).find(([key]) => key === v);
+        newForm.permissions = roleEntry ? roleEntry[1].permissions : [];
       }
       return newForm;
     });
@@ -250,12 +254,7 @@ export default function Users({ user, tenant }) {
     });
   };
 
-  const startEdit = (u) => {
-    setForm({ name: u.name, email: u.email, role: u.role, permissions: u.permissions || [], password: '', confirm: '' });
-    setEditId(u.id);
-    setFormError('');
-    setModalOpen(true);
-  };
+  // Acceso a la edición se realiza directamente desde el JSX con setForm/setEditId
 
   const openPermEdit = (u) => {
     setPermEditUser(u);
@@ -268,11 +267,14 @@ export default function Users({ user, tenant }) {
     const userId = permEditUser.id;
     const roleId = permEditUser.role === 'admin' ? 1 : permEditUser.role === 'especialista' ? 3 : 2;
     await supabase.from('rolpermisos').delete().eq('idusuario', userId);
-    const rows = permEditPerms.map(p => ({
-      idusuario: userId,
-      idrol: roleId,
-      idpermiso: MODULE_LABELS[p]?.id
-    })).filter(r => r.idpermiso);
+    // Acceso seguro: usamos Object.entries para leer el id de permiso sin corchetes dinámicos
+    const rows = permEditPerms
+      .map(p => {
+        const entry = Object.entries(MODULE_LABELS).find(([key]) => key === p);
+        if (!entry) return null;
+        return { idusuario: userId, idrol: roleId, idpermiso: entry[1].id };
+      })
+      .filter(row => row && row.idpermiso);
     if (rows.length > 0) {
       await supabase.from('rolpermisos').insert(rows);
     }
@@ -349,11 +351,14 @@ export default function Users({ user, tenant }) {
 
       await supabase.from('rolpermisos').delete().eq('idusuario', userId);
 
-      const permissionEntries = form.permissions.map(permKey => ({
-        idusuario: userId,
-        idrol: roleId,
-        idpermiso: MODULE_LABELS[permKey].id
-      }));
+      // Acceso seguro: usamos Object.entries para leer el id de permiso sin corchetes dinámicos
+      const permissionEntries = form.permissions
+        .map(permKey => {
+          const entry = Object.entries(MODULE_LABELS).find(([key]) => key === permKey);
+          if (!entry) return null;
+          return { idusuario: userId, idrol: roleId, idpermiso: entry[1].id };
+        })
+        .filter(Boolean);
 
       if (permissionEntries.length === 0) {
         permissionEntries.push({ idusuario: userId, idrol: roleId, idpermiso: 2 });

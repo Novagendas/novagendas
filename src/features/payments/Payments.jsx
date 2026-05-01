@@ -1,5 +1,5 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SelectableInput from '../../components/inputs/SelectableInput';
 import { PAYMENT_METHODS, PAYMENT_METHOD_ICONS } from '../../utils/constants';
 import { fmt } from '../../utils/formatters';
@@ -35,7 +35,9 @@ export default function Payments({ user, tenant }) {
   const [filter, setFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('pagos');
 
-  const fetchData = async () => {
+  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
 
@@ -72,13 +74,14 @@ export default function Payments({ user, tenant }) {
 
     setAbonos(abonoData || []);
     setLoading(false);
-  };
+  }, [tenant.id, form.method]);
 
   useEffect(() => {
-    fetchData();
-  }, [tenant]);
-
-  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [tenant, fetchData]);
 
   // Auto-fill amount when service selected
   const handleServiceChange = (serviceId) => {
@@ -107,7 +110,7 @@ export default function Payments({ user, tenant }) {
 
     setShowModal(false);
 
-    const { data, error } = await supabase.from('pagos').insert([payload]).select();
+    const { error } = await supabase.from('pagos').insert([payload]).select();
 
     if (!error) {
       const client = clients.find(c => c.idcliente === parseInt(form.clientId));
@@ -312,7 +315,7 @@ export default function Payments({ user, tenant }) {
           <button key={m} onClick={() => setFilter(m)}
             className={`filter-btn ${filter === m ? 'filter-btn--active' : ''}`}
           >
-            {m === 'all' ? '📊 Todos' : `${METHOD_ICONS[m] || '💰'} ${m}`}
+            {m === 'all' ? '📊 Todos' : `${(Object.entries(METHOD_ICONS).find(([k]) => k === m) || [null, '💰'])[1]} ${m}`}
           </button>
         ))}
       </div>

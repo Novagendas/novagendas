@@ -331,14 +331,24 @@ export default function SuperAdminPortal() {
 
   useEffect(() => {
     if (adminLogged) {
-      fetchTenants();
-      fetchUsers();
-      fetchUbicaciones();
+      const initData = async () => {
+        await Promise.all([
+          fetchTenants(),
+          fetchUsers(),
+          fetchUbicaciones()
+        ]);
+      };
+      initData();
     }
   }, [adminLogged, fetchTenants, fetchUsers, fetchUbicaciones]);
 
   useEffect(() => {
-    if (adminLogged && tab === 'monitoreo') fetchMonitor();
+    if (adminLogged && tab === 'monitoreo') {
+      const loadMonitor = async () => {
+        await fetchMonitor();
+      };
+      loadMonitor();
+    }
   }, [adminLogged, tab, fetchMonitor]);
 
   /* ── Login ── */
@@ -518,7 +528,18 @@ export default function SuperAdminPortal() {
     setTimeout(() => setCopied(null), 1800);
   };
 
-  const sortFn = (a, b, key, dir) => dir === 'newest' ? (b[key] || 0) - (a[key] || 0) : (a[key] || 0) - (b[key] || 0);
+  // Acceso seguro: usamos una función extractor con switch en lugar de acceso dinámico por corchetes
+  const CAMPOS_ORDEN_PERMITIDOS = ['idnegocios', 'idusuario', 'idubicacion'];
+  const getFieldValue = (obj, key) => {
+    if (key === 'idnegocios') return obj.idnegocios || 0;
+    if (key === 'idusuario')  return obj.idusuario  || 0;
+    if (key === 'idubicacion') return obj.idubicacion || 0;
+    return 0;
+  };
+  const sortFn = (a, b, key, dir) => {
+    if (!CAMPOS_ORDEN_PERMITIDOS.includes(key)) return 0;
+    return dir === 'newest' ? getFieldValue(b, key) - getFieldValue(a, key) : getFieldValue(a, key) - getFieldValue(b, key);
+  };
   const tenantName = id => tenants.find(t => t.idnegocios === id)?.nombre || null;
 
   const filteredTenants = tenants

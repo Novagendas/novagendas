@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../Supabase/supabaseClient';
 import './Dashboard.css';
 
@@ -54,7 +54,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
     loading: true,
   });
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     const now        = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
@@ -88,9 +88,14 @@ export default function Dashboard({ user, tenant, onNavigate }) {
       console.error('Dashboard error:', e);
       setData(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, [tenant.id]);
 
-  useEffect(() => { fetchData(); }, [tenant]);
+  useEffect(() => {
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [tenant, fetchData]);
 
   const fmt = (n) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);

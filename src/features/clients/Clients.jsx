@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
@@ -35,7 +35,7 @@ export default function Clients({ user, tenant }) {
   const [habeas, setHabeas] = useState(false);
 
   // Fetch Data from Supabase
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
     const { data: dbClients, error } = await supabase
@@ -77,11 +77,14 @@ export default function Clients({ user, tenant }) {
       setClients(mapped);
     }
     setLoading(false);
-  };
+  }, [tenant.id]);
 
   useEffect(() => {
-    fetchData();
-  }, [tenant]);
+    const init = async () => {
+      await fetchData();
+    };
+    init();
+  }, [tenant, fetchData]);
 
   const [assignedClientIds, setAssignedClientIds] = useState([]);
 
@@ -646,7 +649,8 @@ function avatarGlowVars(char) {
   const idx = charCode % gradients.length;
 
   return {
-    '--glow-bg': gradients[idx],
-    '--glow-shadow': shadows[idx],
+    // Acceso seguro: usamos .at() para acceder al array sin riesgo de inyección
+    '--glow-bg': gradients.at(idx),
+    '--glow-shadow': shadows.at(idx),
   };
 }

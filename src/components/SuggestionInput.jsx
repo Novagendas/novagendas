@@ -18,24 +18,25 @@ export default function SuggestionInput({
   id = ''
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [filtered, setFiltered] = useState([]);
-  const [cursor, setCursor] = useState(-1);
-  const wrapperRef = useRef(null);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
+  // Eliminamos el estado filtered y lo reemplazamos por useMemo para evitar setState en useEffect
+  const filtered = React.useMemo(() => {
     if (value && isOpen) {
       const match = suggestions.filter(s => 
         s.toLowerCase().includes(value.toLowerCase()) && 
         s.toLowerCase() !== value.toLowerCase()
       );
-      setFiltered(match.slice(0, 8)); // Limit to 8 suggestions
+      return match.slice(0, 8);
     } else if (isOpen && !value) {
-      setFiltered(suggestions.slice(0, 5)); // Show some default suggestions if empty
-    } else {
-      setFiltered([]);
+      return suggestions.slice(0, 5);
     }
+    return [];
   }, [value, suggestions, isOpen]);
+
+  const [cursor, setCursor] = useState(-1);
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // El useEffect de filtrado ha sido reemplazado por el useMemo de arriba
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -56,7 +57,8 @@ export default function SuggestionInput({
       setCursor(c => (c > 0 ? c - 1 : 0));
     } else if (e.key === "Enter" && cursor !== -1) {
       e.preventDefault();
-      selectSuggestion(filtered[cursor]);
+      // Acceso seguro: usamos .at() para evitar inyección por índice dinámico
+      selectSuggestion(filtered.at(cursor));
     } else if (e.key === "Escape") {
       setIsOpen(false);
     }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../Supabase/supabaseClient';
 import './NotificationsPopover.css';
 
@@ -13,7 +13,7 @@ export default function NotificationsPopover({ user, tenant }) {
   });
   const [showAllModal, setShowAllModal] = useState(false);
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
     
@@ -32,11 +32,16 @@ export default function NotificationsPopover({ user, tenant }) {
     const { data } = await query.limit(100);
     if (data) setLogs(data);
     setLoading(false);
-  };
+  }, [tenant, user]);
 
   useEffect(() => {
-    if (open) fetchLogs();
-  }, [open]);
+    if (open) {
+      const init = async () => {
+        await fetchLogs();
+      };
+      init();
+    }
+  }, [open, fetchLogs]);
 
   const markAsRead = (id) => {
     const newRead = [...readLogs, id];
