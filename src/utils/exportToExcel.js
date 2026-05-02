@@ -1,17 +1,33 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
-export function exportToExcel(rows, columns, filename) {
-  const headerRow = columns.map(c => c.label);
-  const dataRows = rows.map(row =>
-    columns.map(c => (row[c.key] !== undefined && row[c.key] !== null ? row[c.key] : ''))
-  );
+export async function exportToExcel(rows, columns, filename) {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Datos');
 
-  const ws = XLSX.utils.aoa_to_sheet([headerRow, ...dataRows]);
-  ws['!cols'] = columns.map(c => ({ wch: Math.max(c.label.length + 4, 14) }));
+  // Configure columns
+  worksheet.columns = columns.map(c => ({
+    header: c.label,
+    key: c.key,
+    width: Math.max(c.label.length + 4, 14)
+  }));
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Datos');
+  // Add data rows
+  worksheet.addRows(rows);
 
+  // Optional: Header styling
+  worksheet.getRow(1).font = { bold: true };
+
+  // Generate buffer and trigger download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = window.URL.createObjectURL(blob);
+  
+  const anchor = document.createElement('a');
+  anchor.href = url;
   const date = new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb, `${filename}_${date}.xlsx`);
+  anchor.download = `${filename}_${date}.xlsx`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  window.URL.revokeObjectURL(url);
 }

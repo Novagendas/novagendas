@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 // ─── Vertical Bar Chart ───────────────────────────────────────────────────────
 export function BarChart({ data = [], color = 'var(--primary)', formatValue }) {
@@ -29,7 +29,7 @@ export function LineChart({ data = [], color = 'var(--primary)' }) {
   const [pathLen, setPathLen] = useState(0);
   const [tooltip, setTooltip] = useState(null);
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const path = svgRef.current?.querySelector('.lc-path');
     if (path) setPathLen(path.getTotalLength());
   }, [data]);
@@ -110,14 +110,13 @@ export function DonutChart({ data = [], subLabel = 'total' }) {
 
   const R = 38, CX = 55, CY = 55;
   const C = 2 * Math.PI * R;
-  let cumLen = 0;
-
-  const segments = data.map(d => {
+  const segments = data.reduce((acc, d) => {
     const length = (d.value / total) * C;
-    const offset = -cumLen;
-    cumLen += length;
-    return { ...d, length, offset };
-  });
+    const offset = -acc.totalLen;
+    acc.items.push({ ...d, length, offset });
+    acc.totalLen += length;
+    return acc;
+  }, { items: [], totalLen: 0 }).items;
 
   return (
     <div className="donut-chart">

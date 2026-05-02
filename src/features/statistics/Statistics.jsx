@@ -16,6 +16,8 @@ const TABS = [
   { id: 'usuarios',   label: 'Usuarios' },
 ];
 
+const SortIcon = ({ col, sortBy, sortDir }) => sortBy === col ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
+
 const ICO = {
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
   money:    <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
@@ -250,11 +252,15 @@ function ServiciosSection({ data, loading, user, tenant }) {
   const { kpis, ranking = [], topBarData = [] } = data;
   if (!kpis) return <EmptyState />;
 
+  const getSafeVal = (obj, key) => {
+    const allowed = ['citas', 'ingresos', 'precio'];
+    return allowed.includes(key) ? (Number(obj[key]) || 0) : 0;
+  };
+
   const sorted = [...ranking].sort((a, b) => {
     const m = sortDir === 'desc' ? -1 : 1;
-    return m * ((a[sortBy] || 0) - (b[sortBy] || 0));
+    return m * (getSafeVal(a, sortBy) - getSafeVal(b, sortBy));
   });
-  const SortIcon = ({ col }) => sortBy === col ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
 
   return (
     <div className="stats-fade-in">
@@ -272,9 +278,9 @@ function ServiciosSection({ data, loading, user, tenant }) {
           <div className="stats-ranking-table">
             <div className="stats-ranking-header">
               <span>Servicio</span>
-              <span className="stats-sort-btn" onClick={() => toggleSort('citas')}>Citas<SortIcon col="citas" /></span>
-              <span className="stats-sort-btn" onClick={() => toggleSort('ingresos')}>Ingresos<SortIcon col="ingresos" /></span>
-              <span className="stats-sort-btn" onClick={() => toggleSort('precio')}>Precio<SortIcon col="precio" /></span>
+              <span className="stats-sort-btn" onClick={() => toggleSort('citas')}>Citas<SortIcon col="citas" sortBy={sortBy} sortDir={sortDir} /></span>
+              <span className="stats-sort-btn" onClick={() => toggleSort('ingresos')}>Ingresos<SortIcon col="ingresos" sortBy={sortBy} sortDir={sortDir} /></span>
+              <span className="stats-sort-btn" onClick={() => toggleSort('precio')}>Precio<SortIcon col="precio" sortBy={sortBy} sortDir={sortDir} /></span>
             </div>
             {sorted.map((s, i) => (
               <div key={i} className="stats-ranking-row">

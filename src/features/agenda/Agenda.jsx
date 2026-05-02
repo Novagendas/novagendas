@@ -40,15 +40,21 @@ function computeColumnLayout(appts) {
   let i = 0;
 
   while (i < withTimes.length) {
-    let groupEnd = withTimes[i].endMin;
+    const currentAppt = withTimes.at(i);
+    if (!currentAppt) break;
+    
+    let groupEnd = currentAppt.endMin;
     let j = i;
-    while (j < withTimes.length && withTimes[j].startMin < groupEnd) {
-      groupEnd = Math.max(groupEnd, withTimes[j].endMin);
+    while (j < withTimes.length) {
+      const nextAppt = withTimes.at(j);
+      if (!nextAppt || nextAppt.startMin >= groupEnd) break;
+      groupEnd = Math.max(groupEnd, nextAppt.endMin);
       j++;
     }
 
     const group = withTimes.slice(i, j);
-    const gStartTime = group[0].time;
+    const firstInGroup = group.at(0);
+    const gStartTime = firstInGroup ? firstInGroup.time : '';
     const cols = [];
     const groupItems = group.map(appt => {
       let col = cols.findIndex(end => end <= appt.startMin);
@@ -256,9 +262,7 @@ export default function Agenda({ user, tenant }) {
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
           
-          const endStr = a.fechahorafin;
-          const endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + totalDuration * 60000);
-
+          // endStr and endD removed as they were unused
           const totalAbono = (a.abonoaplicacion || []).reduce((sum, x) => sum + Number(x.monto_aplicado || 0), 0);
           const totalPrice = apptServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
           return {
@@ -708,7 +712,6 @@ export default function Agenda({ user, tenant }) {
     }
 
     if (conflict) {
-      const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
       showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
       dragging.current = null;
       return;
@@ -794,16 +797,16 @@ export default function Agenda({ user, tenant }) {
     const layoutAppts = computeColumnLayout(rawAppts);
 
     // Collect groups that overflow maxCols
-    const overflowGroups = {};
+    const overflowGroups = new Map();
     layoutAppts.forEach(a => {
       if (a.totalCols > maxCols) {
         const groupKey = `${dateStr}-${a.groupStartTime}-${a.groupEndMin}`;
-        if (!overflowGroups[groupKey]) {
-          overflowGroups[groupKey] = {
+        if (!overflowGroups.has(groupKey)) {
+          overflowGroups.set(groupKey, {
             totalCols: a.totalCols,
             groupEndMin: a.groupEndMin,
             page: groupPages[groupKey] || 0,
-          };
+          });
         }
       }
     });
@@ -843,7 +846,7 @@ export default function Agenda({ user, tenant }) {
         })}
 
         {/* Overflow pagination buttons */}
-        {Object.entries(overflowGroups).map(([groupKey, { totalCols, groupEndMin, page }]) => {
+        {Array.from(overflowGroups.entries()).map(([groupKey, { totalCols, groupEndMin, page }]) => {
           const maxPage = Math.ceil(totalCols / maxCols) - 1;
           const computedTop = (groupEndMin / 60 - START_H) * SLOT_H - 28;
           const maxTop = Math.max(6, HOURS.length * SLOT_H - 32);

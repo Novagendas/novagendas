@@ -41,47 +41,54 @@ export default function Payments({ user, tenant }) {
     if (!tenant?.id) return;
     setLoading(true);
 
-    // Methods
-    const { data: methData } = await supabase.from('metodopago').select('*');
-    setMethods(methData || []);
-    if (methData?.length > 0 && !form.method) update('method', methData[0].tipo);
+    try {
+      // Methods
+      const { data: methData } = await supabase.from('metodopago').select('*');
+      const finalMethods = methData || [];
+      setMethods(finalMethods);
 
-    // Clients
-    const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
-    setClients(cliData || []);
+      // Clients
+      const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
+      setClients(cliData || []);
 
-    // Services
-    const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
-    setServices(svcData || []);
+      // Services
+      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
+      setServices(svcData || []);
 
-    // Local Payments
-    const { data: payData, error } = await supabase
-      .from('pagos')
-      .select('*, cliente(nombre, apellido), servicios(nombre)')
-      .eq('idnegocios', tenant.id)
-      .is('deleted_at', null)
-      .order('idpagos', { ascending: false });
+      // Local Payments
+      const { data: payData, error } = await supabase
+        .from('pagos')
+        .select('*, cliente(nombre, apellido), servicios(nombre)')
+        .eq('idnegocios', tenant.id)
+        .is('deleted_at', null)
+        .order('idpagos', { ascending: false });
 
-    if (!error) setPayments(payData || []);
+      if (!error) setPayments(payData || []);
 
-    // Abonos (advance payments)
-    const { data: abonoData } = await supabase
-      .from('abono')
-      .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
-      .eq('idnegocios', tenant.id)
-      .is('deleted_at', null)
-      .order('idabono', { ascending: false });
+      // Abonos (advance payments)
+      const { data: abonoData } = await supabase
+        .from('abono')
+        .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
+        .eq('idnegocios', tenant.id)
+        .is('deleted_at', null)
+        .order('idabono', { ascending: false });
 
-    setAbonos(abonoData || []);
-    setLoading(false);
-  }, [tenant.id, form.method]);
+      setAbonos(abonoData || []);
+
+      // Safe initialization of default method
+      if (finalMethods.length > 0 && !form.method) {
+        setForm(f => ({ ...f, method: finalMethods[0].tipo }));
+      }
+    } catch (err) {
+      console.error("Error fetching payments data:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [tenant.id]); // Removed form.method from here to break the loop
 
   useEffect(() => {
-    const init = async () => {
-      await fetchData();
-    };
-    init();
-  }, [tenant, fetchData]);
+    fetchData();
+  }, [fetchData]); // Simplified effect dependency
 
   // Auto-fill amount when service selected
   const handleServiceChange = (serviceId) => {
