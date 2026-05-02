@@ -15,6 +15,7 @@ import Inventory from './features/inventory/Inventory';
 import Users from './features/users/Users';
 import Profile from './features/users/Profile';
 import AuditLogs from './features/audit/AuditLogs.jsx';
+import Statistics from './features/statistics/Statistics';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import LandingPage from './features/landing/LandingPage';
@@ -95,7 +96,10 @@ function TenantApp({ tenant, initialView = 'login' }) {
     if (user.role === 'especialista' && currentRoute !== 'agenda' && currentRoute !== 'clients' && currentRoute !== 'profile') {
       return <Agenda user={user} tenant={tenant} />;
     }
-    if (user.role === 'recepcion' && (currentRoute === 'payments' || currentRoute === 'users')) {
+    if (user.role === 'recepcion' && (currentRoute === 'payments' || currentRoute === 'users' || currentRoute === 'estadisticas')) {
+      return <Dashboard user={user} onNavigate={setCurrentRoute} />;
+    }
+    if (currentRoute === 'estadisticas' && user.role !== 'admin') {
       return <Dashboard user={user} onNavigate={setCurrentRoute} />;
     }
 
@@ -107,8 +111,9 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'payments': return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
       case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
-      case 'profile': return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
-      case 'logs': return <AuditLogs tenant={tenant} user={user} />;
+      case 'profile':       return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
+      case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
+      case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
   };
