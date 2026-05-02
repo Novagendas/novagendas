@@ -84,6 +84,7 @@ export default function Payments({ user, tenant }) {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenant.id]); // Removed form.method from here to break the loop
 
   useEffect(() => {

@@ -65,7 +65,10 @@ export function LineChart({ data = [], color = 'var(--primary)' }) {
           style={pathLen ? { strokeDasharray: pathLen, strokeDashoffset: 0, animation: 'lcDraw 1s ease forwards' } : {}} />
         {pts.map((p, i) => (
           <circle key={i} cx={p[0]} cy={p[1]} r="5" fill={color} className="lc-dot" stroke="var(--surface)" strokeWidth="2"
-            onMouseEnter={() => setTooltip({ x: p[0], y: p[1], label: data[i].label, value: data[i].value })}
+            onMouseEnter={() => {
+              const d = data.at(i);
+              if (d) setTooltip({ x: p[0], y: p[1], label: d.label, value: d.value });
+            }}
             onMouseLeave={() => setTooltip(null)} />
         ))}
         {data.map((d, i) => (

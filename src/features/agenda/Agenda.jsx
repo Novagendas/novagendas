@@ -59,6 +59,7 @@ function computeColumnLayout(appts) {
     const groupItems = group.map(appt => {
       let col = cols.findIndex(end => end <= appt.startMin);
       if (col === -1) col = cols.length;
+      // eslint-disable-next-line security/detect-object-injection
       cols[col] = appt.endMin;
       return { ...appt, col, groupId, groupStartTime: gStartTime, groupEndMin: groupEnd };
     });
@@ -805,6 +806,7 @@ export default function Agenda({ user, tenant }) {
           overflowGroups.set(groupKey, {
             totalCols: a.totalCols,
             groupEndMin: a.groupEndMin,
+            // eslint-disable-next-line security/detect-object-injection
             page: groupPages[groupKey] || 0,
           });
         }
@@ -819,6 +821,7 @@ export default function Agenda({ user, tenant }) {
         return [{ ...appt, displayCol: appt.col, displayTotalCols: appt.totalCols }];
       }
       const groupKey = `${dateStr}-${appt.groupStartTime}-${appt.groupEndMin}`;
+      // eslint-disable-next-line security/detect-object-injection
       const page = groupPages[groupKey] || 0;
       const visStart = page * maxCols;
       const visEnd = visStart + maxCols;

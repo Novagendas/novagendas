@@ -253,8 +253,10 @@ function ServiciosSection({ data, loading, user, tenant }) {
   if (!kpis) return <EmptyState />;
 
   const getSafeVal = (obj, key) => {
-    const allowed = ['citas', 'ingresos', 'precio'];
-    return allowed.includes(key) ? (Number(obj[key]) || 0) : 0;
+    if (key === 'citas') return Number(obj.citas) || 0;
+    if (key === 'ingresos') return Number(obj.ingresos) || 0;
+    if (key === 'precio') return Number(obj.precio) || 0;
+    return 0;
   };
 
   const sorted = [...ranking].sort((a, b) => {
@@ -486,15 +488,15 @@ function UsuariosSection({ data, loading, user, tenant }) {
 }
 
 // ─── MAIN ──────────────────────────────────────────────────────────────────────
-const TAB_SUBTITLES = {
-  general: 'Resumen ejecutivo del negocio',
-  citas: 'Análisis de citas y ocupación',
-  pacientes: 'Métricas de pacientes y retención',
-  servicios: 'Rendimiento de servicios',
-  pagos: 'Ingresos, pagos y abonos',
-  inventario: 'Control de stock e inventario',
-  usuarios: 'Actividad y distribución de usuarios',
-};
+const TAB_SUBTITLES = new Map([
+  ['general', 'Resumen ejecutivo del negocio'],
+  ['citas', 'Análisis de citas y ocupación'],
+  ['pacientes', 'Métricas de pacientes y retención'],
+  ['servicios', 'Rendimiento de servicios'],
+  ['pagos', 'Ingresos, pagos y abonos'],
+  ['inventario', 'Control de stock e inventario'],
+  ['usuarios', 'Actividad y distribución de usuarios'],
+]);
 
 export default function Statistics({ user, tenant }) {
   const [activeTab, setActiveTab] = useState('general');
@@ -506,7 +508,7 @@ export default function Statistics({ user, tenant }) {
       <div className="statistics-header">
         <div>
           <h2 className="statistics-title">Estadísticas</h2>
-          <p className="statistics-subtitle">{TAB_SUBTITLES[activeTab]}</p>
+          <p className="statistics-subtitle">{TAB_SUBTITLES.get(activeTab)}</p>
         </div>
       </div>
 
