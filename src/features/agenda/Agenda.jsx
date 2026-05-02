@@ -22,6 +22,49 @@ import './Agenda.css';
 const { SLOT_HEIGHT: SLOT_H, MIN_HOUR: START_H_MIN, MAX_HOUR: END_H_MAX } = CALENDAR_CONFIG;
 const statusColor = STATUS_COLORS;
 
+/* ─── Day view column layout (overlap detection) ─────────── */
+const MAX_VISIBLE_COLS = 5;
+
+function computeColumnLayout(appts) {
+  if (!appts.length) return [];
+
+  const withTimes = appts.map(a => {
+    const [h, m] = a.time.split(':').map(Number);
+    const startMin = h * 60 + m;
+    const endMin = startMin + Math.max(a.duration || 60, 1);
+    return { ...a, startMin, endMin };
+  }).sort((a, b) => a.startMin - b.startMin);
+
+  const result = [];
+  let groupId = 0;
+  let i = 0;
+
+  while (i < withTimes.length) {
+    let groupEnd = withTimes[i].endMin;
+    let j = i;
+    while (j < withTimes.length && withTimes[j].startMin < groupEnd) {
+      groupEnd = Math.max(groupEnd, withTimes[j].endMin);
+      j++;
+    }
+
+    const group = withTimes.slice(i, j);
+    const gStartTime = group[0].time;
+    const cols = [];
+    const groupItems = group.map(appt => {
+      let col = cols.findIndex(end => end <= appt.startMin);
+      if (col === -1) col = cols.length;
+      cols[col] = appt.endMin;
+      return { ...appt, col, groupId, groupStartTime: gStartTime, groupEndMin: groupEnd };
+    });
+
+    result.push(...groupItems.map(a => ({ ...a, totalCols: cols.length })));
+    groupId++;
+    i = j;
+  }
+
+  return result;
+}
+
 /* ─── Month mini calendar helper ─────────────────────────── */
 function buildMonthGrid(pivot) {
   const y = pivot.getFullYear(), m = pivot.getMonth();
@@ -110,6 +153,7 @@ export default function Agenda({ user, tenant }) {
   const [showHoursModal, setShowHoursModal] = useState(false);
   const [tempWorkHours, setTempWorkHours] = useState({ start: 6, end: 21 });
   const [editId, setEditId] = useState(null);
+  const [groupPages, setGroupPages] = useState({});
   const emptyForm = () => ({
     clientId: '',
     serviceIds: [],
@@ -171,7 +215,7 @@ export default function Agenda({ user, tenant }) {
         .from('rolpermisos')
         .select(`
           idusuario,
-          usuario:idusuario (idusuario, nombre, apellido, idnegocios)
+          usuario:idusuario (idusuario, nombre, apellido, email, profesion, idnegocios)
         `)
         .eq('idrol', 3);
 
@@ -206,17 +250,14 @@ export default function Agenda({ user, tenant }) {
       if (!error && apptData) {
         const mapped = apptData.map(a => {
           const startStr = a.fechahorainicio || '';
-          const endStr = a.fechahorafin || '';
-          
           if (!startStr) return null;
 
-          // Parse to local date object
           const startD = new Date(startStr.replace(' ', 'T'));
-          // endD se usa para calcular la duración, si no existe fechahorafin se asume 30 min
-          const _endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + 30 * 60000);
-
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
+          
+          const endStr = a.fechahorafin;
+          const endD = endStr ? new Date(endStr.replace(' ', 'T')) : new Date(startD.getTime() + totalDuration * 60000);
 
           const totalAbono = (a.abonoaplicacion || []).reduce((sum, x) => sum + Number(x.monto_aplicado || 0), 0);
           const totalPrice = apptServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
@@ -542,58 +583,66 @@ export default function Agenda({ user, tenant }) {
         idNegocios: tenant.id
       });
 
-      // ── Sincronizar con Google Calendar (fire & forget) ──
-      try {
-        const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
-        const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
-        const serviceNames = selectedServices.map(s => s.nombre).join(', ');
-        const totalPrice = selectedServices.reduce((sum, s) => sum + (s.precio || 0), 0);
-        const totalDurMin = selectedServices.reduce((sum, s) => sum + (s.duracion || 0), 0);
+      // ── Sincronizar con Google Calendar ──
+      if (calConnected) {
+        try {
+          const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
+          const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
+          const serviceNames = selectedServices.map(s => s.nombre).join(', ');
+          const totalPrice = selectedServices.reduce((sum, s) => sum + (s.precio || 0), 0);
+          const totalDurMin = selectedServices.reduce((sum, s) => sum + (s.duracion || 0), 0);
 
-        const attendees = [];
-        if (client?.email) attendees.push(client.email);
-        if (specialist?.email) attendees.push(specialist.email);
+          const attendees = [];
+          if (client?.email) attendees.push(client.email);
+          if (specialist?.email) attendees.push(specialist.email);
 
-        const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const timeLabel = form.time;
+          const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          const timeLabel = form.time;
 
-        const description = [
-          `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}`,
-          '',
-          `📋 Servicios: ${serviceNames}`,
-          totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
-          totalPrice ? `💰 Precio estimado: $${totalPrice.toLocaleString('es-CO')} COP` : null,
-          '',
-          `👤 Paciente: ${client?.nombre || ''} ${client?.apellido || ''}`,
-          client?.telefono ? `📞 Teléfono: ${client.telefono}` : null,
-          client?.email ? `📧 Email: ${client.email}` : null,
-          client?.cedula ? `🪪 Documento: ${client.cedula}` : null,
-          '',
-          `👨‍⚕️ Especialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Por asignar'}`,
-          specialist?.profesion ? `   Especialidad: ${specialist.profesion}` : null,
-          '',
-          `📆 Fecha: ${dateLabel}`,
-          `🕐 Hora: ${timeLabel}`,
-          '',
-          `━━━━━━━━━━━━━━━━━━━━━━`,
-          `Cita gestionada por Novagendas`,
-          `Favor llegar 15 minutos antes de la cita.`,
-        ].filter(l => l !== null).join('\n');
+          const description = [
+            `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}`,
+            '',
+            `📋 Servicios: ${serviceNames}`,
+            totalDurMin ? `⏱️ Duración estimada: ${totalDurMin} min` : null,
+            totalPrice ? `💰 Precio estimado: $${totalPrice.toLocaleString('es-CO')} COP` : null,
+            '',
+            `👤 Paciente: ${client?.nombre || ''} ${client?.apellido || ''}`,
+            client?.telefono ? `📞 Teléfono: ${client.telefono}` : null,
+            client?.email ? `📧 Email: ${client.email}` : null,
+            client?.cedula ? `🪪 Documento: ${client.cedula}` : null,
+            '',
+            `👨‍⚕️ Especialista: ${specialist ? `${specialist.nombre} ${specialist.apellido}` : 'Por asignar'}`,
+            specialist?.profesion ? `   Especialidad: ${specialist.profesion}` : null,
+            '',
+            `📆 Fecha: ${dateLabel}`,
+            `🕐 Hora: ${timeLabel}`,
+            '',
+            `━━━━━━━━━━━━━━━━━━━━━━`,
+            `Cita gestionada por Novagendas`,
+            `Favor llegar 15 minutos antes de la cita.`,
+          ].filter(l => l !== null).join('\n');
 
-        const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
+          const calArgs = { summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`, description, startDateTime: startStr, endDateTime: formattedEnd, attendeeEmails: attendees };
 
-        if (editId && form.gcalEventId) {
-          // Actualizar evento existente
-          await updateCalendarEvent(tenant.id, form.gcalEventId, calArgs);
-        } else if (!editId) {
-          // Crear nuevo evento y guardar su ID en la cita
-          const newEventId = await createCalendarEvent(tenant.id, calArgs);
-          if (newEventId) {
-            await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
+          if (editId && form.gcalEventId) {
+            if (form.status === 'Cancelada') {
+              // Eliminar el evento de Google Calendar al cancelar la cita
+              await deleteCalendarEvent(tenant.id, form.gcalEventId);
+              await supabase.from('cita').update({ gcal_event_id: null }).eq('idcita', appointmentId);
+            } else {
+              await updateCalendarEvent(tenant.id, form.gcalEventId, calArgs);
+            }
+          } else if (!editId) {
+            // Nueva cita → crear evento y guardar su ID
+            const newEventId = await createCalendarEvent(tenant.id, calArgs);
+            if (newEventId) {
+              await supabase.from('cita').update({ gcal_event_id: newEventId }).eq('idcita', appointmentId);
+            }
           }
+        } catch (calErr) {
+          console.warn('Google Calendar no sincronizado:', calErr.message);
+          showSnack('⚠️ Google Calendar no pudo sincronizar', 'error');
         }
-      } catch (calErr) {
-        console.warn('Google Calendar no sincronizado:', calErr.message);
       }
 
       fetchData();
@@ -659,6 +708,7 @@ export default function Agenda({ user, tenant }) {
     }
 
     if (conflict) {
+      const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
       showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
       dragging.current = null;
       return;
@@ -681,6 +731,27 @@ export default function Agenda({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
+
+      if (calConnected && appt.gcalEventId) {
+        try {
+          const client = clients.find(c => c.idcliente === appt.clientId);
+          const specialist = specialists.find(s => s.idusuario === appt.specialistId);
+          const selectedServices = services.filter(s => appt.serviceIds.includes(s.idservicios));
+          const serviceNames = selectedServices.map(s => s.nombre).join(', ');
+          const attendees = [client?.email, specialist?.email].filter(Boolean);
+          const dateLabel = new Date(startStr).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          await updateCalendarEvent(tenant.id, appt.gcalEventId, {
+            summary: `🗓️ ${client?.nombre || 'Paciente'} ${client?.apellido || ''} — ${serviceNames}`,
+            description: `📅 CITA MÉDICA — ${tenant?.name || 'Novagendas'}\n📆 Fecha: ${dateLabel}\n🕐 Hora: ${dropTime}\n━━━━━━━━━━━━━━━━━━━━━━\nCita gestionada por Novagendas`,
+            startDateTime: startStr,
+            endDateTime: endStr,
+            attendeeEmails: attendees,
+          });
+        } catch (calErr) {
+          console.warn('No se pudo actualizar el evento de Google Calendar:', calErr.message);
+        }
+      }
+
       fetchData();
     }
     dragging.current = null;
@@ -712,13 +783,50 @@ export default function Agenda({ user, tenant }) {
   };
 
 
-  const DayColumn = ({ dateStr }) => {
-    const dayAppts = appointments.filter(a => {
+  const DayColumn = ({ dateStr, maxCols = MAX_VISIBLE_COLS }) => {
+    const rawAppts = appointments.filter(a => {
       const isCorrectDate = a.date === dateStr && a.status !== 'Cancelada';
       const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
       const isCorrectLoc = selectedLocationId ? String(a.locationId) === String(selectedLocationId) : true;
       return isCorrectDate && isCorrectSpec && isCorrectLoc;
     });
+
+    const layoutAppts = computeColumnLayout(rawAppts);
+
+    // Collect groups that overflow maxCols
+    const overflowGroups = {};
+    layoutAppts.forEach(a => {
+      if (a.totalCols > maxCols) {
+        const groupKey = `${dateStr}-${a.groupStartTime}-${a.groupEndMin}`;
+        if (!overflowGroups[groupKey]) {
+          overflowGroups[groupKey] = {
+            totalCols: a.totalCols,
+            groupEndMin: a.groupEndMin,
+            page: groupPages[groupKey] || 0,
+          };
+        }
+      }
+    });
+
+    const setGroupPage = (groupKey, page) => setGroupPages(prev => ({ ...prev, [groupKey]: page }));
+
+    // Filter & assign display columns
+    const displayAppts = layoutAppts.flatMap(appt => {
+      if (appt.totalCols <= maxCols) {
+        return [{ ...appt, displayCol: appt.col, displayTotalCols: appt.totalCols }];
+      }
+      const groupKey = `${dateStr}-${appt.groupStartTime}-${appt.groupEndMin}`;
+      const page = groupPages[groupKey] || 0;
+      const visStart = page * maxCols;
+      const visEnd = visStart + maxCols;
+      if (appt.col < visStart || appt.col >= visEnd) return [];
+      return [{
+        ...appt,
+        displayCol: appt.col - visStart,
+        displayTotalCols: Math.min(maxCols, appt.totalCols - visStart),
+      }];
+    });
+
     return (
       <div className="calendar-day-column">
         {HOURS.map(h => {
@@ -733,19 +841,45 @@ export default function Agenda({ user, tenant }) {
             />
           );
         })}
-        {dayAppts.map(appt => {
+
+        {/* Overflow pagination buttons */}
+        {Object.entries(overflowGroups).map(([groupKey, { totalCols, groupEndMin, page }]) => {
+          const maxPage = Math.ceil(totalCols / maxCols) - 1;
+          const computedTop = (groupEndMin / 60 - START_H) * SLOT_H - 28;
+          const maxTop = Math.max(6, HOURS.length * SLOT_H - 32);
+          const top = Math.min(maxTop, Math.max(6, computedTop));
+          return (
+            <div key={groupKey} className="day-col-page-nav" style={{ top }} onClick={e => e.stopPropagation()}>
+              <button className="day-col-page-btn" disabled={page === 0}
+                onClick={e => { e.stopPropagation(); setGroupPage(groupKey, page - 1); }}>‹</button>
+              <span className="day-col-page-label">{page + 1}/{maxPage + 1}</span>
+              <button className="day-col-page-btn" disabled={page === maxPage}
+                onClick={e => { e.stopPropagation(); setGroupPage(groupKey, page + 1); }}>›</button>
+            </div>
+          );
+        })}
+
+        {displayAppts.map(appt => {
           const client = clients.find(c => c.idcliente === appt.clientId);
           const serviceNames = appt.services?.map(s => s.nombre).join(', ') || 'Consulta General';
+          const colW = 1 / appt.displayTotalCols;
+          const leftPct = appt.displayCol * colW * 100;
+          const widthPct = colW * 100;
+          const colStyle = appt.displayTotalCols > 1 ? {
+            left: `calc(${leftPct}% + 2px)`,
+            right: 'auto',
+            width: `calc(${widthPct}% - 4px)`,
+          } : {};
           return (
             <div
               key={appt.id}
               className="calendar-appt"
-              style={apptStyle(appt)}
+              style={{ ...apptStyle(appt), ...colStyle }}
               draggable
               onDragStart={e => onDragStart(e, appt)}
               onDragEnd={onDragEnd}
               onClick={e => openDetail(appt, e)}
-              onMouseEnter={e => { 
+              onMouseEnter={e => {
                 const rect = e.currentTarget.getBoundingClientRect();
                 setHoveredAppt({ ...appt, client, serviceNames, endTime: getEndTime(appt) });
                 setMousePos({ x: rect.left + rect.width / 2, y: rect.top });
@@ -756,7 +890,7 @@ export default function Agenda({ user, tenant }) {
                 <div className="calendar-appt-title">
                   {client?.nombre || 'Paciente'} {client?.apellido || ''}
                 </div>
-                <button 
+                <button
                   className="calendar-appt-edit-btn"
                   onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
                 >
@@ -785,7 +919,7 @@ export default function Agenda({ user, tenant }) {
           </div>
         ))}
       </div>
-      <DayColumn dateStr={toDateStr(pivot)} />
+      <DayColumn dateStr={toDateStr(pivot)} maxCols={5} />
     </div>
   );
 
@@ -820,7 +954,7 @@ export default function Agenda({ user, tenant }) {
           ))}
         </div>
         {weekDays.map((d, i) => (
-          <DayColumn key={i} dateStr={toDateStr(d)} />
+          <DayColumn key={i} dateStr={toDateStr(d)} maxCols={2} />
         ))}
       </div>
     </div>
@@ -830,7 +964,7 @@ export default function Agenda({ user, tenant }) {
     const grid = buildMonthGrid(pivot);
     const pivotMonth = pivot.getMonth();
     return (
-      <div className="calendar-view-container" style={{ flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden' }}>
+      <div className="calendar-view-container calendar-view-month">
         <div className="month-view-grid-header">
           {DAY_LABELS.map(d => (
             <div key={d} className="month-day-header">{d}</div>

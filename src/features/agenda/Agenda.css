@@ -386,6 +386,15 @@
   align-items: stretch;       /* reset: items must span full width */
 }
 
+/* ViewMonth: columna con grid, ocupa todo el ancho */
+.calendar-view-container.calendar-view-month {
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-items: stretch;
+  width: 100%;
+}
+
 /* Cuerpo del week view: único scroll container para gutter + columnas */
 .week-body {
   flex: 1;
@@ -729,6 +738,50 @@
 /* ══════════════════════════════════════════════
    CITA EN EL GRID (calendar-appt extras)
    ══════════════════════════════════════════════ */
+
+/* ─── Day-view overflow pagination nav ────────────────────── */
+.day-col-page-nav {
+  position: absolute;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.day-col-page-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 4px;
+  transition: background 0.12s;
+}
+
+.day-col-page-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--primary);
+}
+
+.day-col-page-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.day-col-page-label {
+  font-size: 0.7rem;
+  color: var(--text-4);
+  white-space: nowrap;
+}
+
 .calendar-appt-content {
   display: flex;
   align-items: flex-start;
