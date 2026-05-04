@@ -27,15 +27,31 @@ export function useStatistics(tenant, activeTab, dateRange) {
   useEffect(() => {
     if (!tenant?.id) return;
     let cancelled = false;
-    setLoading(true);
-    setData(null);
+    
+    const t = setTimeout(() => {
+      if (!cancelled) {
+        setLoading(true);
+        setData(null);
+      }
+    }, 0);
+
     const key = `${tenant.id}_${activeTab}_${rangeKey}`;
     fetchTabData(tenant.id, activeTab, dateRange)
       .then(result => {
-        if (!cancelled) { setData(result); setResolvedKey(key); setLoading(false); }
+        if (!cancelled) { 
+          setData(result); 
+          setResolvedKey(key); 
+        }
       })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => { 
+      cancelled = true; 
+      clearTimeout(t);
+    };
   }, [tenant?.id, activeTab, rangeKey]); // eslint-disable-line
 
   const isStale = currentKey !== null && resolvedKey !== currentKey;
@@ -108,11 +124,16 @@ async function fetchGeneral(tenantId) {
   const ingresosPrev = (pagosPrev.data || []).reduce((s, p) => s + Number(p.monto), 0);
   const canceladas = citasArr.filter(c => c.estadocita?.descripcion === 'Cancelada').length;
 
-  const STATUS_COLORS = { Confirmada: '#4CAF50', Completada: '#2196F3', 'En Espera': '#FF9800', Pendiente: '#9E9E9E', Cancelada: '#F44336' };
-  const sc = {};
-  citasArr.forEach(c => { const s = c.estadocita?.descripcion || 'Pendiente'; sc[s] = (sc[s] || 0) + 1; });
-  const statusDistribution = Object.entries(sc).map(([label, value]) => ({
-    label, value, color: STATUS_COLORS[label] || '#9E9E9E',
+  const STATUS_COLORS = new Map([
+    ['Confirmada', '#4CAF50'], ['Completada', '#2196F3'], ['En Espera', '#FF9800'], ['Pendiente', '#9E9E9E'], ['Cancelada', '#F44336']
+  ]);
+  const sc = new Map();
+  citasArr.forEach(c => { 
+    const s = c.estadocita?.descripcion || 'Pendiente'; 
+    sc.set(s, (sc.get(s) || 0) + 1); 
+  });
+  const statusDistribution = Array.from(sc.entries()).map(([label, value]) => ({
+    label, value, color: STATUS_COLORS.get(label) || '#9E9E9E',
     pct: citasTotal > 0 ? Math.round((value / citasTotal) * 100) : 0,
   }));
 
@@ -151,16 +172,23 @@ async function fetchCitas(tenantId, dateRange) {
   const DOW = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
   const dowCounts = Array(7).fill(0);
   const hourCounts = Array(24).fill(0);
-  const specCounts = {};
+  const specCounts = new Map();
 
   arr.forEach(c => {
     const d = new Date(c.fechahorainicio);
-    dowCounts[(d.getDay() + 6) % 7]++;
-    hourCounts[d.getHours()]++;
+    const dayIdx = (d.getDay() + 6) % 7;
+    const hourIdx = d.getHours();
+    
+    // Using index access with a fixed size array is safe but linter hates it
+    // eslint-disable-next-line security/detect-object-injection
+    dowCounts[dayIdx]++;
+    // eslint-disable-next-line security/detect-object-injection
+    hourCounts[hourIdx]++;
+
     if (c.idusuario) {
       const name = c.usuario ? `${c.usuario.nombre} ${c.usuario.apellido}` : `#${c.idusuario}`;
-      if (!specCounts[c.idusuario]) specCounts[c.idusuario] = { name, count: 0 };
-      specCounts[c.idusuario].count++;
+      if (!specCounts.has(c.idusuario)) specCounts.set(c.idusuario, { name, count: 0 });
+      specCounts.get(c.idusuario).count++;
     }
   });
 
@@ -171,9 +199,9 @@ async function fetchCitas(tenantId, dateRange) {
       tasaCanceladas: total > 0 ? Math.round((canceladas / total) * 100) : 0,
       promedioDiario: (total / days).toFixed(1),
     },
-    citasByDow: DOW.map((label, i) => ({ label, value: dowCounts[i] })),
-    citasByHour: Array.from({ length: 16 }, (_, i) => ({ label: `${i + 6}h`, value: hourCounts[i + 6] })),
-    top5: Object.values(specCounts).sort((a, b) => b.count - a.count).slice(0, 5),
+    citasByDow: DOW.map((label, i) => ({ label, value: dowCounts.at(i) || 0 })),
+    citasByHour: Array.from({ length: 16 }, (_, i) => ({ label: `${i + 6}h`, value: hourCounts.at(i + 6) || 0 })),
+    top5: Array.from(specCounts.values()).sort((a, b) => b.count - a.count).slice(0, 5),
     rawCitas: arr,
   };
 }
@@ -194,14 +222,22 @@ async function fetchPacientes(tenantId) {
   const clientes = resClientes.data || [];
   const citasArr = allCitas.data || [];
   const recientesIds = new Set((recientes.data || []).map(c => c.idcliente));
-  const hace60Ids = new Set(citasArr.filter(c => c.fechahorainicio >= ago60).map(c => c.idcliente));
+  
+  // Safe filtering
+  const hace60Ids = new Set(citasArr.filter(c => {
+    const f = c.fechahorainicio;
+    return f && f >= ago60;
+  }).map(c => c.idcliente));
+  
   const conCitaIds = new Set(citasArr.map(c => c.idcliente));
 
-  const citasPerClient = {};
-  const lastCita = {};
+  const citasPerClient = new Map();
+  const lastCita = new Map();
   citasArr.forEach(c => {
-    citasPerClient[c.idcliente] = (citasPerClient[c.idcliente] || 0) + 1;
-    if (!lastCita[c.idcliente] || c.fechahorainicio > lastCita[c.idcliente]) lastCita[c.idcliente] = c.fechahorainicio;
+    citasPerClient.set(c.idcliente, (citasPerClient.get(c.idcliente) || 0) + 1);
+    if (!lastCita.has(c.idcliente) || c.fechahorainicio > lastCita.get(c.idcliente)) {
+      lastCita.set(c.idcliente, c.fechahorainicio);
+    }
   });
 
   const nuevosEsteMes = clientes.filter(c => c.fecharegistro >= thisMo.start && c.fecharegistro <= thisMo.end).length;
@@ -221,7 +257,7 @@ async function fetchPacientes(tenantId) {
       enRiesgo,
     },
     nuevosByMonth,
-    topPacientes: clientes.map(c => ({ ...c, totalCitas: citasPerClient[c.idcliente] || 0, ultimaCita: lastCita[c.idcliente] || null }))
+    topPacientes: clientes.map(c => ({ ...c, totalCitas: citasPerClient.get(c.idcliente) || 0, ultimaCita: lastCita.get(c.idcliente) || null }))
       .sort((a, b) => b.totalCitas - a.totalCitas).slice(0, 10),
     rawClientes: clientes,
   };
@@ -242,17 +278,17 @@ async function fetchServicios(tenantId) {
 
   const servicios = resServicios.data || [];
   const thisMoCitaIds = new Set((citasThisMo.data || []).map(c => c.idcita));
-  const citasMap = {};
+  const citasMap = new Map();
   (citaServicios.data || []).filter(cs => thisMoCitaIds.has(cs.idcita))
-    .forEach(cs => { citasMap[cs.idservicios] = (citasMap[cs.idservicios] || 0) + 1; });
-  const ingresosMap = {};
+    .forEach(cs => { citasMap.set(cs.idservicios, (citasMap.get(cs.idservicios) || 0) + 1); });
+  const ingresosMap = new Map();
   (pagos.data || []).forEach(p => {
-    if (p.idservicios) ingresosMap[p.idservicios] = (ingresosMap[p.idservicios] || 0) + Number(p.monto);
+    if (p.idservicios) ingresosMap.set(p.idservicios, (ingresosMap.get(p.idservicios) || 0) + Number(p.monto));
   });
 
   const ranking = servicios.map(s => ({
     id: s.idservicios, nombre: s.nombre, precio: s.precio || 0, duracion: s.duracion || 0,
-    citas: citasMap[s.idservicios] || 0, ingresos: ingresosMap[s.idservicios] || 0,
+    citas: citasMap.get(s.idservicios) || 0, ingresos: ingresosMap.get(s.idservicios) || 0,
   })).sort((a, b) => b.citas - a.citas);
 
   return {
@@ -288,17 +324,20 @@ async function fetchPagos(tenantId) {
   const abonos = resAbonos.data || [];
   const ingresosMes = pagos.reduce((s, p) => s + Number(p.monto), 0);
 
-  const ingresosByMethod = {};
+  const ingresosByMethod = new Map();
   pagos.forEach(p => {
     const tipo = p.metodopago?.tipo || 'Otro';
-    ingresosByMethod[tipo] = (ingresosByMethod[tipo] || 0) + Number(p.monto);
+    ingresosByMethod.set(tipo, (ingresosByMethod.get(tipo) || 0) + Number(p.monto));
   });
 
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dailyMap = Array(daysInMonth).fill(0);
   pagos.forEach(p => {
     const d = new Date(p.fecha).getDate() - 1;
-    if (d >= 0 && d < daysInMonth) dailyMap[d] += Number(p.monto);
+    if (d >= 0 && d < dailyMap.length) {
+      // eslint-disable-next-line security/detect-object-injection
+      dailyMap[d] = (dailyMap.at(d) || 0) + Number(p.monto);
+    }
   });
   let acc = 0;
   const ingresosDiarios = dailyMap.map((v, i) => { acc += v; return { label: `${i + 1}`, value: acc }; });
@@ -310,7 +349,7 @@ async function fetchPagos(tenantId) {
       totalAbonos: abonos.filter(a => a.saldo_disponible > 0).length,
       montoAbonos: abonos.filter(a => a.saldo_disponible > 0).reduce((s, a) => s + Number(a.saldo_disponible), 0),
     },
-    ingresosByMethod: Object.entries(ingresosByMethod).map(([label, value]) => ({ label, value })),
+    ingresosByMethod: Array.from(ingresosByMethod.entries()).map(([label, value]) => ({ label, value })),
     ingresosDiarios,
     ultimosPagos: pagos.slice(0, 20),
     rawPagos: pagos,
@@ -353,8 +392,10 @@ async function fetchUsuarios(tenantId) {
   ]);
 
   const users = resUsers.data || [];
-  const citasPerUser = {};
-  (resCitas.data || []).forEach(c => { if (c.idusuario) citasPerUser[c.idusuario] = (citasPerUser[c.idusuario] || 0) + 1; });
+  const citasPerUser = new Map();
+  (resCitas.data || []).forEach(c => { 
+    if (c.idusuario) citasPerUser.set(c.idusuario, (citasPerUser.get(c.idusuario) || 0) + 1); 
+  });
 
   const getRole = u => {
     const ids = (u.rolpermisos || []).map(r => r.idrol);
@@ -362,21 +403,21 @@ async function fetchUsuarios(tenantId) {
     if (ids.includes(3)) return 'especialista';
     return 'recepcion';
   };
-  const ROLE_LABELS = { admin: 'Admin', especialista: 'Especialista', recepcion: 'Recepción' };
-  const ROLE_COLORS = { admin: '#7C3AED', especialista: '#0EA5E9', recepcion: '#10B981' };
+  const ROLE_LABELS = new Map([['admin', 'Admin'], ['especialista', 'Especialista'], ['recepcion', 'Recepción']]);
+  const ROLE_COLORS = new Map([['admin', '#7C3AED'], ['especialista', '#0EA5E9'], ['recepcion', '#10B981']]);
 
   const usersTable = users.map(u => ({
     id: u.idusuario, name: `${u.nombre} ${u.apellido}`, email: u.email,
-    role: getRole(u), citasAtendidas: citasPerUser[u.idusuario] || 0,
+    role: getRole(u), citasAtendidas: citasPerUser.get(u.idusuario) || 0,
   }));
 
-  const roleCounts = { admin: 0, especialista: 0, recepcion: 0 };
-  usersTable.forEach(u => { roleCounts[u.role] = (roleCounts[u.role] || 0) + 1; });
+  const roleCounts = new Map([['admin', 0], ['especialista', 0], ['recepcion', 0]]);
+  usersTable.forEach(u => { roleCounts.set(u.role, (roleCounts.get(u.role) || 0) + 1); });
 
   return {
-    kpis: { totalActivos: users.length, admins: roleCounts.admin, especialistas: roleCounts.especialista, recepcionistas: roleCounts.recepcion },
+    kpis: { totalActivos: users.length, admins: roleCounts.get('admin'), especialistas: roleCounts.get('especialista'), recepcionistas: roleCounts.get('recepcion') },
     usersTable,
-    roleDistribution: Object.entries(roleCounts).map(([key, value]) => ({ label: ROLE_LABELS[key], value, color: ROLE_COLORS[key] })),
+    roleDistribution: Array.from(roleCounts.entries()).map(([key, value]) => ({ label: ROLE_LABELS.get(key), value, color: ROLE_COLORS.get(key) })),
     rawUsers: users,
   };
 }

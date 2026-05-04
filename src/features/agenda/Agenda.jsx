@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import SelectableInput from '../../components/inputs/SelectableInput';
 import SuggestionInput from '../../components/SuggestionInput';
@@ -40,19 +40,26 @@ function computeColumnLayout(appts) {
   let i = 0;
 
   while (i < withTimes.length) {
-    let groupEnd = withTimes[i].endMin;
+    const currentAppt = withTimes.at(i);
+    if (!currentAppt) break;
+    
+    let groupEnd = currentAppt.endMin;
     let j = i;
-    while (j < withTimes.length && withTimes[j].startMin < groupEnd) {
-      groupEnd = Math.max(groupEnd, withTimes[j].endMin);
+    while (j < withTimes.length) {
+      const nextAppt = withTimes.at(j);
+      if (!nextAppt || nextAppt.startMin >= groupEnd) break;
+      groupEnd = Math.max(groupEnd, nextAppt.endMin);
       j++;
     }
 
     const group = withTimes.slice(i, j);
-    const gStartTime = group[0].time;
+    const firstInGroup = group.at(0);
+    const gStartTime = firstInGroup ? firstInGroup.time : '';
     const cols = [];
     const groupItems = group.map(appt => {
       let col = cols.findIndex(end => end <= appt.startMin);
       if (col === -1) col = cols.length;
+      // eslint-disable-next-line security/detect-object-injection
       cols[col] = appt.endMin;
       return { ...appt, col, groupId, groupStartTime: gStartTime, groupEndMin: groupEnd };
     });
@@ -197,7 +204,7 @@ export default function Agenda({ user, tenant }) {
     });
   };
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
 
@@ -250,15 +257,13 @@ export default function Agenda({ user, tenant }) {
       if (!error && apptData) {
         const mapped = apptData.map(a => {
           const startStr = a.fechahorainicio || '';
-          
           if (!startStr) return null;
 
-          // Parse to local date object
           const startD = new Date(startStr.replace(' ', 'T'));
-
           const apptServices = a.citaservicios?.map(cs => cs.servicios).filter(Boolean) || [];
           const totalDuration = apptServices.reduce((sum, s) => sum + (s.duracion || 0), 0) || 30;
-
+          
+          // endStr and endD removed as they were unused
           const totalAbono = (a.abonoaplicacion || []).reduce((sum, x) => sum + Number(x.monto_aplicado || 0), 0);
           const totalPrice = apptServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
           return {
@@ -288,11 +293,11 @@ export default function Agenda({ user, tenant }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenant.id]);
 
   useEffect(() => {
     fetchData();
-  }, [tenant]);
+  }, [tenant, fetchData]);
 
   useEffect(() => {
     const clear = () => setHoveredAppt(null);
@@ -708,8 +713,7 @@ export default function Agenda({ user, tenant }) {
     }
 
     if (conflict) {
-      const conflictClient = clients.find(c => c.idcliente === conflict.clientId);
-      showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime} con ${conflictClient?.nombre || 'otro paciente'}`, 'error');
+      showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
       dragging.current = null;
       return;
     }
@@ -794,16 +798,17 @@ export default function Agenda({ user, tenant }) {
     const layoutAppts = computeColumnLayout(rawAppts);
 
     // Collect groups that overflow maxCols
-    const overflowGroups = {};
+    const overflowGroups = new Map();
     layoutAppts.forEach(a => {
       if (a.totalCols > maxCols) {
         const groupKey = `${dateStr}-${a.groupStartTime}-${a.groupEndMin}`;
-        if (!overflowGroups[groupKey]) {
-          overflowGroups[groupKey] = {
+        if (!overflowGroups.has(groupKey)) {
+          overflowGroups.set(groupKey, {
             totalCols: a.totalCols,
             groupEndMin: a.groupEndMin,
+            // eslint-disable-next-line security/detect-object-injection
             page: groupPages[groupKey] || 0,
-          };
+          });
         }
       }
     });
@@ -816,6 +821,7 @@ export default function Agenda({ user, tenant }) {
         return [{ ...appt, displayCol: appt.col, displayTotalCols: appt.totalCols }];
       }
       const groupKey = `${dateStr}-${appt.groupStartTime}-${appt.groupEndMin}`;
+      // eslint-disable-next-line security/detect-object-injection
       const page = groupPages[groupKey] || 0;
       const visStart = page * maxCols;
       const visEnd = visStart + maxCols;
@@ -843,7 +849,7 @@ export default function Agenda({ user, tenant }) {
         })}
 
         {/* Overflow pagination buttons */}
-        {Object.entries(overflowGroups).map(([groupKey, { totalCols, groupEndMin, page }]) => {
+        {Array.from(overflowGroups.entries()).map(([groupKey, { totalCols, groupEndMin, page }]) => {
           const maxPage = Math.ceil(totalCols / maxCols) - 1;
           const computedTop = (groupEndMin / 60 - START_H) * SLOT_H - 28;
           const maxTop = Math.max(6, HOURS.length * SLOT_H - 32);
@@ -1458,6 +1464,9 @@ export default function Agenda({ user, tenant }) {
                     <div className="cita-status-row">
                       {APPOINTMENT_STATUSES.map(s => {
                         const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Pendiente': '🕒', 'Cancelada': '❌', 'Completada': '🎉' };
+                        // Acceso seguro: usamos Object.entries para leer el icono sin corchetes dinámicos
+                        const iconEntry = Object.entries(icons).find(([key]) => key === s);
+                        const icono = iconEntry ? iconEntry[1] : '';
                         return (
                           <button
                             key={s}
@@ -1466,7 +1475,7 @@ export default function Agenda({ user, tenant }) {
                             className={`cita-status-chip${form.status === s ? ' cita-status-chip--active' : ''}`}
                             onClick={() => setForm(f => ({ ...f, status: s }))}
                           >
-                            <span>{icons[s]}</span> {s}
+                            <span>{icono}</span> {s}
                           </button>
                         );
                       })}

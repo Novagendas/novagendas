@@ -18,10 +18,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // ── Singleton guard: se crea UNA sola instancia por sesión ──
-const SUPABASE_INSTANCE_KEY = '__novagendas_supabase__'
-
-if (!globalThis[SUPABASE_INSTANCE_KEY]) {
-  globalThis[SUPABASE_INSTANCE_KEY] = createClient(supabaseUrl, supabaseAnonKey, {
+if (!globalThis.__novagendas_supabase__) {
+  globalThis.__novagendas_supabase__ = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -30,7 +28,7 @@ if (!globalThis[SUPABASE_INSTANCE_KEY]) {
   })
 }
 
-export const supabase = globalThis[SUPABASE_INSTANCE_KEY]
+export const supabase = globalThis.__novagendas_supabase__
 
 export const insertLog = async ({ accion, entidad, descripcion, idUsuario, idNegocios }) => {
   try {

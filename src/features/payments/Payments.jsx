@@ -1,5 +1,5 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import SelectableInput from '../../components/inputs/SelectableInput';
 import { PAYMENT_METHODS, PAYMENT_METHOD_ICONS } from '../../utils/constants';
 import { fmt } from '../../utils/formatters';
@@ -35,50 +35,61 @@ export default function Payments({ user, tenant }) {
   const [filter, setFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('pagos');
 
-  const fetchData = async () => {
+  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
 
-    // Methods
-    const { data: methData } = await supabase.from('metodopago').select('*');
-    setMethods(methData || []);
-    if (methData?.length > 0 && !form.method) update('method', methData[0].tipo);
+    try {
+      // Methods
+      const { data: methData } = await supabase.from('metodopago').select('*');
+      const finalMethods = methData || [];
+      setMethods(finalMethods);
 
-    // Clients
-    const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
-    setClients(cliData || []);
+      // Clients
+      const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
+      setClients(cliData || []);
 
-    // Services
-    const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
-    setServices(svcData || []);
+      // Services
+      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
+      setServices(svcData || []);
 
-    // Local Payments
-    const { data: payData, error } = await supabase
-      .from('pagos')
-      .select('*, cliente(nombre, apellido), servicios(nombre)')
-      .eq('idnegocios', tenant.id)
-      .is('deleted_at', null)
-      .order('idpagos', { ascending: false });
+      // Local Payments
+      const { data: payData, error } = await supabase
+        .from('pagos')
+        .select('*, cliente(nombre, apellido), servicios(nombre)')
+        .eq('idnegocios', tenant.id)
+        .is('deleted_at', null)
+        .order('idpagos', { ascending: false });
 
-    if (!error) setPayments(payData || []);
+      if (!error) setPayments(payData || []);
 
-    // Abonos (advance payments)
-    const { data: abonoData } = await supabase
-      .from('abono')
-      .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
-      .eq('idnegocios', tenant.id)
-      .is('deleted_at', null)
-      .order('idabono', { ascending: false });
+      // Abonos (advance payments)
+      const { data: abonoData } = await supabase
+        .from('abono')
+        .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
+        .eq('idnegocios', tenant.id)
+        .is('deleted_at', null)
+        .order('idabono', { ascending: false });
 
-    setAbonos(abonoData || []);
-    setLoading(false);
-  };
+      setAbonos(abonoData || []);
+
+      // Safe initialization of default method
+      if (finalMethods.length > 0 && !form.method) {
+        setForm(f => ({ ...f, method: finalMethods[0].tipo }));
+      }
+    } catch (err) {
+      console.error("Error fetching payments data:", err);
+    } finally {
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenant.id]); // Removed form.method from here to break the loop
 
   useEffect(() => {
     fetchData();
-  }, [tenant]);
-
-  const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  }, [fetchData]); // Simplified effect dependency
 
   // Auto-fill amount when service selected
   const handleServiceChange = (serviceId) => {
@@ -107,7 +118,7 @@ export default function Payments({ user, tenant }) {
 
     setShowModal(false);
 
-    const { data, error } = await supabase.from('pagos').insert([payload]).select();
+    const { error } = await supabase.from('pagos').insert([payload]).select();
 
     if (!error) {
       const client = clients.find(c => c.idcliente === parseInt(form.clientId));
@@ -312,7 +323,7 @@ export default function Payments({ user, tenant }) {
           <button key={m} onClick={() => setFilter(m)}
             className={`filter-btn ${filter === m ? 'filter-btn--active' : ''}`}
           >
-            {m === 'all' ? '📊 Todos' : `${METHOD_ICONS[m] || '💰'} ${m}`}
+            {m === 'all' ? '📊 Todos' : `${(Object.entries(METHOD_ICONS).find(([k]) => k === m) || [null, '💰'])[1]} ${m}`}
           </button>
         ))}
       </div>

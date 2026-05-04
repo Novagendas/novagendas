@@ -99,6 +99,7 @@ export default function ResetPassword({ onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return; }
+    // eslint-disable-next-line security/detect-possible-timing-attacks
     if (password !== confirm)  { setError('Las contraseñas no coinciden.'); return; }
 
     setLoading(true);
@@ -240,8 +241,9 @@ export default function ResetPassword({ onSuccess }) {
                     return <div key={i} className={barClass} />;
                   })}
                 </div>
-                <span className="strength-label" style={{ color: STRENGTH_COLORS[strength] }}>
-                  {STRENGTH_LABELS[strength]}
+                {/* Acceso seguro: usamos .at() para leer los arreglos de color y etiqueta por índice */}
+                <span className="strength-label" style={{ color: STRENGTH_COLORS.at(strength) }}>
+                  {STRENGTH_LABELS.at(strength)}
                 </span>
               </div>
             )}

@@ -82,7 +82,7 @@ export const STORAGE_KEYS = {
 /* Validation Rules */
 export const VALIDATION = {
   EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE_REGEX: /^[\d\s\-\(\)\+]+$/,
+  PHONE_REGEX: /^[\d\s\-()+]+$/,
   CEDULA_REGEX: /^\d{6,10}$/,
   PASSWORD_MIN_LENGTH: 6,
 };

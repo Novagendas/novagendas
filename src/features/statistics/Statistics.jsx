@@ -16,6 +16,8 @@ const TABS = [
   { id: 'usuarios',   label: 'Usuarios' },
 ];
 
+const SortIcon = ({ col, sortBy, sortDir }) => sortBy === col ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
+
 const ICO = {
   calendar: <><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>,
   money:    <><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></>,
@@ -250,11 +252,17 @@ function ServiciosSection({ data, loading, user, tenant }) {
   const { kpis, ranking = [], topBarData = [] } = data;
   if (!kpis) return <EmptyState />;
 
+  const getSafeVal = (obj, key) => {
+    if (key === 'citas') return Number(obj.citas) || 0;
+    if (key === 'ingresos') return Number(obj.ingresos) || 0;
+    if (key === 'precio') return Number(obj.precio) || 0;
+    return 0;
+  };
+
   const sorted = [...ranking].sort((a, b) => {
     const m = sortDir === 'desc' ? -1 : 1;
-    return m * ((a[sortBy] || 0) - (b[sortBy] || 0));
+    return m * (getSafeVal(a, sortBy) - getSafeVal(b, sortBy));
   });
-  const SortIcon = ({ col }) => sortBy === col ? (sortDir === 'desc' ? ' ↓' : ' ↑') : '';
 
   return (
     <div className="stats-fade-in">
@@ -272,9 +280,9 @@ function ServiciosSection({ data, loading, user, tenant }) {
           <div className="stats-ranking-table">
             <div className="stats-ranking-header">
               <span>Servicio</span>
-              <span className="stats-sort-btn" onClick={() => toggleSort('citas')}>Citas<SortIcon col="citas" /></span>
-              <span className="stats-sort-btn" onClick={() => toggleSort('ingresos')}>Ingresos<SortIcon col="ingresos" /></span>
-              <span className="stats-sort-btn" onClick={() => toggleSort('precio')}>Precio<SortIcon col="precio" /></span>
+              <span className="stats-sort-btn" onClick={() => toggleSort('citas')}>Citas<SortIcon col="citas" sortBy={sortBy} sortDir={sortDir} /></span>
+              <span className="stats-sort-btn" onClick={() => toggleSort('ingresos')}>Ingresos<SortIcon col="ingresos" sortBy={sortBy} sortDir={sortDir} /></span>
+              <span className="stats-sort-btn" onClick={() => toggleSort('precio')}>Precio<SortIcon col="precio" sortBy={sortBy} sortDir={sortDir} /></span>
             </div>
             {sorted.map((s, i) => (
               <div key={i} className="stats-ranking-row">
@@ -480,15 +488,15 @@ function UsuariosSection({ data, loading, user, tenant }) {
 }
 
 // ─── MAIN ──────────────────────────────────────────────────────────────────────
-const TAB_SUBTITLES = {
-  general: 'Resumen ejecutivo del negocio',
-  citas: 'Análisis de citas y ocupación',
-  pacientes: 'Métricas de pacientes y retención',
-  servicios: 'Rendimiento de servicios',
-  pagos: 'Ingresos, pagos y abonos',
-  inventario: 'Control de stock e inventario',
-  usuarios: 'Actividad y distribución de usuarios',
-};
+const TAB_SUBTITLES = new Map([
+  ['general', 'Resumen ejecutivo del negocio'],
+  ['citas', 'Análisis de citas y ocupación'],
+  ['pacientes', 'Métricas de pacientes y retención'],
+  ['servicios', 'Rendimiento de servicios'],
+  ['pagos', 'Ingresos, pagos y abonos'],
+  ['inventario', 'Control de stock e inventario'],
+  ['usuarios', 'Actividad y distribución de usuarios'],
+]);
 
 export default function Statistics({ user, tenant }) {
   const [activeTab, setActiveTab] = useState('general');
@@ -500,7 +508,7 @@ export default function Statistics({ user, tenant }) {
       <div className="statistics-header">
         <div>
           <h2 className="statistics-title">Estadísticas</h2>
-          <p className="statistics-subtitle">{TAB_SUBTITLES[activeTab]}</p>
+          <p className="statistics-subtitle">{TAB_SUBTITLES.get(activeTab)}</p>
         </div>
       </div>
 

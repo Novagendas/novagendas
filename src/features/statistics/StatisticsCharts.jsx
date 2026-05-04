@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 // ─── Vertical Bar Chart ───────────────────────────────────────────────────────
 export function BarChart({ data = [], color = 'var(--primary)', formatValue }) {
@@ -29,7 +29,7 @@ export function LineChart({ data = [], color = 'var(--primary)' }) {
   const [pathLen, setPathLen] = useState(0);
   const [tooltip, setTooltip] = useState(null);
 
-  useEffect(() => {
+  React.useLayoutEffect(() => {
     const path = svgRef.current?.querySelector('.lc-path');
     if (path) setPathLen(path.getTotalLength());
   }, [data]);
@@ -65,7 +65,10 @@ export function LineChart({ data = [], color = 'var(--primary)' }) {
           style={pathLen ? { strokeDasharray: pathLen, strokeDashoffset: 0, animation: 'lcDraw 1s ease forwards' } : {}} />
         {pts.map((p, i) => (
           <circle key={i} cx={p[0]} cy={p[1]} r="5" fill={color} className="lc-dot" stroke="var(--surface)" strokeWidth="2"
-            onMouseEnter={() => setTooltip({ x: p[0], y: p[1], label: data[i].label, value: data[i].value })}
+            onMouseEnter={() => {
+              const d = data.at(i);
+              if (d) setTooltip({ x: p[0], y: p[1], label: d.label, value: d.value });
+            }}
             onMouseLeave={() => setTooltip(null)} />
         ))}
         {data.map((d, i) => (
@@ -110,14 +113,13 @@ export function DonutChart({ data = [], subLabel = 'total' }) {
 
   const R = 38, CX = 55, CY = 55;
   const C = 2 * Math.PI * R;
-  let cumLen = 0;
-
-  const segments = data.map(d => {
+  const segments = data.reduce((acc, d) => {
     const length = (d.value / total) * C;
-    const offset = -cumLen;
-    cumLen += length;
-    return { ...d, length, offset };
-  });
+    const offset = -acc.totalLen;
+    acc.items.push({ ...d, length, offset });
+    acc.totalLen += length;
+    return acc;
+  }, { items: [], totalLen: 0 }).items;
 
   return (
     <div className="donut-chart">
