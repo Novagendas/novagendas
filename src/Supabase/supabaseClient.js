@@ -1,10 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const isDevelopment = import.meta.env.VITE_ENV === 'development'
+
+const supabaseUrl = isDevelopment
+  ? import.meta.env.VITE_SUPABASE_URL_DEV
+  : import.meta.env.VITE_SUPABASE_URL
+
+const supabaseAnonKey = isDevelopment
+  ? import.meta.env.VITE_SUPABASE_ANON_KEY_DEV
+  : import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("Faltan variables de entorno de Supabase (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)")
+  const envLabel = isDevelopment ? 'desarrollo (VITE_SUPABASE_URL_DEV / VITE_SUPABASE_ANON_KEY_DEV)' : 'producción (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)'
+  console.error(`Faltan variables de entorno de Supabase para ${envLabel}`)
 }
 
 // ── Singleton guard: se crea UNA sola instancia por sesión ──

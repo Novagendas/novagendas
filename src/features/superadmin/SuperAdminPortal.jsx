@@ -6,8 +6,8 @@ import ThemeToggle from '../../components/ThemeToggle';
 import './SuperAdminPortal.css';
 
 const authHelper = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co/',
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_kRI9Xe0UXW9Ma0ecTdQWZQ_6uba91Cm',
   { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 );
 

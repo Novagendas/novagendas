@@ -29,17 +29,12 @@ export default function Login({ tenant, onLogin, onForgotPassword }) {
     setError(false);
 
     try {
-      if (!tenant || !tenant.id) {
-        setErrorMsg('Negocio no identificado.');
-        setError(true);
-        setLoading(false);
-        return;
-      }
-
+      const subdomain = window.location.hostname.split('.')[0];
+      
       const { data: users, error: dbErr } = await supabase.rpc('login_usuario', {
         p_email: email,
         p_password: password,
-        p_idnegocios: tenant.id
+        p_subdominio: subdomain
       });
 
       if (!dbErr && users && users.length > 0) {
@@ -49,10 +44,17 @@ export default function Login({ tenant, onLogin, onForgotPassword }) {
         else if (u.rol_nombre === 'profesional') role = 'especialista';
         else if (u.rol_nombre === 'recepcionista' || u.rol_nombre === 'ayudante' || u.rol_nombre === 'asistente') role = 'recepcion';
 
-        onLogin({ id: u.idusuario, name: u.nombre + ' ' + u.apellido, email: u.email, role });
+        onLogin({ 
+          id: u.idusuario, 
+          name: u.nombre + ' ' + u.apellido, 
+          email: u.email, 
+          role,
+          tenant_id: u.idnegocios 
+        });
         return;
       } else {
-        setErrorMsg('Credenciales inválidas.');
+        console.error('Login error details:', dbErr);
+        setErrorMsg('Credenciales inválidas o no perteneces a este negocio.');
         setError(true);
         setLoading(false);
       }
