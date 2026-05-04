@@ -155,14 +155,14 @@ export default function App() {
   const [view, setView] = useState('loading');
   const [tenant, setTenant] = useState(null);
   const [resetTrigger, setResetTrigger] = useState(false);
+  const isDevelopment = import.meta.env.VITE_ENV === 'development' || import.meta.env.ENV === 'development';
 
   // Log del entorno al iniciar
   useEffect(() => {
-    const isDevelopment = import.meta.env.VITE_ENV === 'development' || import.meta.env.ENV === 'development';
     console.log(`🚀 Novagendas - Entorno: ${isDevelopment ? 'DESARROLLO' : 'PRODUCCIÓN'}`);
     console.log(`🌐 Host: ${window.location.hostname}`);
     console.log(`🔗 URL: ${window.location.href}`);
-  }, []);
+  }, [isDevelopment]);
 
   useEffect(() => {
     // Detectar rutas legales (/terminos y /condiciones) — aplican en cualquier host
@@ -187,9 +187,6 @@ export default function App() {
     const host = window.location.hostname;
     const parts = host.split('.');
     let subdomain = null;
-
-    // Detectar si estamos en desarrollo
-    const isDevelopment = import.meta.env.VITE_ENV === 'development' || import.meta.env.ENV === 'development';
 
     const isIp = /^[0-9.]+$/.test(host);
     if (!isIp) {
@@ -250,7 +247,7 @@ export default function App() {
     };
 
     fetchTenant();
-  }, []);
+  }, [isDevelopment]);
 
   if (view === 'loading') return <LoadingScreen />;
   if (view === 'terminos') return <TermsPage />;
