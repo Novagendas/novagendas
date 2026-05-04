@@ -5,8 +5,8 @@ import './Users.css';
 
 // Cliente auxiliar para crear entradas en auth.users sin afectar la sesión del admin
 const authHelper = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co/',
+  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_kRI9Xe0UXW9Ma0ecTdQWZQ_6uba91Cm',
   { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
 );
 

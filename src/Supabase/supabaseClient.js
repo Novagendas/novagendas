@@ -1,20 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Detectar entorno
-const isDevelopment = import.meta.env.VITE_ENV === 'development' || import.meta.env.ENV === 'development'
+const isDevelopment = import.meta.env.VITE_ENV === 'development'
 
-// Usar credenciales basadas en el entorno
 const supabaseUrl = isDevelopment
-  ? import.meta.env.VITE_SUPABASE_URL_DEV || import.meta.env.URL_DATABASE_DEV
+  ? import.meta.env.VITE_SUPABASE_URL_DEV
   : import.meta.env.VITE_SUPABASE_URL
 
 const supabaseAnonKey = isDevelopment
-  ? import.meta.env.VITE_SUPABASE_ANON_KEY_DEV || import.meta.env.PUBLIC_KEY_DEV
+  ? import.meta.env.VITE_SUPABASE_ANON_KEY_DEV
   : import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  const envType = isDevelopment ? 'desarrollo' : 'producción'
-  console.error(`Faltan variables de entorno de Supabase para ${envType} (VITE_SUPABASE_URL${isDevelopment ? '_DEV' : ''}, VITE_SUPABASE_ANON_KEY${isDevelopment ? '_DEV' : ''})`)
+  const envLabel = isDevelopment ? 'desarrollo (VITE_SUPABASE_URL_DEV / VITE_SUPABASE_ANON_KEY_DEV)' : 'producción (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)'
+  console.error(`Faltan variables de entorno de Supabase para ${envLabel}`)
 }
 
 // ── Singleton guard: se crea UNA sola instancia por sesión ──

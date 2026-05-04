@@ -98,6 +98,14 @@ CREATE TABLE RolPermisos (
     IdRol INT REFERENCES Rol(IdRol)
 );
 
+CREATE TABLE UsuarioNegocio (
+    IdUsuarioNegocio SERIAL PRIMARY KEY,
+    IdUsuario INT REFERENCES Usuario(IdUsuario),
+    IdNegocio INT REFERENCES Negocios(IdNegocios),
+    IdRol INT REFERENCES Rol(IdRol),
+    FechaAsignacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ==========================================
 -- 4. LOGICA DE SEGURIDAD (HASHING Y LOGIN)
 -- ==========================================
@@ -118,8 +126,12 @@ CREATE TRIGGER trg_hash_password
 BEFORE INSERT OR UPDATE ON Usuario
 FOR EACH ROW EXECUTE FUNCTION hash_password();
 
--- Función de Login Seguro (RPC)
-CREATE OR REPLACE FUNCTION login_usuario(p_email TEXT, p_password TEXT, p_idnegocios INT)
+-- Función de Login Seguro (RPC) Multi-Tenant por Subdominio
+CREATE OR REPLACE FUNCTION login_usuario(
+    p_email TEXT, 
+    p_password TEXT, 
+    p_subdominio TEXT
+)
 RETURNS TABLE (
     idusuario INT,
     nombre VARCHAR,
@@ -131,12 +143,19 @@ RETURNS TABLE (
 BEGIN
     RETURN QUERY
     SELECT 
-        u.IdUsuario, u.Nombre, u.Apellido, u.Email, u.IdNegocios, 
-        (SELECT r.Nombre FROM Rol r JOIN RolPermisos rp ON r.IdRol = rp.IdRol WHERE rp.IdUsuario = u.IdUsuario LIMIT 1)
+        u.IdUsuario, 
+        u.Nombre, 
+        u.Apellido, 
+        u.Email, 
+        n.IdNegocios, 
+        r.Nombre
     FROM Usuario u
+    JOIN UsuarioNegocio un ON un.IdUsuario = u.IdUsuario
+    JOIN Negocios n ON n.IdNegocios = un.IdNegocio
+    LEFT JOIN Rol r ON r.IdRol = un.IdRol
     WHERE u.Email = p_email 
-      AND u.IdNegocios = p_idnegocios
-      AND u.password = crypt(p_password, u.password); -- Verificación de hash
+      AND u.password = crypt(p_password, u.password)
+      AND n.Dominio = p_subdominio;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
