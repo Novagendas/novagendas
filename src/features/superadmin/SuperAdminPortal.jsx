@@ -135,7 +135,7 @@ function StatCard({ icon, label, value, sub, color = 'var(--primary)' }) {
 }
 
 /* ─── Tenant Form ─── */
-function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
+function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving, allUsers }) {
   return (
     <form onSubmit={onSubmit} className="super-form">
       <div className="super-form-grid">
@@ -149,9 +149,6 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
             {ESTADO_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </Field>
-        <Field label="ID Usuario Admin">
-          <input type="number" className="input-field" value={form.idusuarioadmin} onChange={e => setForm(f => ({ ...f, idusuarioadmin: e.target.value }))} placeholder="ID del admin" />
-        </Field>
         <Field label="Subdominio" style={{ flex: '1 1 100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <input className="input-field" required value={form.subdomain} onChange={e => setForm(f => ({ ...f, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} placeholder="mi-clinica" style={{ flex: 1 }} />
@@ -163,6 +160,53 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving }) {
             <input type="checkbox" checked={form.deployed} onChange={e => setForm(f => ({ ...f, deployed: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--primary)' }} />
             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-2)' }}>Activo en producción</span>
           </label>
+        </Field>
+        <Field label="Usuarios del negocio" style={{ flex: '1 1 100%' }}>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
+            {(!allUsers || allUsers.length === 0) && (
+              <div style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-4)' }}>Sin usuarios registrados</div>
+            )}
+            {allUsers && allUsers.map(u => {
+              const linked = form.usuarios.find(x => x.idusuario === u.idusuario);
+              return (
+                <div key={u.idusuario} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', background: linked ? 'var(--primary-light)' : 'transparent' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!linked}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setForm(f => ({ ...f, usuarios: [...f.usuarios, { idusuario: u.idusuario, es_principal: false }] }));
+                      } else {
+                        setForm(f => ({ ...f, usuarios: f.usuarios.filter(x => x.idusuario !== u.idusuario) }));
+                      }
+                    }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--primary)', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>{u.nombre} {u.apellido}</div>
+                    <div style={{ fontSize: '0.69rem', color: 'var(--text-4)' }}>{u.email} · ID {u.idusuario}</div>
+                  </div>
+                  {linked && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, color: linked.es_principal ? '#7c3aed' : 'var(--text-4)', whiteSpace: 'nowrap' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!linked.es_principal}
+                        onChange={e => setForm(f => ({ ...f, usuarios: f.usuarios.map(x => x.idusuario === u.idusuario ? { ...x, es_principal: e.target.checked } : x) }))}
+                        style={{ width: 14, height: 14, cursor: 'pointer', accentColor: '#7c3aed' }}
+                      />
+                      Dueño ★
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {form.usuarios.length > 0 && (
+            <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: 'var(--text-4)' }}>
+              {form.usuarios.length} usuario{form.usuarios.length !== 1 ? 's' : ''} seleccionado{form.usuarios.length !== 1 ? 's' : ''}
+              {!form.usuarios.some(u => u.es_principal) && <span style={{ color: '#d97706', marginLeft: 8 }}>⚠ Marca uno como Dueño para asignar el admin del negocio</span>}
+            </div>
+          )}
         </Field>
       </div>
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
@@ -198,17 +242,58 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
             {ROL_OPTIONS.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
           </select>
         </Field>
-        <Field label="Negocio">
-          <select className="input-field" value={form.idnegocios} onChange={e => setForm(f => ({ ...f, idnegocios: e.target.value }))}>
-            <option value="">Sin negocio asignado</option>
-            {tenants && tenants.map(t => <option key={t.idnegocios} value={t.idnegocios}>{t.nombre} ({t.dominio})</option>)}
-          </select>
-        </Field>
         <Field label="Estado">
           <select className="input-field" value={form.idestado} onChange={e => setForm(f => ({ ...f, idestado: parseInt(e.target.value) }))}>
             <option value={1}>Activo</option>
             <option value={2}>Inactivo</option>
           </select>
+        </Field>
+        <Field label="Negocios asociados" style={{ flex: '1 1 100%' }}>
+          <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            {tenants && tenants.length === 0 && (
+              <div style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-4)' }}>Sin negocios registrados</div>
+            )}
+            {tenants && tenants.map(t => {
+              const linked = form.negocios.find(n => n.idnegocios === t.idnegocios);
+              return (
+                <div key={t.idnegocios} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', background: linked ? 'var(--primary-light)' : 'transparent' }}>
+                  <input
+                    type="checkbox"
+                    checked={!!linked}
+                    onChange={e => {
+                      if (e.target.checked) {
+                        setForm(f => ({ ...f, negocios: [...f.negocios, { idnegocios: t.idnegocios, es_principal: false }] }));
+                      } else {
+                        setForm(f => ({ ...f, negocios: f.negocios.filter(n => n.idnegocios !== t.idnegocios) }));
+                      }
+                    }}
+                    style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--primary)', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.84rem' }}>{t.nombre}</div>
+                    <div style={{ fontSize: '0.69rem', color: 'var(--text-4)' }}>{t.dominio} · ID {t.idnegocios}</div>
+                  </div>
+                  {linked && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, color: linked.es_principal ? '#7c3aed' : 'var(--text-4)', whiteSpace: 'nowrap' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!linked.es_principal}
+                        onChange={e => setForm(f => ({ ...f, negocios: f.negocios.map(n => n.idnegocios === t.idnegocios ? { ...n, es_principal: e.target.checked } : n) }))}
+                        style={{ width: 14, height: 14, cursor: 'pointer', accentColor: '#7c3aed' }}
+                      />
+                      Dueño ★
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {form.negocios.length > 0 && (
+            <div style={{ marginTop: '0.35rem', fontSize: '0.72rem', color: 'var(--text-4)' }}>
+              {form.negocios.length} negocio{form.negocios.length !== 1 ? 's' : ''} seleccionado{form.negocios.length !== 1 ? 's' : ''}
+              {!form.negocios.some(n => n.es_principal) && <span style={{ color: '#d97706', marginLeft: 8 }}>⚠ Marca uno como Dueño para el acceso principal</span>}
+            </div>
+          )}
         </Field>
       </div>
       {!isEdit && (
@@ -251,7 +336,7 @@ export default function SuperAdminPortal() {
   const [tenantSort, setTenantSort] = useState('newest');
   const [tenantModal, setTenantModal] = useState(null);
   const [savingT, setSavingT] = useState(false);
-  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, idestadoapp: 1, idusuarioadmin: '' };
+  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, idestadoapp: 1, idusuarioadmin: '', usuarios: [] };
   const [tForm, setTForm] = useState(blankT);
 
   const [users, setUsers] = useState([]);
@@ -261,7 +346,7 @@ export default function SuperAdminPortal() {
   const [userRolFilter, setUserRolFilter] = useState('all');
   const [userModal, setUserModal] = useState(null);
   const [savingU, setSavingU] = useState(false);
-  const blankU = { nombre: '', apellido: '', email: '', cedula: '', contrasena: '', telefono: '', profesion: '', idnegocios: '', idestado: 1, idrol: 1 };
+  const blankU = { nombre: '', apellido: '', email: '', cedula: '', contrasena: '', telefono: '', profesion: '', idestado: 1, idrol: 1, negocios: [] };
   const [uForm, setUForm] = useState(blankU);
 
   /* Ubicaciones */
@@ -294,11 +379,19 @@ export default function SuperAdminPortal() {
 
   const fetchUsers = useCallback(async () => {
     setUserLoad(true);
-    const { data: userData } = await supabase.from('usuario').select('*').order('idusuario');
-    const { data: rolData } = await supabase.from('rolpermisos').select('idusuario, idrol');
+    const [{ data: userData }, { data: rolData }, { data: negocioData }] = await Promise.all([
+      supabase.from('usuario').select('*').order('idusuario'),
+      supabase.from('rolpermisos').select('idusuario, idrol'),
+      supabase.from('negociousuario').select('idusuario, idnegocios, es_principal'),
+    ]);
     const rolMap = {};
     (rolData || []).forEach(r => { if (!rolMap[r.idusuario]) rolMap[r.idusuario] = r.idrol; });
-    setUsers((userData || []).map(u => ({ ...u, _idrol: rolMap[u.idusuario] || null })));
+    const negMap = {};
+    (negocioData || []).forEach(n => {
+      if (!negMap[n.idusuario]) negMap[n.idusuario] = [];
+      negMap[n.idusuario].push({ idnegocios: n.idnegocios, es_principal: n.es_principal });
+    });
+    setUsers((userData || []).map(u => ({ ...u, _idrol: rolMap[u.idusuario] || null, _negocios: negMap[u.idusuario] || [] })));
     setUserLoad(false);
   }, []);
 
@@ -387,24 +480,39 @@ export default function SuperAdminPortal() {
   /* ── Negocios CRUD ── */
   const openAddTenant = () => { setTForm(blankT); setTenantModal('add'); };
   const openEditTenant = t => {
-    setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, idestadoapp: t.idestadoapp || 1, idusuarioadmin: t.idusuarioadmin || '' });
+    const tenantUsuarios = users
+      .filter(u => u._negocios?.some(n => n.idnegocios === t.idnegocios))
+      .map(u => ({ idusuario: u.idusuario, es_principal: u._negocios.find(n => n.idnegocios === t.idnegocios)?.es_principal || false }));
+    setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, idestadoapp: t.idestadoapp || 1, idusuarioadmin: t.idusuarioadmin || '', usuarios: tenantUsuarios });
     setTenantModal(t);
   };
 
   const handleSaveTenant = async e => {
     e.preventDefault();
     setSavingT(true);
-    const payload = { nit: tForm.nit, nombre: tForm.name, dominio: tForm.subdomain, descripcion: tForm.descripcion, direccion: tForm.direccion, telefono: tForm.telefono, deployed: tForm.deployed, idestadoapp: tForm.idestadoapp, idusuarioadmin: tForm.idusuarioadmin ? parseInt(tForm.idusuarioadmin) : null };
+    const principalUser = tForm.usuarios.find(u => u.es_principal);
+    const idusuarioadminDerived = principalUser ? principalUser.idusuario : (tForm.idusuarioadmin ? parseInt(tForm.idusuarioadmin) : null);
+    const payload = { nit: tForm.nit, nombre: tForm.name, dominio: tForm.subdomain, descripcion: tForm.descripcion, direccion: tForm.direccion, telefono: tForm.telefono, deployed: tForm.deployed, idestadoapp: tForm.idestadoapp, idusuarioadmin: idusuarioadminDerived };
     const isAdd = tenantModal === 'add';
-    const { error } = isAdd
-      ? await supabase.from('negocios').insert([payload])
-      : await supabase.from('negocios').update(payload).eq('idnegocios', tenantModal.idnegocios);
+    const { data: savedData, error } = isAdd
+      ? await supabase.from('negocios').insert([payload]).select('idnegocios').maybeSingle()
+      : await supabase.from('negocios').update(payload).eq('idnegocios', tenantModal.idnegocios).select('idnegocios').maybeSingle();
     setSavingT(false);
     if (error) { showSnack('Error: ' + error.message, 'error'); return; }
-    await insertLog({ accion: isAdd ? 'CREATE' : 'UPDATE', entidad: 'Negocio', descripcion: `${isAdd ? 'Creación' : 'Actualización'} del negocio '${tForm.name}'`, idUsuario: currentUser?.id, idNegocios: isAdd ? null : tenantModal.idnegocios });
+    const negocioId = savedData?.idnegocios || tenantModal?.idnegocios;
+    if (negocioId) {
+      await supabase.from('negociousuario').delete().eq('idnegocios', negocioId);
+      if (tForm.usuarios.length > 0) {
+        await supabase.from('negociousuario').insert(
+          tForm.usuarios.map(u => ({ idusuario: u.idusuario, idnegocios: negocioId, es_principal: u.es_principal }))
+        );
+      }
+    }
+    await insertLog({ accion: isAdd ? 'CREATE' : 'UPDATE', entidad: 'Negocio', descripcion: `${isAdd ? 'Creación' : 'Actualización'} del negocio '${tForm.name}'`, idUsuario: currentUser?.id, idNegocios: negocioId || null });
     showSnack(isAdd ? `Negocio "${tForm.name}" creado.` : `Negocio "${tForm.name}" actualizado.`);
     setTenantModal(null);
     fetchTenants();
+    fetchUsers();
   };
 
   const deleteTenant = () => {
@@ -431,7 +539,7 @@ export default function SuperAdminPortal() {
   /* ── Usuarios CRUD ── */
   const openAddUser = () => { setUForm(blankU); setUserModal('add'); };
   const openEditUser = u => {
-    setUForm({ nombre: u.nombre || '', apellido: u.apellido || '', email: u.email || '', cedula: u.cedula || '', contrasena: '', telefono: u.telefono || '', profesion: u.profesion || '', idnegocios: u.idnegocios || '', idestado: u.idestado || 1, idrol: u._idrol || 1 });
+    setUForm({ nombre: u.nombre || '', apellido: u.apellido || '', email: u.email || '', cedula: u.cedula || '', contrasena: '', telefono: u.telefono || '', profesion: u.profesion || '', idestado: u.idestado || 1, idrol: u._idrol || 1, negocios: u._negocios || [] });
     setUserModal(u);
   };
 
@@ -439,7 +547,9 @@ export default function SuperAdminPortal() {
     e.preventDefault();
     setSavingU(true);
     const isAdd = userModal === 'add';
-    const payload = { nombre: uForm.nombre, apellido: uForm.apellido, email: uForm.email, cedula: uForm.cedula, telefono: uForm.telefono, profesion: uForm.profesion, idestado: uForm.idestado, idnegocios: uForm.idnegocios ? parseInt(uForm.idnegocios) : null };
+    const principalNeg = uForm.negocios.find(n => n.es_principal) || uForm.negocios[0];
+    const idnegociosPrincipal = principalNeg?.idnegocios || null;
+    const payload = { nombre: uForm.nombre, apellido: uForm.apellido, email: uForm.email, cedula: uForm.cedula, telefono: uForm.telefono, profesion: uForm.profesion, idestado: uForm.idestado };
     if (uForm.contrasena) payload['password'] = uForm.contrasena;
 
     const { error } = isAdd
@@ -459,12 +569,21 @@ export default function SuperAdminPortal() {
       }
     }
 
+    if (savedId) {
+      await supabase.from('negociousuario').delete().eq('idusuario', savedId);
+      if (uForm.negocios.length > 0) {
+        await supabase.from('negociousuario').insert(
+          uForm.negocios.map(n => ({ idusuario: savedId, idnegocios: n.idnegocios, es_principal: n.es_principal }))
+        );
+      }
+    }
+
     if (isAdd && uForm.email && uForm.contrasena) {
-      const { error: authErr } = await authHelper.auth.signUp({ email: uForm.email, password: uForm.contrasena, options: { data: { nombre: uForm.nombre, apellido: uForm.apellido, idusuario: savedId, idnegocios: uForm.idnegocios ? parseInt(uForm.idnegocios) : null } } });
+      const { error: authErr } = await authHelper.auth.signUp({ email: uForm.email, password: uForm.contrasena, options: { data: { nombre: uForm.nombre, apellido: uForm.apellido, idusuario: savedId, idnegocios: idnegociosPrincipal } } });
       if (authErr && !authErr.message?.toLowerCase().includes('already registered')) console.warn('auth.users sync:', authErr.message);
     }
 
-    await insertLog({ accion: isAdd ? 'CREATE' : 'UPDATE', entidad: 'Usuario', descripcion: `${isAdd ? 'Creación' : 'Edición'} de usuario: ${uForm.nombre} ${uForm.apellido} (${uForm.email})`, idUsuario: currentUser?.id, idNegocios: uForm.idnegocios ? parseInt(uForm.idnegocios) : null });
+    await insertLog({ accion: isAdd ? 'CREATE' : 'UPDATE', entidad: 'Usuario', descripcion: `${isAdd ? 'Creación' : 'Edición'} de usuario: ${uForm.nombre} ${uForm.apellido} (${uForm.email})`, idUsuario: currentUser?.id, idNegocios: idnegociosPrincipal });
     setSavingU(false);
     showSnack(isAdd ? `Usuario "${uForm.nombre} ${uForm.apellido}" creado.` : `Usuario "${uForm.nombre} ${uForm.apellido}" actualizado.`);
     setUserModal(null);
@@ -477,6 +596,7 @@ export default function SuperAdminPortal() {
     askConfirm(`¿Eliminar al usuario "${target.nombre} ${target.apellido}" (${target.email})?`, async () => {
       closeConfirm();
       await supabase.from('negocios').update({ idusuarioadmin: null }).eq('idusuarioadmin', target.idusuario);
+      await supabase.from('negociousuario').delete().eq('idusuario', target.idusuario);
       await supabase.from('rolpermisos').delete().eq('idusuario', target.idusuario);
       const { error } = await supabase.from('usuario').delete().eq('idusuario', target.idusuario);
       if (error) { showSnack('Error eliminando: ' + error.message, 'error'); return; }
@@ -700,7 +820,7 @@ export default function SuperAdminPortal() {
                     <tr><td colSpan="8" className="super-empty-cell">{tenantSearch ? 'Sin resultados.' : 'Sin negocios registrados.'}</td></tr>
                   ) : filteredTenants.map(t => {
                     const tenantUbic = ubicaciones.filter(u => u.idnegocios === t.idnegocios);
-                    const tenantUsers = users.filter(u => u.idnegocios === t.idnegocios && u.idestado === 1);
+                    const tenantUsers = users.filter(u => u._negocios?.some(n => n.idnegocios === t.idnegocios) && u.idestado === 1);
                     return (
                       <tr key={t.idnegocios} className="super-tr-hover">
                         <TD>
@@ -722,8 +842,20 @@ export default function SuperAdminPortal() {
                           </div>
                           <div style={{ fontSize: '0.68rem', color: 'var(--text-4)', marginTop: 3 }}>{tenantUsers.length} usuario{tenantUsers.length !== 1 ? 's' : ''} activo{tenantUsers.length !== 1 ? 's' : ''}</div>
                         </TD>
-                        <TD style={{ fontSize: '0.8rem', color: 'var(--text-3)' }}>
-                          {t.idusuarioadmin ? <span>{tenantName(t.idusuarioadmin) || `ID: ${t.idusuarioadmin}`}</span> : <span style={{ color: '#9ca3af' }}>—</span>}
+                        <TD style={{ fontSize: '0.8rem' }}>
+                          {tenantUsers.length > 0
+                            ? <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                {tenantUsers.map(u => {
+                                  const esDueno = u._negocios?.find(n => n.idnegocios === t.idnegocios)?.es_principal;
+                                  return (
+                                    <div key={u.idusuario} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                      <span style={{ color: 'var(--text-2)', fontWeight: esDueno ? 700 : 400 }}>{u.nombre} {u.apellido}</span>
+                                      {esDueno && <span style={{ fontSize: '0.6rem', background: '#ede9fe', color: '#7c3aed', padding: '1px 5px', borderRadius: 99, fontWeight: 700 }}>Dueño</span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            : <span style={{ color: '#9ca3af' }}>—</span>}
                         </TD>
                         <TD style={{ textAlign: 'center' }}>
                           <input type="checkbox" checked={!!t.deployed} onChange={() => toggleDeployed(t.idnegocios, t.deployed)}
@@ -792,10 +924,14 @@ export default function SuperAdminPortal() {
                       </TD>
                       <TD style={{ color: 'var(--text-2)', fontSize: '0.83rem' }}>{u.email}</TD>
                       <TD>
-                        {u.idnegocios
-                          ? <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.83rem' }}>{tenantName(u.idnegocios) || '—'}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-4)' }}>ID: {u.idnegocios}</div>
+                        {u._negocios && u._negocios.length > 0
+                          ? <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                              {u._negocios.map(n => (
+                                <div key={n.idnegocios} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <span style={{ fontWeight: 600, fontSize: '0.82rem' }}>{tenantName(n.idnegocios) || `ID: ${n.idnegocios}`}</span>
+                                  {n.es_principal && <span style={{ fontSize: '0.62rem', background: '#ede9fe', color: '#7c3aed', padding: '1px 6px', borderRadius: 99, fontWeight: 700 }}>Dueño</span>}
+                                </div>
+                              ))}
                             </div>
                           : <span style={{ color: '#9ca3af' }}>—</span>}
                       </TD>
@@ -928,7 +1064,7 @@ export default function SuperAdminPortal() {
                           const tCitasHoy = monitorData.citasHoy.filter(c => c.idnegocios === t.idnegocios);
                           const tClientes = monitorData.clientes.filter(c => c.idnegocios === t.idnegocios);
                           const tUbic = ubicaciones.filter(u => u.idnegocios === t.idnegocios);
-                          const tUsers = users.filter(u => u.idnegocios === t.idnegocios && u.idestado === 1);
+                          const tUsers = users.filter(u => u._negocios?.some(n => n.idnegocios === t.idnegocios) && u.idestado === 1);
                           return (
                             <tr key={t.idnegocios} className="super-tr-hover">
                               <TD>
@@ -979,7 +1115,7 @@ export default function SuperAdminPortal() {
           subtitle={tenantModal === 'add' ? 'Registra un nuevo negocio en la plataforma' : `ID: ${tenantModal.idnegocios} · ${tenantModal.dominio}`}
           onClose={() => setTenantModal(null)}
         >
-          <TenantForm form={tForm} setForm={setTForm} onSubmit={handleSaveTenant} onDelete={deleteTenant} isEdit={tenantModal !== 'add'} saving={savingT} />
+          <TenantForm form={tForm} setForm={setTForm} onSubmit={handleSaveTenant} onDelete={deleteTenant} isEdit={tenantModal !== 'add'} saving={savingT} allUsers={users} />
         </Modal>
       )}
 
