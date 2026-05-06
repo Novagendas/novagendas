@@ -592,21 +592,7 @@ textarea.input-field {
   border-color: rgba(var(--primary-rgb), 0.25);
 }
 
-.card-stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-xs);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
-}
-
-.card-stat:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-}
+/* .card-stat is defined in Dashboard.css */
 
 /* ─────────────────────────────────────────────────────
    BADGE SYSTEM
@@ -657,6 +643,7 @@ textarea.input-field {
 ───────────────────────────────────────────────────── */
 .data-table {
   width: 100%;
+  min-width: 560px;    /* Previene overflow horizontal en mobile */
   border-collapse: collapse;
   text-align: left;
 }
@@ -696,13 +683,15 @@ textarea.input-field {
 }
 
 /* Wrapper para tablas con scroll + header sticky */
-.table-scroll-wrap {
+.table-scroll-wrap,
+.table-responsive {
   overflow-y: auto;
   overflow-x: auto;
   max-height: 60vh;
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
+  -webkit-overflow-scrolling: touch;
 }
 
 .table-scroll-wrap::-webkit-scrollbar {
@@ -947,51 +936,7 @@ textarea.input-field {
 /* ─────────────────────────────────────────────────────
    ANIMATIONS
 ───────────────────────────────────────────────────── */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s var(--ease-out) forwards;
-}
-
-.animate-fade-up {
-  animation: fadeUp 0.3s var(--ease-out) forwards;
-}
-
-.animate-scale-in {
-  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
+/* animations defined above in ANIMATION UTILITIES section */
 
 .spinner {
   width: 1.25rem;
@@ -1162,14 +1107,7 @@ textarea.input-field {
   animation: float 6s ease-in-out infinite;
 }
 
-.hover-lift {
-  transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-}
-
-.hover-lift:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-lg);
-}
+/* .hover-lift defined above in LAYOUT UTILITIES */
 
 /* ─────────────────────────────────────────────────────
    THEME TOGGLE UTILITY
@@ -1257,3 +1195,26 @@ textarea.input-field {
 .rounded-xl {
   border-radius: var(--radius-xl) !important;
 }
+
+/* ─────────────────────────────────────────────────────
+   MOBILE RESPONSIVE UTILITIES
+───────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hidden-mobile {
+    display: none !important;
+  }
+  
+  .flex-col-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .w-full-mobile {
+    width: 100% !important;
+  }
+
+  .mb-sm-mobile {
+    margin-bottom: 1rem !important;
+  }
+}
+

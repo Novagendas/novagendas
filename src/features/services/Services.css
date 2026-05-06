@@ -565,17 +565,47 @@
 .service-snackbar--success { background: #10b981; }
 .service-snackbar--error { background: #ef4444; }
 
-@keyframes slideInBottom {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes spinner { 100% { transform: rotate(360deg); } }
+/* @keyframes slideInBottom & spinner are defined globally in index.css */
 
 .spinner-small {
   width: 1.1rem;
   height: 1.1rem;
   animation: spinner 1s linear infinite;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .services-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .services-actions {
+    width: 100%;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .service-price-box {
+    grid-template-columns: 1fr;
+  }
+
+  .alert-footer {
+    flex-direction: column;
+  }
+
+  .service-snackbar {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+  }
 }
 
 .capitalize-text { text-transform: capitalize; }

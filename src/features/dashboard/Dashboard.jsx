@@ -113,7 +113,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
       {/* Banner de bienvenida */}
       <div className="dashboard-banner">
         <div>
-          <h1>Bienvenido, {user?.name?.split(' ')[0] || 'Administrador'}</h1>
+          <h1>Bienvenido, {user?.name?.split(' ')[0]?.trim() || 'Administrador'}</h1>
           <p>Hoy tienes {data.todayAppts.length} citas programadas. Mantén el control de tu negocio.</p>
         </div>
         <div className="dashboard-banner-actions">
@@ -177,11 +177,11 @@ export default function Dashboard({ user, tenant, onNavigate }) {
               </table>
             ) : (
               <div className="empty-state">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
                 <p className="empty-state-title">No hay citas agendadas para hoy</p>
-                <p className="empty-state-text">Usa el botón "Agendar Cita" para comenzar.</p>
+                <p className="empty-state-text">Usá el botón "Ver Agenda Diaria" para comenzar.</p>
               </div>
             )}
           </div>
