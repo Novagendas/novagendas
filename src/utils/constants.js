@@ -12,6 +12,7 @@ export const ROUTE_META = {
   payments: { label: 'Registro de Pagos', emoji: '💳' },
   inventory: { label: 'Inventario', emoji: '📦' },
   users: { label: 'Gestión de Usuarios', emoji: '🔑' },
+  feriados: { label: 'Días Bloqueados', emoji: '🗓️' },
   audit: { label: 'Registro de Auditoría', emoji: '📜' },
 };
 

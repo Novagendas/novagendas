@@ -56,7 +56,7 @@ export default function Services({ user, tenant }) {
     const { data: srvData } = await supabase
       .from('servicios')
       .select(`
-        idservicios, nombre, descripcion, precio, duracion, color, imagen,
+        idservicios, nombre, descripcion, precio, duracion, color, imagen, idestado,
         idcategoriaservicio, categoriaservicio(descripcion)
       `)
       .eq('idnegocios', tenant.id)
@@ -72,7 +72,8 @@ export default function Services({ user, tenant }) {
         duration: s.duracion,
         color: s.color || '#3b82f6',
         category: s.categoriaservicio?.descripcion || 'General',
-        categoryId: s.idcategoriaservicio
+        categoryId: s.idcategoriaservicio,
+        activo: s.idestado !== 2,
       }));
       setServices(mapped);
     }
@@ -210,6 +211,22 @@ export default function Services({ user, tenant }) {
     }
   };
 
+  const handleToggleEstado = async (s, e) => {
+    e.stopPropagation();
+    const newEstado = s.activo ? 2 : 1;
+    const { error } = await supabase.from('servicios').update({ idestado: newEstado }).eq('idservicios', s.id);
+    if (error) { showSnack('Error al cambiar estado', 'error'); return; }
+    await insertLog({
+      accion: 'UPDATE',
+      entidad: 'Servicio',
+      descripcion: `Se ${newEstado === 1 ? 'habilitó' : 'inhabilitó'} el servicio '${s.name}'`,
+      idUsuario: user.idusuario || user.id,
+      idNegocios: tenant.id
+    });
+    showSnack(newEstado === 1 ? `"${s.name}" habilitado` : `"${s.name}" inhabilitado`);
+    fetchData();
+  };
+
   const handleDelete = (id, e) => {
     e.stopPropagation(); 
     showConfirm('Eliminar Servicio', '¿Seguro que deseas eliminar este servicio permanentemente?', async () => {
@@ -308,12 +325,17 @@ export default function Services({ user, tenant }) {
                     <div className="service-card-banner-blob" />
                     
                     <div className="service-card-banner-left">
-                      <div className="service-card-icon-box">
+                      <div className="service-card-icon-box" style={{ opacity: s.activo ? 1 : 0.5 }}>
                         {catIcon[s.category] || <ServiceDefaultIcon />}
                       </div>
                       <span className="capitalize-text service-card-cat-badge">
                         {s.category}
                       </span>
+                      {!s.activo && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, background: 'rgba(220,38,38,0.18)', color: '#dc2626', padding: '2px 7px', borderRadius: 99, border: '1px solid rgba(220,38,38,0.3)' }}>
+                          Inhabilitado
+                        </span>
+                      )}
                     </div>
 
                     <div className="service-card-actions">
@@ -340,9 +362,36 @@ export default function Services({ user, tenant }) {
                       {s.name}
                     </h3>
 
-                    <div className="service-card-meta">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                      <span className="service-card-meta-text">{s.duration} minutos de sesión</span>
+                    <div className="service-card-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                        <span className="service-card-meta-text">{s.duration} minutos de sesión</span>
+                      </div>
+                      <button
+                        onClick={(e) => handleToggleEstado(s, e)}
+                        title={s.activo ? 'Inhabilitar servicio' : 'Habilitar servicio'}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.3rem',
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          padding: '2px 6px', borderRadius: 99,
+                          fontSize: '0.72rem', fontWeight: 700,
+                          color: s.activo ? '#16a34a' : '#9ca3af',
+                        }}
+                      >
+                        <span style={{
+                          width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                          border: `2px solid ${s.activo ? '#16a34a' : '#d1d5db'}`,
+                          background: s.activo ? '#16a34a' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          {s.activo && (
+                            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </span>
+                        {s.activo ? 'Habilitado' : 'Inhabilitado'}
+                      </button>
                     </div>
 
                     {/* Price Section */}

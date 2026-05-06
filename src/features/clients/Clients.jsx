@@ -98,6 +98,34 @@ export default function Clients({ user, tenant }) {
     }
   }, [user, tenant]);
 
+  const [proxCita, setProxCita] = useState(null);
+  const [proxCitaLoad, setProxCitaLoad] = useState(false);
+
+  useEffect(() => {
+    if (!selectedId || !tenant?.id) return;
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setProxCitaLoad(true);
+      const { data } = await supabase
+        .from('cita')
+        .select(`idcita, fechahorainicio, estadocita(descripcion), citaservicios(servicios(nombre))`)
+        .eq('idnegocios', tenant.id)
+        .eq('idcliente', selectedId)
+        .gte('fechahorainicio', new Date().toISOString())
+        .is('deleted_at', null)
+        .order('fechahorainicio', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) {
+        setProxCita(data || null);
+        setProxCitaLoad(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedId, tenant?.id]);
+
   // Especialista filter: Solo ver clientes asignados en citas o con historial previo
   const visibleClients = user?.role === 'especialista'
     ? clients.filter(c => assignedClientIds.includes(c.id) || c.history.some(h => h.doctor === user?.name))
@@ -354,6 +382,33 @@ export default function Clients({ user, tenant }) {
               </div>
             </div>
 
+            {/* Próxima Cita */}
+            {proxCitaLoad ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem', color: 'var(--text-4)', fontSize: '0.82rem' }}>
+                <span className="spinner-mini" style={{ width: 12, height: 12 }} /> Cargando próxima cita...
+              </div>
+            ) : proxCita ? (() => {
+              const fecha = new Date(proxCita.fechahorainicio);
+              const serviciosNombres = proxCita.citaservicios?.map(cs => cs.servicios?.nombre).filter(Boolean).join(', ') || '—';
+              const estadoDesc = proxCita.estadocita?.descripcion || 'Pendiente';
+              const estadoColor = estadoDesc === 'Completada' ? '#16a34a' : estadoDesc === 'Cancelada' ? '#dc2626' : '#2563eb';
+              return (
+                <div style={{ margin: '0.5rem 1.25rem', padding: '0.7rem 1rem', background: 'var(--primary-light)', borderRadius: 10, border: '1px solid rgba(59,130,246,0.15)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5" style={{ flexShrink: 0 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--primary)' }}>Próxima cita: </span>
+                    <span style={{ fontSize: '0.82rem', color: 'var(--text-2)' }}>
+                      {fecha.toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric', month: 'short' })} · {fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-4)', marginLeft: '0.4rem' }}>{serviciosNombres}</span>
+                  </div>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, background: `${estadoColor}18`, color: estadoColor, padding: '2px 8px', borderRadius: 99, border: `1px solid ${estadoColor}25`, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                    {estadoDesc}
+                  </span>
+                </div>
+              );
+            })() : null}
+
             {/* History section */}
             <div className="clinical-history-section">
               <div className="clinical-history-header">
@@ -361,7 +416,7 @@ export default function Clients({ user, tenant }) {
                   <div className="clinical-history-icon-box">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
                   </div>
-                  <h3>Evoluciones Clínicas</h3>
+                  <h3>Evoluciones</h3>
                 </div>
 
                 <button className="btn btn-primary new-evolution-btn" onClick={() => setShowNoteModal(true)}>

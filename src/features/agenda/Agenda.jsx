@@ -99,6 +99,7 @@ export default function Agenda({ user, tenant }) {
   const [selectedLocationId, setSelectedLocationId] = useState(null);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+  const [blockedDates, setBlockedDates] = useState([]);
   
   // Configurable working hours
   const [workHours, setWorkHours] = useState({ start: 6, end: 21 });
@@ -210,28 +211,32 @@ export default function Agenda({ user, tenant }) {
 
     try {
       const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
-      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id).is('deleted_at', null);
+      const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).neq('idestado', 2);
       const { data: locData } = await supabase.from('ubicacion').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).order('nombre');
       setLocations(locData || []);
 
       const { data: prodData } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).gt('cantidad', 0).order('nombre');
       setProducts(prodData || []);
       
-      // Fetch users with 'profesional' role (idrol = 3) via junction table
-      const { data: specData } = await supabase
-        .from('rolpermisos')
-        .select(`
-          idusuario,
-          usuario:idusuario (idusuario, nombre, apellido, email, profesion, idnegocios)
-        `)
-        .eq('idrol', 3);
+      // Fetch specialists (idrol=3) that belong to this tenant via negociousuario
+      const { data: tenantLinks } = await supabase
+        .from('negociousuario')
+        .select('idusuario')
+        .eq('idnegocios', tenant.id);
 
-      const filteredSpecs = specData
-        ?.map(s => s.usuario)
-        .filter(u => u && u.idnegocios === tenant.id) || [];
-      
-      // Deduplicate
-      const uniqueSpecs = Array.from(new Map(filteredSpecs.map(u => [u.idusuario, u])).values());
+      const tenantUserIds = (tenantLinks || []).map(l => l.idusuario);
+
+      let uniqueSpecs = [];
+      if (tenantUserIds.length > 0) {
+        const { data: specData } = await supabase
+          .from('rolpermisos')
+          .select('idusuario, usuario:idusuario (idusuario, nombre, apellido, email, profesion, deleted_at)')
+          .eq('idrol', 3)
+          .in('idusuario', tenantUserIds);
+
+        const specs = specData?.map(s => s.usuario).filter(u => u && !u.deleted_at) || [];
+        uniqueSpecs = Array.from(new Map(specs.map(u => [u.idusuario, u])).values());
+      }
 
       setClients(cliData || []);
       setServices(svcData || []);
@@ -298,6 +303,12 @@ export default function Agenda({ user, tenant }) {
   useEffect(() => {
     fetchData();
   }, [tenant, fetchData]);
+
+  useEffect(() => {
+    if (!tenant?.id) return;
+    supabase.from('diasbloqueados').select('fecha').eq('idnegocios', tenant.id)
+      .then(({ data }) => setBlockedDates((data || []).map(b => b.fecha)));
+  }, [tenant?.id]);
 
   useEffect(() => {
     const clear = () => setHoveredAppt(null);
@@ -392,6 +403,10 @@ export default function Agenda({ user, tenant }) {
   };
 
   const openCreate = (date = '', time = '') => {
+    if (date && blockedDates.includes(date)) {
+      showSnack('🚫 Este día está bloqueado — no se pueden agendar citas.', 'error');
+      return;
+    }
     if (date && time) {
       const slotTime = new Date(`${date}T${time}:00`);
       if (slotTime < new Date(Date.now() - 60 * 60 * 1000)) {
@@ -445,6 +460,10 @@ export default function Agenda({ user, tenant }) {
     }
     if (!form.date || !form.time) {
       showSnack('⚠️ Define fecha y hora para la cita', 'error');
+      return;
+    }
+    if (blockedDates.includes(form.date)) {
+      showSnack('⚠️ Este día está bloqueado (feriado o no disponible). No se pueden agendar citas.', 'error');
       return;
     }
 
@@ -981,6 +1000,7 @@ export default function Agenda({ user, tenant }) {
             if (!day) return <div key={idx} className="month-day-cell other-month" />;
             const ds = toDateStr(day);
             const isToday = ds === todayStr;
+            const isBlocked = blockedDates.includes(ds);
             const dayAppts = appointments.filter(a => {
               const isCorrectDate = a.date === ds && a.status !== 'Cancelada';
               const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
@@ -992,10 +1012,12 @@ export default function Agenda({ user, tenant }) {
                 key={idx}
                 onClick={() => { setPivot(day); setView('day'); }}
                 className={`month-day-cell ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
+                style={isBlocked ? { background: '#fee2e220', borderColor: '#fca5a5' } : undefined}
               >
                 <div className="month-day-header-row">
-                  <div className={`month-day-number ${isToday ? 'today' : ''}`}>
+                  <div className={`month-day-number ${isToday ? 'today' : ''}`} style={isBlocked ? { color: '#dc2626' } : undefined}>
                     {day.getDate()}
+                    {isBlocked && <span style={{ marginLeft: 3, fontSize: '0.6rem' }}>🚫</span>}
                   </div>
                   {dayAppts.length > 0 && (
                     <span className="month-day-count">{dayAppts.length} cita{dayAppts.length > 1 ? 's' : ''}</span>
@@ -1545,7 +1567,13 @@ export default function Agenda({ user, tenant }) {
                 <div className="appt-modal-info-grid">
                   <div className="input-group">
                     <label className="searchable-select-label">Fecha de Cita</label>
-                    <input type="date" className="input-field input-rounded-lg" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required />
+                    <input type="date" className="input-field input-rounded-lg" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} required
+                      style={blockedDates.includes(form.date) ? { borderColor: '#dc2626', background: '#fee2e2' } : undefined} />
+                    {blockedDates.includes(form.date) && (
+                      <div style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: 600, marginTop: 4 }}>
+                        🚫 Este día está bloqueado — no se puede agendar
+                      </div>
+                    )}
                   </div>
                   <div className="input-group">
                     <label className="searchable-select-label">Hora</label>

@@ -120,6 +120,7 @@ const MODULE_LABELS = {
   services: { id: 4, label: 'Catálogo y Pagos', icon: '💰' },
   inventory: { id: 5, label: 'Inventario', icon: '📦' },
   users: { id: 6, label: 'Gestión de Usuarios', icon: '🔑' },
+  feriados: { id: 7, label: 'Editar Días Bloqueados', icon: '🗓️' },
 };
 
 const formatRegistration = (raw) => {
@@ -191,13 +192,27 @@ export default function Users({ user, tenant }) {
   const fetchData = useCallback(async () => {
     if (!tenant?.id) return;
     setLoading(true);
+
+    const { data: links } = await supabase
+      .from('negociousuario')
+      .select('idusuario')
+      .eq('idnegocios', tenant.id);
+
+    const userIds = (links || []).map(l => l.idusuario);
+
+    if (userIds.length === 0) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
     const { data: rawUsers, error } = await supabase
       .from('usuario')
       .select(`
         *,
         rolpermisos (idrol, idpermiso)
       `)
-      .eq('idnegocios', tenant.id)
+      .in('idusuario', userIds)
       .is('deleted_at', null);
 
     if (!error && rawUsers) {
@@ -339,7 +354,7 @@ export default function Users({ user, tenant }) {
         const { error: negErr } = await supabase.from('negociousuario').insert([{
           idusuario: userId,
           idnegocios: tenant.id,
-          es_principal: true,
+          es_principal: false,
           idrol: roleId,
         }]);
         if (negErr) console.warn('negociousuario link error:', negErr.message);

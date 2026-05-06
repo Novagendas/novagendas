@@ -74,6 +74,7 @@ export default function Profile({ user, tenant, onUserUpdate }) {
     if (user) fetchUser();
   }, [user]);
 
+
   const handleChange = (k, v) => setProfileData(p => ({ ...p, [k]: v }));
   const handlePassChange = (k, v) => setPasswords(p => ({ ...p, [k]: v }));
 

@@ -36,3 +36,10 @@ CLAUDE.md
 .env.bak
 ENVIRONMENTS.md
 .gitignore
+.claude/scheduled_tasks.lock
+.claude/settings.json
+.claude/installed_plugins.json
+.claude/installed_plugins/
+.claude/installed_plugins/*/*
+.claude/*
+mejoras_sql.sql
