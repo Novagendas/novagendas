@@ -43,3 +43,12 @@ ENVIRONMENTS.md
 .claude/installed_plugins/*/*
 .claude/*
 mejoras_sql.sql
+.superpowers/brainstorm/93792-1778093053/content/combined-landing.html
+.superpowers/brainstorm/93792-1778093053/content/design-direction.html
+.gitignore
+.superpowers/brainstorm/93792-1778093053/state/server-info
+.gitignore
+.gitignore
+docs/superpowers/specs/2026-05-06-landing-redesign.md
+.superpowers/brainstorm/93792-1778093053/state/server.pid
+docs/superpowers/plans/2026-05-06-landing-redesign.md
