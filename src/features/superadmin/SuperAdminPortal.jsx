@@ -22,8 +22,8 @@ const ESTADO_OPTIONS = [
 
 const ROL_OPTIONS = [
   { id: 1, label: 'Administrador' },
-  { id: 2, label: 'Profesional / Especialista' },
-  { id: 3, label: 'Recepcionista' },
+  { id: 2, label: 'Recepcionista' },
+  { id: 3, label: 'Profesional / Especialista' },
 ];
 
 const TABS = [
@@ -552,15 +552,24 @@ export default function SuperAdminPortal() {
     const payload = { nombre: uForm.nombre, apellido: uForm.apellido, email: uForm.email, cedula: uForm.cedula, telefono: uForm.telefono, profesion: uForm.profesion, idestado: uForm.idestado };
     if (uForm.contrasena) payload['password'] = uForm.contrasena;
 
-    const { error } = isAdd
-      ? await supabase.from('usuario').insert([{ ...payload, password: uForm.contrasena }])
-      : await supabase.from('usuario').update(payload).eq('idusuario', userModal.idusuario);
+    let savedId = isAdd ? null : userModal.idusuario;
 
-    if (error) { showSnack('Error: ' + error.message, 'error'); setSavingU(false); return; }
-
-    const savedId = isAdd
-      ? (await supabase.from('usuario').select('idusuario').eq('email', uForm.email).maybeSingle()).data?.idusuario
-      : userModal.idusuario;
+    if (isAdd) {
+      const { data: inserted, error } = await supabase
+        .from('usuario')
+        .insert([{ ...payload, password: uForm.contrasena }])
+        .select('idusuario')
+        .single();
+      if (error) { showSnack('Error: ' + error.message, 'error'); setSavingU(false); return; }
+      savedId = inserted?.idusuario ?? null;
+      if (!savedId) {
+        const { data: found } = await supabase.from('usuario').select('idusuario').eq('email', uForm.email).maybeSingle();
+        savedId = found?.idusuario ?? null;
+      }
+    } else {
+      const { error } = await supabase.from('usuario').update(payload).eq('idusuario', userModal.idusuario);
+      if (error) { showSnack('Error: ' + error.message, 'error'); setSavingU(false); return; }
+    }
 
     if (savedId && uForm.idrol) {
       const { data: updatedRows } = await supabase.from('rolpermisos').update({ idrol: uForm.idrol }).eq('idusuario', savedId).select();
@@ -573,7 +582,7 @@ export default function SuperAdminPortal() {
       await supabase.from('negociousuario').delete().eq('idusuario', savedId);
       if (uForm.negocios.length > 0) {
         await supabase.from('negociousuario').insert(
-          uForm.negocios.map(n => ({ idusuario: savedId, idnegocios: n.idnegocios, es_principal: n.es_principal }))
+          uForm.negocios.map(n => ({ idusuario: savedId, idnegocios: n.idnegocios, es_principal: n.es_principal, idrol: uForm.idrol }))
         );
       }
     }

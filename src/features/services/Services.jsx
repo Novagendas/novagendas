@@ -265,14 +265,11 @@ export default function Services({ user, tenant }) {
       )}
 
       {categories.length === 0 && !loading && (
-        <div className="services-alert-no-cats animate-fade-in">
-          <div className="alert-icon-wrapper">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div className="services-notice animate-fade-in">
+          <div className="services-notice-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           </div>
-          <div className="alert-content">
-            <h4>No hay categorías configuradas</h4>
-            <p>Debes crear al menos una categoría arriba en "Editar Categorías" para poder registrar servicios.</p>
-          </div>
+          <span>Sin categorías — crea una en <strong>"Editar Categorías"</strong> para poder registrar servicios.</span>
         </div>
       )}
 

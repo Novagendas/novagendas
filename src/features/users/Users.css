@@ -590,6 +590,7 @@
 }
 
 .modal-close-btn {
+  position: static;
   color: #fff;
   background: rgba(255,255,255,0.12);
   border-radius: 12px;
@@ -603,11 +604,16 @@
   transition: background 0.18s ease, border-color 0.18s ease;
   flex-shrink: 0;
   padding: 0;
+  top: auto;
+  right: auto;
+  box-shadow: none;
 }
 
 .modal-close-btn:hover {
   background: rgba(255,255,255,0.22);
   border-color: rgba(255,255,255,0.4);
+  color: #fff;
+  transform: none;
 }
 
 .modal-close-btn:active {

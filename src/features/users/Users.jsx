@@ -323,7 +323,6 @@ export default function Users({ user, tenant }) {
       nombre: firstName,
       apellido: lastName,
       email: form.email,
-      idnegocios: tenant.id
     };
     if (form.password) payload.password = form.password;
 
@@ -336,6 +335,14 @@ export default function Users({ user, tenant }) {
         const { data: newUser, error: insertErr } = await supabase.from('usuario').insert([{ ...payload, idestado: 1 }]).select().single();
         if (insertErr) throw insertErr;
         userId = newUser.idusuario;
+
+        const { error: negErr } = await supabase.from('negociousuario').insert([{
+          idusuario: userId,
+          idnegocios: tenant.id,
+          es_principal: true,
+          idrol: roleId,
+        }]);
+        if (negErr) console.warn('negociousuario link error:', negErr.message);
 
         const { error: authErr } = await authHelper.auth.signUp({
           email: form.email,

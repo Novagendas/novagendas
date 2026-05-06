@@ -372,6 +372,9 @@
   flex-direction: column;
   gap: 1.25rem;
   background: var(--surface);
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .inventory-input-label {
