@@ -151,7 +151,7 @@ export default function Inventory({ tenant }) {
       lote: form.lote || null
     };
     setShowModal(false);
-    
+
     if (editId) {
       supabase.from('producto').update(payload).eq('idproducto', editId).then(({ error }) => {
         if (!error) {
@@ -255,7 +255,7 @@ export default function Inventory({ tenant }) {
 
   return (
     <div className="inventory-container">
-      
+
       {/* ── Page Header ── */}
       <div className="page-header">
         <div>
@@ -266,12 +266,12 @@ export default function Inventory({ tenant }) {
         </div>
         <div className="inventory-actions">
           <button className="btn btn-outline btn-inventory-category" onClick={() => setShowCatModal(true)}>
-             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-             Categorías
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+            Categorías
           </button>
           <button className="btn btn-primary" onClick={openCreate}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-             Nuevo Insumo
+            Nuevo Insumo
           </button>
         </div>
       </div>
@@ -369,55 +369,55 @@ export default function Inventory({ tenant }) {
             </div>
           ) : filteredProducts.length > 0 ? (
             <div className="table-scroll-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Producto</th>
-                  <th>Lote</th>
-                  <th>Categoría</th>
-                  <th>Valor Unitario</th>
-                  <th className="text-center">Nivel de Stock</th>
-                  <th className="text-center">Cantidad</th>
-                  <th className="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((item) => {
-                  const pct = stockPercent(item);
-                  const isLow = item.cantidad <= item.cantidadminima;
-                  const barColor = isLow ? 'var(--danger)' : pct < 60 ? 'var(--warning)' : 'var(--success)';
-                  const catName = categories.find(c => c.idcategoriaproducto === item.idcategoriaproducto)?.descripcion || 'General';
-                  return (
-                    <tr key={item.idproducto}>
-                      <td><span className="font-bold text-main">{item.nombre}</span></td>
-                      <td>{item.lote ? <span className="badge badge-neutral">{item.lote}</span> : <span style={{ color: 'var(--text-5)', fontSize: '0.78rem' }}>—</span>}</td>
-                      <td><span className="badge badge-neutral">{catName}</span></td>
-                      <td><span className="font-semibold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.precio || 0)}</span></td>
-                      <td className="stock-level-container">
-                        <div className="stock-bar-bg">
-                          <div className="stock-bar-fill" style={{ width: `${pct}%`, background: barColor }} />
-                        </div>
-                        <div className="stock-bar-label">{Math.round(pct)}% del stock objetivo</div>
-                      </td>
-                      <td>
-                        <div className="quantity-display">
-                          <span className="quantity-main" style={{ color: isLow ? 'var(--danger)' : 'var(--text)' }}>{item.cantidad}</span>
-                          <span className="quantity-min">mín: {item.cantidadminima}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="inventory-row-actions">
-                          <button onClick={() => startEdit(item)} className="btn btn-ghost btn-icon" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg></button>
-                          <div className="inventory-action-separator" />
-                          <button onClick={() => handleUpdateStock(item, -1)} className="btn btn-secondary btn-icon btn-stock-adjust">-</button>
-                          <button onClick={() => handleUpdateStock(item, 1)} className="btn btn-primary btn-icon btn-stock-adjust">+</button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Lote</th>
+                    <th>Categoría</th>
+                    <th>Valor Unitario</th>
+                    <th className="text-center">Nivel de Stock</th>
+                    <th className="text-center">Cantidad</th>
+                    <th className="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((item) => {
+                    const pct = stockPercent(item);
+                    const isLow = item.cantidad <= item.cantidadminima;
+                    const barColor = isLow ? 'var(--danger)' : pct < 60 ? 'var(--warning)' : 'var(--success)';
+                    const catName = categories.find(c => c.idcategoriaproducto === item.idcategoriaproducto)?.descripcion || 'General';
+                    return (
+                      <tr key={item.idproducto}>
+                        <td><span className="font-bold text-main">{item.nombre}</span></td>
+                        <td>{item.lote ? <span className="badge badge-neutral">{item.lote}</span> : <span style={{ color: 'var(--text-5)', fontSize: '0.78rem' }}>—</span>}</td>
+                        <td><span className="badge badge-neutral">{catName}</span></td>
+                        <td><span className="font-semibold">{new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.precio || 0)}</span></td>
+                        <td className="stock-level-container">
+                          <div className="stock-bar-bg">
+                            <div className="stock-bar-fill" style={{ width: `${pct}%`, background: barColor }} />
+                          </div>
+                          <div className="stock-bar-label">{Math.round(pct)}% del stock objetivo</div>
+                        </td>
+                        <td>
+                          <div className="quantity-display">
+                            <span className="quantity-main" style={{ color: isLow ? 'var(--danger)' : 'var(--text)' }}>{item.cantidad}</span>
+                            <span className="quantity-min">mín: {item.cantidadminima}</span>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="inventory-row-actions">
+                            <button onClick={() => startEdit(item)} className="btn btn-ghost btn-icon" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg></button>
+                            <div className="inventory-action-separator" />
+                            <button onClick={() => handleUpdateStock(item, -1)} className="btn btn-secondary btn-icon btn-stock-adjust">-</button>
+                            <button onClick={() => handleUpdateStock(item, 1)} className="btn btn-primary btn-icon btn-stock-adjust">+</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="empty-state no-border padded-xl">
@@ -454,15 +454,15 @@ export default function Inventory({ tenant }) {
             <form onSubmit={handleSubmit} className="inventory-form">
               <div className="input-group">
                 <label className="inventory-input-label">Nombre del Producto</label>
-                <SuggestionInput 
-                  placeholder="Ej. Agujas 30G" 
-                  value={form.name} 
-                  onChange={e => update('name', e.target.value)} 
-                  required 
-                  className="input-rounded" 
-                  spellCheck={true} 
-                  lang="es" 
-                  suggestions={commonTerms} 
+                <SuggestionInput
+                  placeholder="Ej. Agujas 30G"
+                  value={form.name}
+                  onChange={e => update('name', e.target.value)}
+                  required
+                  className="input-rounded"
+                  spellCheck={true}
+                  lang="es"
+                  suggestions={commonTerms}
                 />
               </div>
 
@@ -532,7 +532,7 @@ export default function Inventory({ tenant }) {
                 </div>
               </div>
               <button className="btn btn-ghost btn-icon btn-modal-close-glass" onClick={() => setShowCatModal(false)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
 
@@ -543,10 +543,10 @@ export default function Inventory({ tenant }) {
                     <span className="category-name">{c.descripcion}</span>
                     <div className="flex gap-2">
                       <button onClick={() => { setEditCatId(c.idcategoriaproducto); setCatName(c.descripcion); }} className="btn btn-ghost btn-icon padded-none size-32">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                       </button>
                       <button onClick={() => handleDeleteCategory(c.idcategoriaproducto)} className="btn btn-ghost btn-icon padded-none size-32 text-danger">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
                       </button>
                     </div>
                   </div>
@@ -558,15 +558,15 @@ export default function Inventory({ tenant }) {
                   {editCatId ? 'Editando Categoría' : 'Añadir Nueva Categoría'}
                 </label>
                 <div className="flex gap-3">
-                  <SuggestionInput 
-                    placeholder="Nombre..." 
-                    value={catName} 
-                    onChange={e => setCatName(e.target.value)} 
-                    required 
-                    className="flex-1 input-rounded" 
-                    spellCheck={true} 
-                    lang="es" 
-                    suggestions={commonTerms.filter(t => products.map(p => p.nombre).includes(t) === false)} 
+                  <SuggestionInput
+                    placeholder="Nombre..."
+                    value={catName}
+                    onChange={e => setCatName(e.target.value)}
+                    required
+                    className="flex-1 input-rounded"
+                    spellCheck={true}
+                    lang="es"
+                    suggestions={commonTerms.filter(t => products.map(p => p.nombre).includes(t) === false)}
                   />
                   <button type="submit" className="btn btn-primary rounded-lg px-6" disabled={saving}>
                     {editCatId ? 'Guardar' : 'Añadir'}
@@ -585,20 +585,20 @@ export default function Inventory({ tenant }) {
             <div className="padded-xl centered">
               <div className={`alert-icon-wrapper ${alertConfig.type === 'confirm' ? 'confirm' : 'alert'}`}>
                 {alertConfig.type === 'confirm' ? (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
                 ) : (
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
                 )}
               </div>
-              
+
               <h3 className="alert-title">{alertConfig.title}</h3>
               <p className="alert-message">{alertConfig.message}</p>
-              
+
               <div className="flex gap-4 centered">
                 {alertConfig.type === 'confirm' ? (
                   <>
                     <button className="btn btn-outline flex-1 rounded-lg padded" onClick={closeAlert}>Cancelar</button>
-                    <button className="btn btn-danger flex-1 rounded-lg padded shadow-danger" 
+                    <button className="btn btn-danger flex-1 rounded-lg padded shadow-danger"
                       onClick={() => {
                         const onConfirm = alertConfig.onConfirm;
                         closeAlert();

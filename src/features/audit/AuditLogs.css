@@ -50,6 +50,7 @@
 
 .audit-table {
   width: 100%;
+  min-width: 620px;
   border-collapse: collapse;
   text-align: left;
 }
@@ -186,5 +187,24 @@
 
 @keyframes audit-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .audit-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1.25rem 1.25rem;
+  }
+
+  .audit-table th,
+  .audit-table td {
+    padding: 0.75rem 1rem;
+  }
+
+  .audit-desc-cell {
+    max-width: 200px;
+  }
 }
 

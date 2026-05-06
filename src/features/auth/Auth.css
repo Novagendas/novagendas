@@ -309,3 +309,31 @@
   from { opacity: 0; transform: translateY(24px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .auth-page {
+    padding: 1rem;
+  }
+
+  .auth-card {
+    padding: 2rem 1.5rem;
+    border-radius: var(--radius-2xl);
+    gap: 1.5rem;
+  }
+
+  .auth-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .auth-header p {
+    font-size: 0.875rem;
+  }
+
+  .auth-logo {
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    font-size: 1.25rem;
+  }
+}

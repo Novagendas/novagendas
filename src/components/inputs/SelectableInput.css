@@ -107,12 +107,13 @@
   right: 0;
   margin-top: 0.35rem;
   list-style: none;
-  padding: 0;
-  margin-top: 0.35rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  box-shadow: var(--shadow-lg);
+  padding: 0.5rem;
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
   z-index: 1000;
   max-height: 300px;
   overflow-y: auto;
@@ -126,22 +127,23 @@
   padding: 0.75rem 1rem;
   background: none;
   border: none;
+  border-radius: var(--radius-md);
   cursor: pointer;
   font-family: inherit;
-  font-size: inherit;
+  font-size: 0.875rem;
   color: var(--text-2);
   text-align: left;
   width: 100%;
-  transition: background-color 0.15s ease;
+  transition: all 0.15s var(--ease);
 }
 
 .selectable-input-option:hover {
-  background-color: var(--bg-light);
+  background-color: rgba(var(--primary-rgb), 0.05);
   color: var(--text);
 }
 
 .selectable-input-option.selected {
-  background-color: var(--primary-light);
+  background-color: rgba(var(--primary-rgb), 0.08);
   color: var(--primary);
   font-weight: 600;
 }
