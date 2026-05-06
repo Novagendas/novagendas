@@ -102,19 +102,28 @@ export default function Clients({ user, tenant }) {
   const [proxCitaLoad, setProxCitaLoad] = useState(false);
 
   useEffect(() => {
-    if (!selectedId || !tenant?.id) { setProxCita(null); return; }
-    setProxCitaLoad(true);
-    supabase
-      .from('cita')
-      .select(`idcita, fechahorainicio, estadocita(descripcion), citaservicios(servicios(nombre))`)
-      .eq('idnegocios', tenant.id)
-      .eq('idcliente', selectedId)
-      .gte('fechahorainicio', new Date().toISOString())
-      .is('deleted_at', null)
-      .order('fechahorainicio', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-      .then(({ data }) => { setProxCita(data || null); setProxCitaLoad(false); });
+    if (!selectedId || !tenant?.id) return;
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setProxCitaLoad(true);
+      const { data } = await supabase
+        .from('cita')
+        .select(`idcita, fechahorainicio, estadocita(descripcion), citaservicios(servicios(nombre))`)
+        .eq('idnegocios', tenant.id)
+        .eq('idcliente', selectedId)
+        .gte('fechahorainicio', new Date().toISOString())
+        .is('deleted_at', null)
+        .order('fechahorainicio', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) {
+        setProxCita(data || null);
+        setProxCitaLoad(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [selectedId, tenant?.id]);
 
   // Especialista filter: Solo ver clientes asignados en citas o con historial previo

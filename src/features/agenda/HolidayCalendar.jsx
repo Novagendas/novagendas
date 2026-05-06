@@ -54,9 +54,27 @@ export default function HolidayCalendar({ user, tenant, canManage = false }) {
       .order('fecha');
     setBloqueados(data || []);
     setLoading(false);
-  }, [tenant?.id]);
+  }, [tenant]);
 
-  useEffect(() => { fetchBloqueados(); }, [fetchBloqueados]);
+  useEffect(() => {
+    if (!tenant?.id) return;
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      const { data } = await supabase
+        .from('diasbloqueados')
+        .select('*')
+        .eq('idnegocios', tenant.id)
+        .order('fecha');
+      if (!cancelled) {
+        setBloqueados(data || []);
+        setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [tenant?.id]);
 
   const blockedMap = bloqueados.reduce((acc, b) => { acc[b.fecha] = b; return acc; }, {});
 
