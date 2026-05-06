@@ -142,8 +142,8 @@
   align-items: center;
   gap: 0.65rem;
   flex-shrink: 0;
-  overflow: hidden;
   max-width: 60%;
+  overflow: visible;
 }
 
 .layout-user-section {

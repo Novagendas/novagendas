@@ -44,40 +44,25 @@
 }
 
 /* --- Alerts --- */
-.services-alert-no-cats {
-  border-radius: var(--radius);
-  padding: 1rem 1.5rem;
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 0.8rem;
+.services-notice {
+  display: inline-flex;
   align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius-full);
   background: #fef2f2;
   border: 1px solid #fee2e2;
-}
-
-.alert-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #fee2e2;
-  color: #ef4444;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.alert-content h4 {
-  margin: 0;
-  color: #991b1b;
-  font-size: 0.95rem;
-}
-
-.alert-content p {
-  margin: 0.1rem 0 0;
   color: #b91c1c;
   font-size: 0.8rem;
   font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.services-notice-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: #ef4444;
 }
 
 /* --- Summary Pills --- */

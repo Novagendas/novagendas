@@ -1196,6 +1196,39 @@ textarea.input-field {
   border-radius: var(--radius-xl) !important;
 }
 
+.rounded-lg {
+  border-radius: var(--radius-lg) !important;
+}
+
+/* ── Modal sizing ── */
+.modal-xs { max-width: 400px; }
+.modal-sm { max-width: 560px; }
+
+/* ── Padding utilities ── */
+.padded     { padding: 1.5rem; }
+.padded-xl  { padding: 2.5rem; }
+
+/* ── Text alignment ── */
+.centered { text-align: center; }
+
+/* ── Z-index helpers ── */
+.high-z { z-index: 9999; }
+
+/* ── Gap shorthand ── */
+.gap-lg { gap: 1.5rem; }
+
+/* ── Shadow accent utilities ── */
+.shadow-primary { box-shadow: 0 8px 24px var(--primary-light) !important; }
+.shadow-danger  { box-shadow: 0 8px 24px var(--danger-light)  !important; }
+
+/* ── Padding/spacing shorthand ── */
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+.px-4 { padding-left: 1rem;   padding-right: 1rem; }
+.py-4 { padding-top: 1rem;    padding-bottom: 1rem; }
+
+/* ── Border modifier ── */
+.no-border { border: none !important; }
+
 /* ─────────────────────────────────────────────────────
    MOBILE RESPONSIVE UTILITIES
 ───────────────────────────────────────────────────── */
