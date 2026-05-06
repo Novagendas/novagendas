@@ -18,6 +18,7 @@ import AuditLogs from './features/audit/AuditLogs.jsx';
 import Statistics from './features/statistics/Statistics';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
+import HolidayCalendar from './features/agenda/HolidayCalendar';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
@@ -111,6 +112,10 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'payments': return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
       case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
+      case 'feriados': {
+        const canManageFeriados = user.role === 'admin' || (Array.isArray(user.permissions) && user.permissions.includes('feriados'));
+        return <HolidayCalendar user={user} tenant={tenant} canManage={canManageFeriados} />;
+      }
       case 'profile':       return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
       case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
       case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;

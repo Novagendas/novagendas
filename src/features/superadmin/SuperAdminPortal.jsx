@@ -136,6 +136,13 @@ function StatCard({ icon, label, value, sub, color = 'var(--primary)' }) {
 
 /* ─── Tenant Form ─── */
 function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving, allUsers }) {
+  const [userSearch, setUserSearch] = useState('');
+  const filteredUsers = (allUsers || []).filter(u => {
+    if (!userSearch) return true;
+    const q = userSearch.toLowerCase();
+    return [u.nombre, u.apellido, u.email].join(' ').toLowerCase().includes(q);
+  });
+
   return (
     <form onSubmit={onSubmit} className="super-form">
       <div className="super-form-grid">
@@ -162,11 +169,18 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving, allUser
           </label>
         </Field>
         <Field label="Usuarios del negocio" style={{ flex: '1 1 100%' }}>
+          <div style={{ marginBottom: '0.4rem', position: 'relative' }}>
+            <svg style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input className="input-field" style={{ paddingLeft: '1.8rem', fontSize: '0.82rem', height: '2rem' }} placeholder="Buscar usuario…" value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+          </div>
           <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', maxHeight: 220, overflowY: 'auto' }}>
             {(!allUsers || allUsers.length === 0) && (
               <div style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-4)' }}>Sin usuarios registrados</div>
             )}
-            {allUsers && allUsers.map(u => {
+            {filteredUsers.length === 0 && allUsers && allUsers.length > 0 && (
+              <div style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-4)' }}>Sin resultados para "{userSearch}"</div>
+            )}
+            {filteredUsers.map(u => {
               const linked = form.usuarios.find(x => x.idusuario === u.idusuario);
               return (
                 <div key={u.idusuario} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', background: linked ? 'var(--primary-light)' : 'transparent' }}>
@@ -222,6 +236,13 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving, allUser
 /* ─── User Form ─── */
 function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }) {
   const [showPass, setShowPass] = useState(false);
+  const [negSearch, setNegSearch] = useState('');
+  const filteredTenants = (tenants || []).filter(t => {
+    if (!negSearch) return true;
+    const q = negSearch.toLowerCase();
+    return [t.nombre, t.dominio].join(' ').toLowerCase().includes(q);
+  });
+
   return (
     <form onSubmit={onSubmit} className="super-form">
       <div className="super-form-grid">
@@ -249,11 +270,18 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
           </select>
         </Field>
         <Field label="Negocios asociados" style={{ flex: '1 1 100%' }}>
+          <div style={{ marginBottom: '0.4rem', position: 'relative' }}>
+            <svg style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input className="input-field" style={{ paddingLeft: '1.8rem', fontSize: '0.82rem', height: '2rem' }} placeholder="Buscar negocio…" value={negSearch} onChange={e => setNegSearch(e.target.value)} />
+          </div>
           <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
             {tenants && tenants.length === 0 && (
               <div style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-4)' }}>Sin negocios registrados</div>
             )}
-            {tenants && tenants.map(t => {
+            {filteredTenants.length === 0 && tenants && tenants.length > 0 && (
+              <div style={{ padding: '0.75rem 1rem', fontSize: '0.82rem', color: 'var(--text-4)' }}>Sin resultados para "{negSearch}"</div>
+            )}
+            {filteredTenants.map(t => {
               const linked = form.negocios.find(n => n.idnegocios === t.idnegocios);
               return (
                 <div key={t.idnegocios} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.55rem 1rem', borderBottom: '1px solid var(--border)', background: linked ? 'var(--primary-light)' : 'transparent' }}>
@@ -346,7 +374,7 @@ export default function SuperAdminPortal() {
   const [userRolFilter, setUserRolFilter] = useState('all');
   const [userModal, setUserModal] = useState(null);
   const [savingU, setSavingU] = useState(false);
-  const blankU = { nombre: '', apellido: '', email: '', cedula: '', contrasena: '', telefono: '', profesion: '', idestado: 1, idrol: 1, negocios: [] };
+  const blankU = { nombre: '', apellido: '', email: '', cedula: '', contrasena: '', telefono: '', profesion: '', idestado: 1, idrol: 2, negocios: [] };
   const [uForm, setUForm] = useState(blankU);
 
   /* Ubicaciones */
@@ -380,7 +408,7 @@ export default function SuperAdminPortal() {
   const fetchUsers = useCallback(async () => {
     setUserLoad(true);
     const [{ data: userData }, { data: rolData }, { data: negocioData }] = await Promise.all([
-      supabase.from('usuario').select('*').order('idusuario'),
+      supabase.from('usuario').select('*').is('deleted_at', null).order('idusuario'),
       supabase.from('rolpermisos').select('idusuario, idrol'),
       supabase.from('negociousuario').select('idusuario, idnegocios, es_principal'),
     ]);
