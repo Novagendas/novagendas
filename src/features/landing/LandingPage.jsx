@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
-import ParticleBackground from '../../components/ParticleBackground';
+import React, { useState, useEffect } from 'react';
 import ThemeToggle from '../../components/ThemeToggle';
 import './LandingPage.css';
 
-/* ── Intersection Observer hook ── */
 function useReveal() {
   useEffect(() => {
     const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('reveal-visible'); }),
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('reveal-visible');
+      }),
       { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
     );
     document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
@@ -15,27 +15,141 @@ function useReveal() {
   }, []);
 }
 
-/* ── Counter animation ── */
-function Counter({ target, suffix = '' }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      obs.disconnect();
-      let start = 0;
-      const step = Math.ceil(target / 60);
-      const interval = setInterval(() => {
-        start = Math.min(start + step, target);
-        setCount(start);
-        if (start >= target) clearInterval(interval);
-      }, 20);
-    }, { threshold: 0.5 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [target]);
-  return <span ref={ref}>{count.toLocaleString('es-CO')}{suffix}</span>;
-}
+const GCalIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+  </svg>
+);
+
+const ArrowRight = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <line x1="5" y1="12" x2="19" y2="12"/>
+    <polyline points="12 5 19 12 12 19"/>
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="3">
+    <polyline points="20 6 9 17 4 12"/>
+  </svg>
+);
+
+const NAV_LINKS = [
+  { id: 'funciones',     label: 'Funciones' },
+  { id: 'como-funciona', label: 'Cómo funciona' },
+  { id: 'sectores',      label: 'Sectores' },
+  { id: 'contacto',      label: 'Contacto' },
+];
+
+const SECTORES = [
+  { label: '🏥 Clínicas estéticas', highlight: true },
+  { label: '🧖 Spas & bienestar' },
+  { label: '🦷 Consultorios' },
+  { label: '✂️ Barberías & salones' },
+  { label: '🧠 Psicólogos' },
+  { label: '💪 Centros deportivos' },
+  { label: '🐾 Veterinarias' },
+  { label: '+ Más' },
+];
+
+const FEATURES = [
+  {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="18" rx="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+    ),
+    bg: '#ede9fe',
+    title: 'Agenda drag & drop',
+    desc: 'Vistas día, semana y mes. Arrastra citas para moverlas. Múltiples especialistas y detección automática de conflictos de horario.',
+  },
+  {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    ),
+    bg: '#dbeafe',
+    title: 'Gestión de clientes',
+    desc: 'Historial completo por cliente, evolución por sesión, notas privadas y datos de contacto centralizados.',
+  },
+  {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="12" y1="1" x2="12" y2="23"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    ),
+    bg: '#dcfce7',
+    title: 'Pagos y facturación',
+    desc: 'Registra ingresos, aplica abonos, diferencia métodos de pago y genera reportes financieros por período.',
+  },
+  {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      </svg>
+    ),
+    bg: '#ffedd5',
+    title: 'Control de inventario',
+    desc: 'Seguimiento de productos e insumos. Alertas de stock bajo. Registro automático de lo consumido por sesión.',
+  },
+  {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="12" width="5" height="9"/>
+        <rect x="9" y="7" width="5" height="14"/>
+        <rect x="15" y="3" width="5" height="18"/>
+      </svg>
+    ),
+    bg: '#f0fdf4',
+    title: 'Estadísticas y reportes',
+    desc: 'Ingresos, citas por especialista, servicios más rentables y tendencias mes a mes en tiempo real.',
+  },
+  {
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <line x1="20" y1="8" x2="20" y2="14"/>
+        <line x1="23" y1="11" x2="17" y2="11"/>
+      </svg>
+    ),
+    bg: '#fce7f3',
+    title: 'Roles y permisos',
+    desc: 'Admin, recepcionista y especialista. Cada usuario ve solo lo que le corresponde, con trazabilidad completa.',
+  },
+];
+
+const DIFF_ITEMS = [
+  'Acceso desde cualquier dispositivo con navegador',
+  'Multi-tenant: cada negocio en su propio subdominio',
+  'Sincronización nativa con Google Calendar',
+  'Días festivos y bloqueos de agenda configurables',
+  'Registro de auditoría de cada acción del equipo',
+];
+
+const DEMO_STATS = [
+  { val: '24', label: 'Citas hoy' },
+  { val: '8',  label: 'Especialistas' },
+  { val: '312', label: 'Clientes' },
+];
+
+const DEMO_BARS = [
+  ['Servicio A', 78],
+  ['Servicio B', 63],
+  ['Servicio C', 45],
+];
 
 export default function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -43,32 +157,28 @@ export default function LandingPage() {
 
   return (
     <div className="lp">
-      <ParticleBackground />
 
-      {/* ─── Navbar ─── */}
+      {/* ─── Nav ─── */}
       <nav className="lp-nav">
         <div className="lp-nav-brand">
-          <div className="lp-logo-mark">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
+          <img src="/logoclaro.jpeg" alt="Novagendas" className="lp-logo-img" />
           <span className="lp-brand-name">Novagendas</span>
         </div>
 
         <div className="lp-nav-links">
-          <a href="#problema">Problema</a>
-          <a href="#solucion">Solución</a>
-          <a href="#funciones">Funciones</a>
-          <a href="#contacto">Contacto</a>
+          {NAV_LINKS.map(({ id, label }) => (
+            <a key={id} href={`#${id}`}>{label}</a>
+          ))}
         </div>
 
         <div className="lp-nav-actions">
           <ThemeToggle />
-          <button className="lp-mobile-btn" onClick={() => setIsMenuOpen(o => !o)} aria-label="Menú">
+          <a href="#contacto" className="lp-nav-cta">Solicitar demo →</a>
+          <button
+            className="lp-mobile-btn"
+            onClick={() => setIsMenuOpen(o => !o)}
+            aria-label="Menú"
+          >
             {isMenuOpen
               ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -80,319 +190,302 @@ export default function LandingPage() {
       {isMenuOpen && (
         <div className="lp-mobile-menu">
           <button className="lp-mobile-close" onClick={() => setIsMenuOpen(false)}>✕</button>
-          {['problema','solucion','funciones','contacto'].map(s => (
-            <a key={s} href={`#${s}`} onClick={() => setIsMenuOpen(false)} className="lp-mobile-link">
-              {s.charAt(0).toUpperCase() + s.slice(1)}
+          {NAV_LINKS.map(({ id, label }) => (
+            <a key={id} href={`#${id}`} onClick={() => setIsMenuOpen(false)} className="lp-mobile-link">
+              {label}
             </a>
           ))}
         </div>
       )}
 
       {/* ─── Hero ─── */}
-      <section className="lp-hero">
-        <div className="lp-hero-inner">
-          <div className="lp-badge reveal stagger-1">
-            <span className="lp-badge-dot" />
-            Software especializado para clínicas y centros estéticos
-          </div>
+      <div className="lp-hero-wrap">
+        <div className="lp-hero">
 
-          <h1 className="lp-hero-h1 reveal stagger-2">
-            Tu clínica, organizada.<br />
-            <span className="lp-gradient-text">Sin fricción. Sin papel.</span>
-          </h1>
-
-          <p className="lp-hero-sub reveal stagger-3">
-            Novagendas centraliza la agenda, los pacientes, los pagos y el inventario
-            de tu centro estético o clínica en una sola plataforma diseñada para el sector salud.
-          </p>
-
-          <div className="lp-hero-ctas reveal stagger-4">
-            <a href="#contacto" className="lp-btn-primary">
-              Solicitar demostración
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </a>
-            <a href="#funciones" className="lp-btn-ghost">Ver funcionalidades</a>
-          </div>
-
-          {/* Mini-UI mockup */}
-          <div className="lp-mockup reveal stagger-5">
-            <div className="lp-mockup-bar">
-              <span /><span /><span />
-              <div className="lp-mockup-url">novagendas.com · agenda</div>
+          {/* Left */}
+          <div className="lp-hero-left">
+            <div className="lp-pill-row reveal stagger-1">
+              <span className="lp-pill lp-pill--primary">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                Software de agendamiento
+              </span>
+              <span className="lp-pill lp-pill--green">✓ Sincroniza con Google Calendar</span>
+              <span className="lp-pill">Multi-usuario</span>
             </div>
-            <div className="lp-mockup-body">
-              <div className="lp-mockup-sidebar">
-                {['📊','📅','👥','💰','📦'].map((icon, i) => (
-                  <div key={i} className={`lp-mockup-nav-item ${i === 1 ? 'active' : ''}`}>{icon}</div>
-                ))}
-              </div>
-              <div className="lp-mockup-content">
-                <div className="lp-mockup-header-bar">
-                  <div className="lp-mockup-title-block">
-                    <div className="lp-mockup-line w-40" />
-                    <div className="lp-mockup-line w-60 thin" />
-                  </div>
-                  <div className="lp-mockup-new-btn">+ Nueva cita</div>
-                </div>
-                <div className="lp-mockup-calendar">
-                  {[...Array(5)].map((_, col) => (
-                    <div key={col} className="lp-mockup-col">
-                      <div className="lp-mockup-col-header" />
-                      {col === 1 && <div className="lp-mockup-appt accent">09:00 · Botox</div>}
-                      {col === 2 && <div className="lp-mockup-appt green">10:30 · Relleno</div>}
-                      {col === 0 && <div className="lp-mockup-appt purple">11:00 · Valoración</div>}
-                      {col === 3 && <div className="lp-mockup-appt orange">14:00 · Láser</div>}
-                    </div>
-                  ))}
-                </div>
-              </div>
+
+            <h1 className="lp-hero-h1 reveal stagger-2">
+              Agenda tu negocio.<br />
+              <span className="lp-gradient-text">Sin caos. Sin papel.</span>
+            </h1>
+
+            <p className="lp-hero-sub reveal stagger-3">
+              Novagendas centraliza citas, clientes, pagos e inventario en una sola plataforma.
+              Para clínicas, spas, consultorios y cualquier negocio que trabaje con citas.
+            </p>
+
+            <div className="lp-gcal-proof reveal stagger-4">
+              <GCalIcon size={20} />
+              <span>Integración nativa con Google Calendar</span>
+              <span className="lp-gcal-proof-sync">
+                <span className="lp-gcal-dot" />
+                Sincronización en tiempo real
+              </span>
+            </div>
+
+            <div className="lp-hero-ctas reveal stagger-5">
+              <a href="#contacto" className="lp-btn-primary">
+                Solicitar demostración <ArrowRight />
+              </a>
+              <a href="#funciones" className="lp-btn-ghost">Ver funcionalidades</a>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ─── Stats ─── */}
-      <section className="lp-stats">
-        <div className="lp-stats-inner">
-          {[
-            { value: 500, suffix: '+', label: 'Citas gestionadas' },
-            { value: 12,  suffix: '',  label: 'Clínicas activas' },
-            { value: 98,  suffix: '%', label: 'Tasa de satisfacción' },
-            { value: 3,   suffix: 'x', label: 'Menos tiempo administrativo' },
-          ].map((s, i) => (
-            <div key={i} className="lp-stat-item reveal" style={{ animationDelay: `${i * 80}ms` }}>
-              <div className="lp-stat-value"><Counter target={s.value} suffix={s.suffix} /></div>
-              <div className="lp-stat-label">{s.label}</div>
+          {/* Right — Bento */}
+          <div className="lp-bento reveal stagger-2">
+
+            <div className="lp-bento-card lp-bento-card--purple">
+              <span className="lp-bento-label">Citas hoy</span>
+              <div className="lp-bento-num">24</div>
+              <span className="lp-bento-sub lp-bento-sub--green">↑ 3 vs ayer</span>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* ─── Problema ─── */}
-      <section id="problema" className="lp-section lp-section--alt">
-        <div className="lp-section-inner">
-          <div className="lp-section-tag reveal">El problema</div>
-          <h2 className="lp-section-h2 reveal stagger-1">
-            Gestionar una clínica sin las herramientas correctas
-            <span className="lp-gradient-text"> cuesta tiempo y pacientes</span>
-          </h2>
-          <p className="lp-section-sub reveal stagger-2">
-            Los centros estéticos y clínicas de salud enfrentan a diario una realidad caótica
-            que frena su crecimiento y afecta la experiencia del paciente.
-          </p>
+            <div className="lp-bento-card lp-bento-card--dark">
+              <div className="lp-gcal-sync">
+                <div className="lp-gcal-sync-dot" />
+                <span className="lp-gcal-sync-text">Google Calendar activo</span>
+              </div>
+              <span className="lp-gcal-sync-sub">Último sync hace 2 min · 8 eventos</span>
+              <div className="lp-gcal-sync-tag">
+                <GCalIcon size={11} />
+                novagendas ↔ tu calendario
+              </div>
+            </div>
 
-          <div className="lp-problems-grid">
-            {[
-              { icon: '📋', title: 'Agendas en papel o WhatsApp', desc: 'Doble reservas, olvidos y horas perdidas coordinando manualmente cada cita.' },
-              { icon: '🗂️', title: 'Historias clínicas dispersas', desc: 'Fichas en hojas sueltas, fotos en el celular, notas sin estructura ni seguridad.' },
-              { icon: '💸', title: 'Pagos sin trazabilidad', desc: 'No sabes cuánto ingresó hoy, quién debe, qué servicios son más rentables.' },
-              { icon: '📦', title: 'Inventario a ciegas', desc: 'Te quedas sin insumos el día más ocupado porque no hay control de stock.' },
-              { icon: '👤', title: 'Sin control de especialistas', desc: 'Cada profesional trabaja de forma aislada, sin visibilidad para el administrador.' },
-              { icon: '🔒', title: 'Datos del paciente en riesgo', desc: 'Información sensible guardada en lugares inseguros o sin acceso controlado.' },
-            ].map((p, i) => (
-              <div key={i} className="lp-problem-card reveal" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="lp-problem-icon">{p.icon}</div>
-                <div>
-                  <div className="lp-problem-title">{p.title}</div>
-                  <div className="lp-problem-desc">{p.desc}</div>
+            <div className="lp-bento-card lp-bento-card--wide">
+              <div className="lp-bento-week-header">
+                <span className="lp-bento-label">Agenda esta semana</span>
+                <span className="lp-bento-new-btn">+ Nueva cita</span>
+              </div>
+              <div className="lp-bento-week">
+                <div className="lp-week-day">
+                  <span className="lp-week-hd">LUN</span>
+                  <div className="lp-week-ev lp-ev-blue">09:00 · Cita</div>
+                  <div className="lp-week-ev lp-ev-purple">11:30</div>
+                </div>
+                <div className="lp-week-day">
+                  <span className="lp-week-hd">MAR</span>
+                  <div className="lp-week-ev lp-ev-green">10:00 · Cita</div>
+                </div>
+                <div className="lp-week-day">
+                  <span className="lp-week-hd">MIÉ</span>
+                  <div className="lp-week-ev lp-ev-new">09:00 · Nueva</div>
+                  <div className="lp-week-ev lp-ev-orange">14:00</div>
+                </div>
+                <div className="lp-week-day">
+                  <span className="lp-week-hd">JUE</span>
+                  <div className="lp-week-ev lp-ev-pink">📅 GCal</div>
+                  <div className="lp-week-ev lp-ev-blue">11:00</div>
+                </div>
+                <div className="lp-week-day">
+                  <span className="lp-week-hd">VIE</span>
+                  <div className="lp-week-ev lp-ev-green">09:30</div>
+                  <div className="lp-week-ev lp-ev-purple">15:00</div>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
 
-      {/* ─── Transición ─── */}
-      <div className="lp-bridge reveal">
-        <div className="lp-bridge-inner">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 12 15 18 9"/></svg>
-          <p>Hay una mejor forma de gestionar tu clínica</p>
+            <div className="lp-bento-card">
+              <span className="lp-bento-label">Ingresos este mes</span>
+              <div className="lp-bento-num" style={{ fontSize: '1.7rem' }}>$4.2M</div>
+              <div className="lp-bar-group">
+                <div className="lp-bar lp-bar-1" />
+                <div className="lp-bar lp-bar-2" />
+                <div className="lp-bar lp-bar-3" />
+                <div className="lp-bar lp-bar-4" />
+                <div className="lp-bar lp-bar-5" />
+                <div className="lp-bar lp-bar-6" />
+              </div>
+            </div>
+
+            <div className="lp-bento-card">
+              <span className="lp-bento-label">Módulos activos</span>
+              <div className="lp-fpills">
+                <span className="lp-fpill lp-fpill-blue">📅 Agenda</span>
+                <span className="lp-fpill lp-fpill-green">💰 Pagos</span>
+                <span className="lp-fpill lp-fpill-purple">👥 Clientes</span>
+                <span className="lp-fpill lp-fpill-orange">📦 Inventario</span>
+                <span className="lp-fpill lp-fpill-blue">📊 Reportes</span>
+                <span className="lp-fpill lp-fpill-green">👤 Equipo</span>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 
-      {/* ─── Solución ─── */}
-      <section id="solucion" className="lp-section">
-        <div className="lp-section-inner">
-          <div className="lp-section-tag lp-section-tag--green reveal">La solución</div>
-          <h2 className="lp-section-h2 reveal stagger-1">
-            Una plataforma diseñada
-            <span className="lp-gradient-text"> específicamente para ti</span>
-          </h2>
-          <p className="lp-section-sub reveal stagger-2">
-            Novagendas no es un software genérico adaptado. Fue construido desde cero
-            para las necesidades reales de clínicas estéticas y centros de salud.
-          </p>
-
-          <div className="lp-solution-cards">
-            {[
-              {
-                step: '01',
-                title: 'Ingresa tu clínica',
-                desc: 'Registra tu negocio, configura tus especialistas y define los servicios que ofreces en minutos.',
-                color: 'var(--primary)',
-              },
-              {
-                step: '02',
-                title: 'Gestiona desde un solo lugar',
-                desc: 'Agenda, historial de pacientes, inventario, pagos y estadísticas en un panel unificado y accesible desde cualquier dispositivo.',
-                color: '#7c3aed',
-              },
-              {
-                step: '03',
-                title: 'Haz crecer tu negocio',
-                desc: 'Toma decisiones basadas en datos reales: qué servicios generan más, qué especialistas son más eficientes y cuáles son tus horarios pico.',
-                color: '#16a34a',
-              },
-            ].map((s, i) => (
-              <div key={i} className="lp-solution-card reveal" style={{ animationDelay: `${i * 100}ms` }}>
-                <div className="lp-solution-step" style={{ background: `${s.color}18`, color: s.color, borderColor: `${s.color}30` }}>{s.step}</div>
-                <h3 className="lp-solution-title">{s.title}</h3>
-                <p className="lp-solution-desc">{s.desc}</p>
+      {/* ─── Sectores ─── */}
+      <div id="sectores" className="lp-sectores">
+        <div className="lp-sectores-inner">
+          <div className="lp-sectores-label">Para cualquier negocio que trabaje con citas</div>
+          <div className="lp-sectores-chips">
+            {SECTORES.map(({ label, highlight }) => (
+              <div key={label} className={`lp-sector-chip${highlight ? ' lp-sector-chip--highlight' : ''}`}>
+                {label}
               </div>
             ))}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* ─── Funciones ─── */}
+      {/* ─── Funcionalidades ─── */}
       <section id="funciones" className="lp-section lp-section--alt">
         <div className="lp-section-inner">
           <div className="lp-section-tag reveal">Funcionalidades</div>
-          <h2 className="lp-section-h2 reveal stagger-1">Todo lo que necesita tu clínica</h2>
+          <h2 className="lp-section-h2 reveal stagger-1">
+            Todo lo que tu negocio <span className="lp-gradient-text">realmente necesita</span>
+          </h2>
           <p className="lp-section-sub reveal stagger-2">
-            Módulos pensados para el flujo real de trabajo de un centro estético o de salud.
+            Cada módulo fue construido para el flujo real de un negocio con citas. Sin funciones de relleno.
           </p>
 
           <div className="lp-features-grid">
-            {[
-              {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
-                color: 'var(--primary)',
-                title: 'Agenda inteligente',
-                desc: 'Vistas día, semana y mes con arrastrar y soltar. Múltiples especialistas, detección de conflictos y sincronización con Google Calendar.',
-              },
-              {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-                color: '#7c3aed',
-                title: 'Gestión de pacientes',
-                desc: 'Historial clínico, evolución por procedimiento, notas privadas y datos de contacto en un perfil centralizado y seguro.',
-              },
-              {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-                color: '#16a34a',
-                title: 'Pagos y facturación',
-                desc: 'Registra ingresos, aplica abonos, diferencia métodos de pago y genera reportes financieros por período.',
-              },
-              {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg>,
-                color: '#ea580c',
-                title: 'Control de inventario',
-                desc: 'Seguimiento de productos e insumos, alertas de stock bajo y registro automático de lo consumido por sesión.',
-              },
-              {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="12" width="5" height="9"/><rect x="9" y="7" width="5" height="14"/><rect x="15" y="3" width="5" height="18"/></svg>,
-                color: '#0891b2',
-                title: 'Estadísticas y reportes',
-                desc: 'Visualiza ingresos, citas por especialista, servicios más rentables y tendencias de crecimiento mes a mes.',
-              },
-              {
-                icon: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
-                color: '#db2777',
-                title: 'Gestión de equipo',
-                desc: 'Roles diferenciados para admin, recepcionista y especialista. Cada usuario ve solo lo que le corresponde.',
-              },
-            ].map((f, i) => (
-              <div key={i} className="lp-feature-card reveal" style={{ animationDelay: `${i * 70}ms` }}>
-                <div className="lp-feature-icon-box" style={{ background: `${f.color}12`, color: f.color, borderColor: `${f.color}20` }}>
-                  {f.icon}
+
+            {/* GCal — banner ancho */}
+            <div className="lp-feat-card lp-feat-card--gcal reveal">
+              <div className="lp-feat-gcal-content">
+                <div className="lp-feat-icon" style={{ background: '#f0fdf4', marginBottom: '0.75rem' }}>📅</div>
+                <div className="lp-feat-title" style={{ fontSize: '1.15rem' }}>
+                  Sincronización con Google Calendar
                 </div>
-                <h3 className="lp-feature-title">{f.title}</h3>
-                <p className="lp-feature-desc">{f.desc}</p>
+                <p className="lp-feat-desc" style={{ marginTop: '0.5rem' }}>
+                  Todas las citas se sincronizan automáticamente con Google Calendar de tu negocio.
+                  Tus clientes reciben invitaciones con recordatorios — tú ves todo desde un solo lugar, sin duplicar trabajo.
+                </p>
+                <div className="lp-gcal-flow">
+                  <div className="lp-gcal-flow-node"><GCalIcon size={14} /> Google Calendar</div>
+                  <span className="lp-gcal-flow-arrow">⇄</span>
+                  <div className="lp-gcal-flow-node">📅 Novagendas</div>
+                  <span className="lp-gcal-flow-arrow">→</span>
+                  <div className="lp-gcal-flow-node">✉️ Invitación al cliente</div>
+                </div>
+              </div>
+              <div className="lp-feat-gcal-visual">
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-4)', marginBottom: 6 }}>
+                  Vista sincronizada
+                </div>
+                <div className="lp-gcal-mini-week">
+                  <div className="lp-week-day">
+                    <span className="lp-week-hd">HOY</span>
+                    <div className="lp-week-ev lp-ev-new">10:00 Cita</div>
+                    <div className="lp-week-ev lp-ev-pink">📅 GCal</div>
+                  </div>
+                  <div className="lp-week-day">
+                    <span className="lp-week-hd">MAÑ</span>
+                    <div className="lp-week-ev lp-ev-green">09:30</div>
+                    <div className="lp-week-ev lp-ev-blue">14:00</div>
+                  </div>
+                  <div className="lp-week-day">
+                    <span className="lp-week-hd">JUE</span>
+                    <div className="lp-week-ev lp-ev-purple">11:00</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature cards */}
+            {FEATURES.map((f, i) => (
+              <div key={i} className="lp-feat-card reveal" style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="lp-feat-icon" style={{ background: f.bg }}>{f.icon}</div>
+                <div className="lp-feat-title">{f.title}</div>
+                <p className="lp-feat-desc">{f.desc}</p>
               </div>
             ))}
+
           </div>
         </div>
       </section>
 
       {/* ─── Diferenciadores ─── */}
-      <section className="lp-section lp-section--accent">
-        <div className="lp-section-inner lp-diff-inner">
+      <section id="como-funciona" className="lp-diff">
+        <div className="lp-diff-inner">
           <div className="lp-diff-text reveal">
-            <div className="lp-section-tag lp-section-tag--white">Por qué elegirnos</div>
-            <h2 className="lp-section-h2 lp-white">No es solo software.<br />Es tu socio operativo.</h2>
-            <p className="lp-section-sub lp-white-sub">
-              Novagendas se adapta a tu modelo de negocio, no al revés. Multi-sede, multi-usuario y
-              pensado para crecer contigo.
+            <div className="lp-diff-tag">Por qué elegirnos</div>
+            <h2 className="lp-diff-h2">No es solo software.<br />Es tu socio operativo.</h2>
+            <p className="lp-diff-sub">
+              Novagendas se adapta a tu modelo de negocio, no al revés. Cada clínica, spa o consultorio
+              tiene su propio subdominio, sus propios datos y su propia configuración.
             </p>
             <ul className="lp-diff-list">
-              {[
-                'Acceso desde cualquier dispositivo con navegador',
-                'Multi-tenant: cada clínica tiene su propio subdominio',
-                'Roles y permisos granulares por usuario',
-                'Datos seguros con Supabase PostgreSQL',
-                'Integración nativa con Google Calendar',
-                'Días festivos y bloqueos de agenda configurables',
-              ].map((item, i) => (
+              {DIFF_ITEMS.map((item, i) => (
                 <li key={i} className="lp-diff-item">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                  <div className="lp-diff-check"><CheckIcon /></div>
                   {item}
                 </li>
               ))}
             </ul>
           </div>
-          <div className="lp-diff-visual reveal stagger-2">
-            <div className="lp-diff-card">
-              <div className="lp-diff-card-header">
-                <div className="lp-diff-avatar">NA</div>
-                <div>
-                  <div className="lp-diff-card-name">Clínica Soleil</div>
-                  <div className="lp-diff-card-sub">soleil.novagendas.com</div>
+
+          <div className="lp-demo-card reveal stagger-2">
+            <div className="lp-demo-header">
+              <div className="lp-demo-avatar">TN</div>
+              <div>
+                <div className="lp-demo-name">Tu Negocio</div>
+                <div className="lp-demo-url">tunegocio.novagendas.com</div>
+              </div>
+              <div className="lp-demo-badge">Activo</div>
+            </div>
+            <div className="lp-demo-stats">
+              {DEMO_STATS.map(({ val, label }) => (
+                <div key={label} className="lp-demo-stat">
+                  <div className="lp-demo-stat-val">{val}</div>
+                  <div className="lp-demo-stat-label">{label}</div>
                 </div>
-                <div className="lp-diff-card-badge">Activo</div>
-              </div>
-              <div className="lp-diff-stats">
-                <div className="lp-diff-stat"><span className="lp-diff-stat-val">24</span><span>Citas hoy</span></div>
-                <div className="lp-diff-stat"><span className="lp-diff-stat-val">8</span><span>Especialistas</span></div>
-                <div className="lp-diff-stat"><span className="lp-diff-stat-val">312</span><span>Pacientes</span></div>
-              </div>
-              <div className="lp-diff-bar-section">
-                <div className="lp-diff-bar-label"><span>Servicios más solicitados</span></div>
-                {[['Botox', 78], ['Relleno', 63], ['Valoración', 45]].map(([name, pct]) => (
-                  <div key={name} className="lp-diff-bar-row">
-                    <span className="lp-diff-bar-name">{name}</span>
-                    <div className="lp-diff-bar-track"><div className="lp-diff-bar-fill" style={{ width: `${pct}%` }} /></div>
-                    <span className="lp-diff-bar-pct">{pct}%</span>
+              ))}
+            </div>
+            <div className="lp-demo-bars">
+              <div className="lp-demo-bar-title">Servicios más solicitados</div>
+              {DEMO_BARS.map(([name, pct]) => (
+                <div key={name} className="lp-demo-bar-row">
+                  <span className="lp-demo-bar-name">{name}</span>
+                  <div className="lp-demo-bar-track">
+                    <div className="lp-demo-bar-fill" style={{ width: `${pct}%` }} />
                   </div>
-                ))}
-              </div>
+                  <span className="lp-demo-bar-pct">{pct}%</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ─── Contacto / CTA ─── */}
-      <section id="contacto" className="lp-section lp-cta-section">
-        <div className="lp-cta-inner reveal">
+      {/* ─── CTA / Contacto ─── */}
+      <section id="contacto" className="lp-cta">
+        <div className="lp-cta-inner">
           <div className="lp-section-tag reveal">Empieza hoy</div>
-          <h2 className="lp-section-h2 reveal stagger-1">
-            ¿Listo para transformar<br />
-            <span className="lp-gradient-text">la gestión de tu clínica?</span>
+          <h2 className="lp-cta-h2 reveal stagger-1">
+            ¿Listo para organizar<br />
+            <span className="lp-gradient-text">tu negocio?</span>
           </h2>
-          <p className="lp-section-sub reveal stagger-2">
+          <p className="lp-cta-sub reveal stagger-2">
             Agenda una demostración personalizada y descubre cómo Novagendas
             se adapta a tu flujo de trabajo en menos de una semana.
           </p>
           <div className="lp-contact-form-wrap reveal stagger-3">
-            <form className="lp-contact-form" onSubmit={e => { e.preventDefault(); alert('¡Gracias! Te contactaremos pronto.'); }}>
+            <form
+              className="lp-contact-form"
+              onSubmit={e => { e.preventDefault(); alert('¡Gracias! Te contactaremos pronto.'); }}
+            >
               <div className="lp-contact-row">
-                <input className="lp-input" type="text" placeholder="Nombre de tu clínica" required />
+                <input className="lp-input" type="text" placeholder="Nombre de tu negocio" required />
                 <input className="lp-input" type="email" placeholder="Correo electrónico" required />
               </div>
               <input className="lp-input" type="tel" placeholder="WhatsApp o teléfono (opcional)" />
-              <textarea className="lp-input lp-textarea" placeholder="Cuéntanos brevemente sobre tu negocio y qué necesitas mejorar" rows={3} />
+              <textarea className="lp-input lp-textarea" placeholder="Cuéntanos sobre tu negocio y qué necesitas mejorar" rows={3} />
               <button type="submit" className="lp-btn-primary lp-btn-full">
-                Solicitar demostración gratuita
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                Solicitar demostración gratuita <ArrowRight />
               </button>
             </form>
           </div>
@@ -403,23 +496,18 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-inner">
           <div className="lp-footer-brand">
-            <div className="lp-logo-mark lp-logo-mark--sm">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-              </svg>
-            </div>
-            <span className="lp-footer-brand-name">Novagendas</span>
+            <img src="/logoclaro.jpeg" alt="Novagendas" className="lp-footer-logo" />
+            <span className="lp-footer-name">Novagendas</span>
+            <span className="lp-footer-tagline">· El software de agendamiento para tu negocio</span>
           </div>
-          <p className="lp-footer-tagline">El software de gestión que las clínicas estéticas necesitaban.</p>
           <div className="lp-footer-links">
             <a href="/terminos">Términos y Privacidad</a>
-            <span>·</span>
             <a href="/condiciones">Condiciones de Servicio</a>
           </div>
           <p className="lp-footer-copy">© {new Date().getFullYear()} Novagendas. Todos los derechos reservados.</p>
         </div>
       </footer>
+
     </div>
   );
 }
