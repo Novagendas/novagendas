@@ -178,7 +178,6 @@ export default function Users({ user, tenant }) {
   const [form, setForm] = useState({ name: '', email: '', role: 'recepcion', permissions: ROLES.recepcion.permissions, password: '', confirm: '' });
   const [formError, setFormError] = useState('');
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
-  const [deleteId, setDeleteId] = useState(null);
   const [editId, setEditId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [permEditUser, setPermEditUser] = useState(null);
@@ -414,32 +413,6 @@ export default function Users({ user, tenant }) {
     if (!error) fetchData();
   };
 
-  const confirmDelete = (id) => {
-    const u = users.find(user => user.id === id);
-    if (u && u.role === 'admin') {
-      alert('⚠️ Seguridad: No es posible eliminar al administrador del sistema.');
-      return;
-    }
-    setDeleteId(id);
-  };
-
-  const doDelete = async () => {
-    const target = users.find(u => u.id === deleteId);
-    const { error } = await supabase.from('usuario').update({ deleted_at: new Date().toISOString() }).eq('idusuario', deleteId);
-    if (!error) {
-      await insertLog({
-        accion: 'DELETE',
-        entidad: 'Usuario',
-        descripcion: `Se eliminó al usuario ${target?.name || deleteId} (${target?.email || ''})`,
-        idUsuario: user.idusuario || user.id,
-        idNegocios: tenant.id
-      });
-      showSnack('Usuario eliminado');
-      fetchData();
-    }
-    setDeleteId(null);
-  };
-
   return (
     <div className="users-layout">
       <div className="users-card-main animate-fade-in">
@@ -516,11 +489,6 @@ export default function Users({ user, tenant }) {
                     </div>
 
                     <div className="user-item-actions-group">
-                      {!isAdmin && (
-                        <button onClick={(e) => { e.stopPropagation(); confirmDelete(u.id); }} className="user-item-btn-delete">
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                        </button>
-                      )}
                       {isAdmin && (
                         <div className="user-item-lock-box" title="Cuenta maestra protegida">
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
@@ -542,25 +510,6 @@ export default function Users({ user, tenant }) {
           )}
         </div>
       </div>
-
-      {deleteId && (
-        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
-          <div className="modal-box modal-box--delete" onClick={e => e.stopPropagation()}>
-            <div className="delete-confirm-box">
-              <div className="delete-confirm-icon">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
-              </div>
-              <h3>¿Eliminar miembro?</h3>
-              <p>Esta acción revocará todos los accesos de forma permanente. El usuario ya no podrá ingresar a la plataforma.</p>
-
-              <div className="modal-footer-actions">
-                <button className="btn btn-outline modal-footer-btn-cancel" onClick={() => setDeleteId(null)}>No, cancelar</button>
-                <button className="btn btn-danger modal-footer-btn-delete" onClick={doDelete}>Sí, eliminar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {modalOpen && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && cancelEdit()}>

@@ -159,7 +159,7 @@ async function fetchCitas(tenantId, dateRange) {
     : monthBounds(now);
 
   const { data: citas } = await supabase.from('cita')
-    .select('idcita, fechahorainicio, fechahorafin, idusuario, observacion, estadocita(descripcion), usuario(nombre, apellido), cliente(nombre, apellido)')
+    .select('idcita, fechahorainicio, fechahorafin, idusuario, observacion, estadocita(descripcion), usuario(nombre, apellido), cliente(nombre, apellido), citaservicios(servicios(nombre))')
     .eq('idnegocios', tenantId)
     .gte('fechahorainicio', bounds.start).lte('fechahorainicio', bounds.end);
 

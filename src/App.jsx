@@ -187,6 +187,12 @@ export default function App() {
     const hasRecoveryHash = window.location.hash.includes('type=recovery');
     if (hasCode || hasRecoveryHash) {
       setResetTrigger(true);
+    } else {
+      // Limpiar sesión Supabase Auth huérfana para evitar errores 403 Forbidden
+      // al refrescar tokens de resets de contraseña previos
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session) supabase.auth.signOut();
+      });
     }
 
     const host = window.location.hostname;
