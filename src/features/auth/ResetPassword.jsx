@@ -116,6 +116,9 @@ export default function ResetPassword({ onSuccess }) {
       await supabase.from('usuario').update({ password }).eq('email', userEmail);
     }
 
+    // Cerrar sesión Supabase Auth para evitar tokens huérfanos que causan errores 403
+    await supabase.auth.signOut();
+
     setSuccess(true);
     setLoading(false);
     setTimeout(() => { if (onSuccess) onSuccess(); }, 2500);

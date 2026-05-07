@@ -17,13 +17,21 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // ── Singleton guard: se crea UNA sola instancia por sesión ──
 if (!globalThis.__novagendas_supabase__) {
-  globalThis.__novagendas_supabase__ = createClient(supabaseUrl, supabaseAnonKey, {
+  const client = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
     }
-  })
+  });
+
+  // Limpiar tokens huérfanos del reset de contraseña que causan 403 Forbidden
+  client.auth.onAuthStateChange((event) => {
+    if (event === 'TOKEN_REFRESHED') return;
+    if (event === 'SIGNED_OUT') return;
+  });
+
+  globalThis.__novagendas_supabase__ = client;
 }
 
 export const supabase = globalThis.__novagendas_supabase__

@@ -100,27 +100,51 @@ export default function Clients({ user, tenant }) {
 
   const [proxCita, setProxCita] = useState(null);
   const [proxCitaLoad, setProxCitaLoad] = useState(false);
+  const [openEvolucion, setOpenEvolucion] = useState(false);
+  const [openHistorialCitas, setOpenHistorialCitas] = useState(false);
+  const [clientAppointments, setClientAppointments] = useState([]);
+  const [clientAppointmentsLoad, setClientAppointmentsLoad] = useState(false);
+  const [selectedCitaDetail, setSelectedCitaDetail] = useState(null);
 
   useEffect(() => {
-    if (!selectedId || !tenant?.id) return;
+    if (!selectedId) {
+      setOpenEvolucion(false);
+      setOpenHistorialCitas(false);
+      setSelectedCitaDetail(null);
+      return;
+    }
+    if (!tenant?.id) return;
     let cancelled = false;
     (async () => {
       await Promise.resolve();
       if (cancelled) return;
       setProxCitaLoad(true);
-      const { data } = await supabase
-        .from('cita')
-        .select(`idcita, fechahorainicio, estadocita(descripcion), citaservicios(servicios(nombre))`)
-        .eq('idnegocios', tenant.id)
-        .eq('idcliente', selectedId)
-        .gte('fechahorainicio', new Date().toISOString())
-        .is('deleted_at', null)
-        .order('fechahorainicio', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      setClientAppointmentsLoad(true);
+      const [proxRes, citasRes] = await Promise.all([
+        supabase
+          .from('cita')
+          .select(`idcita, fechahorainicio, estadocita(descripcion), citaservicios(servicios(nombre))`)
+          .eq('idnegocios', tenant.id)
+          .eq('idcliente', selectedId)
+          .gte('fechahorainicio', new Date().toISOString())
+          .is('deleted_at', null)
+          .order('fechahorainicio', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('cita')
+          .select(`idcita, fechahorainicio, fechahorafin, estadocita(descripcion), citaservicios(servicios(nombre, precio)), usuario:idusuario(nombre, apellido)`)
+          .eq('idnegocios', tenant.id)
+          .eq('idcliente', selectedId)
+          .is('deleted_at', null)
+          .order('fechahorainicio', { ascending: false })
+          .limit(50)
+      ]);
       if (!cancelled) {
-        setProxCita(data || null);
+        setProxCita(proxRes.data || null);
         setProxCitaLoad(false);
+        setClientAppointments(citasRes.data || []);
+        setClientAppointmentsLoad(false);
       }
     })();
     return () => { cancelled = true; };
@@ -409,69 +433,193 @@ export default function Clients({ user, tenant }) {
               );
             })() : null}
 
-            {/* History section */}
-            <div className="clinical-history-section">
-              <div className="clinical-history-header">
-                <div className="clinical-history-title">
+            {/* ── Evolución (colapsable) ── */}
+            <div className="collapsible-section">
+              <button
+                className="collapsible-toggle"
+                onClick={() => setOpenEvolucion(v => !v)}
+              >
+                <div className="collapsible-toggle-left">
                   <div className="clinical-history-icon-box">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>
                   </div>
-                  <h3>Evoluciones</h3>
+                  <span className="collapsible-title">Evolución</span>
+                  <span className="collapsible-count">{activeClient.history.length}</span>
                 </div>
-
-                <button className="btn btn-primary new-evolution-btn" onClick={() => setShowNoteModal(true)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                  Nueva Evolución
-                </button>
-              </div>
-
-              {activeClient.history.length === 0 ? (
-                <div className="card animate-fade-in history-empty-state">
-                  <div className="history-empty-icon">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-                  </div>
-                  <h4>Historial en blanco</h4>
-                  <p>Este paciente aún no tiene registros clínicos. Asegúrate de registrar los procedimientos realizados.</p>
+                <div className="collapsible-toggle-right">
+                  <button
+                    className="btn btn-primary new-evolution-btn"
+                    onClick={e => { e.stopPropagation(); setShowNoteModal(true); }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                    Nueva
+                  </button>
+                  <svg
+                    className={`collapsible-arrow${openEvolucion ? ' collapsible-arrow--open' : ''}`}
+                    width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
-              ) : (
-                <div className="timeline-wrapper">
-                  {/* Timeline connecting line */}
-                  <div className="timeline-container">
-                    <div className="timeline-line" />
+              </button>
 
-                    {activeClient.history.map((hist, idx) => (
-                      <div
-                        key={hist.id || idx}
-                        className="animate-fade-in timeline-item"
-                        style={{ '--delay': `${idx * 100}ms`, animationDelay: 'var(--delay)' }}
-                      >
-                        {/* Timeline dot */}
-                        <div className="timeline-dot-container">
-                          <div className="timeline-dot" />
-                        </div>
-
-                        {/* Content Card */}
-                        <div className="timeline-card">
-                          <div className="timeline-card-header">
-                            <div>
-                              <span className="timeline-date">{hist.date}</span>
-                              <h4 className="timeline-title">{hist.title}</h4>
+              {openEvolucion && (
+                <div className="collapsible-body animate-fade-in">
+                  {activeClient.history.length === 0 ? (
+                    <div className="card history-empty-state">
+                      <div className="history-empty-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                      </div>
+                      <h4>Sin evoluciones</h4>
+                      <p>Este paciente aún no tiene registros clínicos.</p>
+                    </div>
+                  ) : (
+                    <div className="timeline-wrapper">
+                      <div className="timeline-container">
+                        <div className="timeline-line" />
+                        {activeClient.history.map((hist, idx) => (
+                          <div
+                            key={hist.id || idx}
+                            className="animate-fade-in timeline-item"
+                            style={{ '--delay': `${idx * 80}ms`, animationDelay: 'var(--delay)' }}
+                          >
+                            <div className="timeline-dot-container">
+                              <div className="timeline-dot" />
                             </div>
-                            {hist.doctor && (
-                              <span className="doctor-badge">
-                                <div className="doctor-badge-dot" />
-                                {hist.doctor}
-                              </span>
+                            <div className="timeline-card">
+                              <div className="timeline-card-header">
+                                <div>
+                                  <span className="timeline-date">{hist.date}</span>
+                                  <h4 className="timeline-title">{hist.title}</h4>
+                                </div>
+                                {hist.doctor && (
+                                  <span className="doctor-badge">
+                                    <div className="doctor-badge-dot" />
+                                    {hist.doctor}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="timeline-notes-box">
+                                <p className="timeline-notes">{hist.notas}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* ── Historial de Citas (colapsable) ── */}
+            <div className="collapsible-section">
+              <button
+                className="collapsible-toggle"
+                onClick={() => setOpenHistorialCitas(v => !v)}
+              >
+                <div className="collapsible-toggle-left">
+                  <div className="clinical-history-icon-box">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                  </div>
+                  <span className="collapsible-title">Historial de Citas</span>
+                  <span className="collapsible-count">{clientAppointments.length}</span>
+                </div>
+                <svg
+                  className={`collapsible-arrow${openHistorialCitas ? ' collapsible-arrow--open' : ''}`}
+                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {openHistorialCitas && (
+                <div className="collapsible-body animate-fade-in">
+                  {clientAppointmentsLoad ? (
+                    <div style={{ padding: '1rem', color: 'var(--text-4)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="spinner-mini" style={{ width: 12, height: 12 }} /> Cargando citas...
+                    </div>
+                  ) : clientAppointments.length === 0 ? (
+                    <div className="card history-empty-state">
+                      <div className="history-empty-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                      </div>
+                      <h4>Sin citas registradas</h4>
+                      <p>Este paciente no tiene citas en el sistema.</p>
+                    </div>
+                  ) : (
+                    <div className="cita-history-list">
+                      {clientAppointments.map((cita) => {
+                        const fecha = new Date(cita.fechahorainicio);
+                        const estadoDesc = cita.estadocita?.descripcion || 'Pendiente';
+                        const estadoColor = estadoDesc === 'Completada' ? '#16a34a' : estadoDesc === 'Cancelada' ? '#dc2626' : '#2563eb';
+                        const serviciosNombres = cita.citaservicios?.map(cs => cs.servicios?.nombre).filter(Boolean);
+                        const profesional = cita.usuario ? `${cita.usuario.nombre} ${cita.usuario.apellido}` : null;
+                        const isOpen = selectedCitaDetail === cita.idcita;
+
+                        return (
+                          <div key={cita.idcita} className="cita-history-item">
+                            <button
+                              className="cita-history-row"
+                              onClick={() => setSelectedCitaDetail(isOpen ? null : cita.idcita)}
+                            >
+                              <div className="cita-history-row-left">
+                                <div className="cita-history-date-block">
+                                  <span className="cita-history-day">{fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}</span>
+                                  <span className="cita-history-year">{fecha.getFullYear()}</span>
+                                </div>
+                                <div className="cita-history-info">
+                                  
+                                </div>
+                              </div>
+                              <div className="cita-history-row-right">
+                                <span className="cita-history-status-badge" style={{ background: `${estadoColor}15`, color: estadoColor, border: `1px solid ${estadoColor}30` }}>
+                                  {estadoDesc}
+                                </span>
+                                <svg
+                                  className={`collapsible-arrow${isOpen ? ' collapsible-arrow--open' : ''}`}
+                                  width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                                >
+                                  <polyline points="6 9 12 15 18 9" />
+                                </svg>
+                              </div>
+                            </button>
+
+                            {isOpen && (
+                              <div className="cita-history-detail animate-fade-in">
+                                {profesional && (
+                                  <div className="cita-history-detail-row">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                    <span>Profesional: </span>
+                                    <span>{profesional}</span>
+                                  </div>
+                                )}
+                                {cita.fechahorafin && (
+                                  <div className="cita-history-detail-row">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+                                    <span>
+                                      {fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })} — {new Date(cita.fechahorafin).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                )}
+                                {serviciosNombres && serviciosNombres.length > 0 && (
+                                  <div className="cita-history-detail-row cita-history-detail-row--services">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-4)" strokeWidth="2.5"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                                     <span>Servicio: </span>
+                                    <div className="cita-history-services-tags">
+                                      {serviciosNombres.map((svc, i) => (
+                                        <span key={i} className="cita-history-svc-tag">{svc}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-
-                          <div className="timeline-notes-box">
-                            <p className="timeline-notes">{hist.notas}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

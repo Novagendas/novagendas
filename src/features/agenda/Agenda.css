@@ -1624,6 +1624,12 @@ input[type="time"].input-field:focus {
   background: #ede9fe; border-color: #c4b5fd; color: #7c3aed;
 }
 
+.cita-status-chip--locked {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
 /* ── Abono aplicado (banner informativo en edición) ── */
 .abono-applied-banner {
   display: flex;
@@ -2968,4 +2974,127 @@ input[type="time"].input-field:focus {
     font-size: 0.6rem;
     padding: 1px 4px;
   }
+}
+
+/* ── Completed appointment lock ── */
+.appt-completed-lock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 0 1.1rem;
+  height: 40px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* ── Product Selector ── */
+.prod-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.prod-select-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.prod-select-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.prod-select-field {
+  padding-left: 2.25rem !important;
+  border-radius: 12px;
+}
+
+.prod-qty-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.prod-qty-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 0 0.65rem;
+  height: 38px;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+
+.prod-qty-btn:hover {
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.prod-qty-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 28px;
+  text-align: center;
+}
+
+.prod-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  border-radius: 12px;
+  padding: 0 0.9rem;
+  height: 38px;
+  font-size: 0.8rem;
+}
+
+.prod-add-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.prod-used-list {
+  margin-top: 0.75rem;
+}
+
+.prod-used-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.prod-tag-name {
+  font-weight: 600;
+}
+
+.prod-tag-qty {
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 6px;
+  padding: 1px 5px;
 }

@@ -186,6 +186,7 @@ export default function Agenda({ user, tenant }) {
   const [selectedSpecialistId, setSelectedSpecialistId] = useState(user.role === 'especialista' ? (user.idusuario || user.id) : null);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [conflictModal, setConflictModal] = useState({ show: false, message: '', details: null });
+  const [statusConfirmModal, setStatusConfirmModal] = useState({ show: false, newStatus: null });
 
   /* ------ Conflict Helper ------ */
   const checkConflict = (newDate, newTime, duration, specialistId, excludeId = null) => {
@@ -215,7 +216,7 @@ export default function Agenda({ user, tenant }) {
       const { data: locData } = await supabase.from('ubicacion').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).order('nombre');
       setLocations(locData || []);
 
-      const { data: prodData } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).gt('cantidad', 0).order('nombre');
+      const { data: prodData } = await supabase.from('producto').select('*').eq('idnegocios', tenant.id).is('deleted_at', null).neq('idestado', 2).gt('cantidad', 0).order('nombre');
       setProducts(prodData || []);
       
       // Fetch specialists (idrol=3) that belong to this tenant via negociousuario
@@ -577,6 +578,10 @@ export default function Agenda({ user, tenant }) {
           const montoAplicar = Math.min(form.abonoToApply, Number(abono.saldo_disponible));
           const saldoAnterior = Number(abono.saldo_disponible);
           const saldoNuevo = saldoAnterior - montoAplicar;
+          const totalServicios = selectedServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
+          const saldoPendiente = Math.max(0, totalServicios - montoAplicar);
+          const estadoPago = saldoPendiente > 0 ? 'Parcial' : 'Pagado';
+
           await supabase.from('abonoaplicacion').insert({
             idabono: form.selectedAbonoId,
             idcita: appointmentId,
@@ -585,6 +590,23 @@ export default function Agenda({ user, tenant }) {
           await supabase.from('abono')
             .update({ saldo_disponible: saldoNuevo })
             .eq('idabono', form.selectedAbonoId);
+
+          const observacion = saldoPendiente > 0
+            ? `Abono #${form.selectedAbonoId} aplicado a Cita #${appointmentId} — Debe: $${saldoPendiente.toLocaleString('es-CO')}`
+            : `Abono #${form.selectedAbonoId} aplicado a Cita #${appointmentId} — Cubierto totalmente`;
+
+          await supabase.from('pagos').insert({
+            idcliente: parseInt(form.clientId),
+            idservicios: form.serviceIds[0] || null,
+            monto: montoAplicar,
+            monto_total: totalServicios > 0 ? totalServicios : null,
+            estado: estadoPago,
+            idmetodopago: abono.idmetodopago || 1,
+            observacion,
+            idnegocios: tenant.id,
+            fecha: new Date().toISOString(),
+          });
+
           const client = clients.find(c => c.idcliente === parseInt(form.clientId));
           await insertLog({
             accion: 'ABONO',
@@ -1486,16 +1508,19 @@ export default function Agenda({ user, tenant }) {
                     <div className="cita-status-row">
                       {APPOINTMENT_STATUSES.map(s => {
                         const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Pendiente': '🕒', 'Cancelada': '❌', 'Completada': '🎉' };
-                        // Acceso seguro: usamos Object.entries para leer el icono sin corchetes dinámicos
                         const iconEntry = Object.entries(icons).find(([key]) => key === s);
                         const icono = iconEntry ? iconEntry[1] : '';
+                        const isLocked = form.status === 'Completada';
+                        const isCurrentStatus = form.status === s;
                         return (
                           <button
                             key={s}
                             type="button"
                             data-status={s.toLowerCase().replace(' ', '-')}
-                            className={`cita-status-chip${form.status === s ? ' cita-status-chip--active' : ''}`}
-                            onClick={() => setForm(f => ({ ...f, status: s }))}
+                            className={`cita-status-chip${isCurrentStatus ? ' cita-status-chip--active' : ''}${isLocked ? ' cita-status-chip--locked' : ''}`}
+                            onClick={() => { if (!isLocked && !isCurrentStatus) setStatusConfirmModal({ show: true, newStatus: s }); }}
+                            disabled={isLocked}
+                            title={isLocked ? 'No se puede modificar una cita completada' : ''}
                           >
                             <span>{icono}</span> {s}
                           </button>
@@ -1726,35 +1751,37 @@ export default function Agenda({ user, tenant }) {
 
                 {products.length > 0 && (
                   <div className="cita-group-section">
-                    <label className="searchable-select-label">Productos utilizados (opcional)</label>
-                    <div className="appt-modal-row">
-                      <select
-                        className="input-field"
-                        value={productSearch}
-                        onChange={e => setProductSearch(e.target.value)}
-                      >
-                        <option value="">Selecciona un producto...</option>
-                        {products
-                          .filter(p => !form.productsUsed.find(u => u.idproducto === p.idproducto))
-                          .map(p => (
-                            <option key={p.idproducto} value={p.idproducto}>
-                              {p.nombre} (stock: {p.cantidad})
-                            </option>
-                          ))}
-                      </select>
-                      <input
-                        type="number"
-                        className="input-field"
-                        style={{ width: 80, flexShrink: 0 }}
-                        min="1"
-                        value={productQty}
-                        onChange={e => setProductQty(Math.max(1, parseInt(e.target.value) || 1))}
-                        placeholder="Cant."
-                      />
+                    <label className="searchable-select-label">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginRight: 5, verticalAlign: 'middle' }}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                      Productos utilizados <span style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: '0.75rem' }}>(opcional)</span>
+                    </label>
+                    <div className="prod-selector-row">
+                      <div className="prod-select-wrapper">
+                        <svg className="prod-select-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                        <select
+                          className="input-field prod-select-field"
+                          value={productSearch}
+                          onChange={e => setProductSearch(e.target.value)}
+                        >
+                          <option value="">Selecciona un producto...</option>
+                          {products
+                            .filter(p => !form.productsUsed.find(u => u.idproducto === p.idproducto))
+                            .map(p => (
+                              <option key={p.idproducto} value={p.idproducto}>
+                                {p.nombre} — stock: {p.cantidad}
+                              </option>
+                            ))}
+                        </select>
+                      </div>
+                      <div className="prod-qty-control">
+                        <button type="button" className="prod-qty-btn" onClick={() => setProductQty(q => Math.max(1, q - 1))}>−</button>
+                        <span className="prod-qty-value">{productQty}</span>
+                        <button type="button" className="prod-qty-btn" onClick={() => setProductQty(q => q + 1)}>+</button>
+                      </div>
                       <button
                         type="button"
-                        className="btn btn-outline"
-                        style={{ flexShrink: 0 }}
+                        className="btn btn-primary prod-add-btn"
+                        disabled={!productSearch}
                         onClick={() => {
                           if (!productSearch) return;
                           const prod = products.find(p => p.idproducto === parseInt(productSearch));
@@ -1767,17 +1794,23 @@ export default function Agenda({ user, tenant }) {
                           setProductSearch('');
                           setProductQty(1);
                         }}
-                      >+ Agregar</button>
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Agregar
+                      </button>
                     </div>
                     {form.productsUsed.length > 0 && (
-                      <div className="service-tags-container">
+                      <div className="service-tags-container prod-used-list">
                         {form.productsUsed.map(u => {
                           const prod = products.find(p => p.idproducto === u.idproducto);
                           return (
-                            <div key={u.idproducto} className="service-tag">
-                              {prod?.nombre || `Producto #${u.idproducto}`} × {u.cantidad}
+                            <div key={u.idproducto} className="service-tag prod-used-tag">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                              <span className="prod-tag-name">{prod?.nombre || `Producto #${u.idproducto}`}</span>
+                              <span className="prod-tag-qty">× {u.cantidad}</span>
                               <span
                                 className="service-tag-remove"
+                                role="button"
                                 onClick={() => setForm({ ...form, productsUsed: form.productsUsed.filter(x => x.idproducto !== u.idproducto) })}
                               >×</span>
                             </div>
@@ -1790,23 +1823,65 @@ export default function Agenda({ user, tenant }) {
               </div>
 
               <div className="appt-modal-footer">
-                {editId && (
-                  <button type="button" className="btn btn-outline btn-danger-outline" onClick={handleDeleteAppointment} disabled={saving || form.status === 'Completada'}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                    Eliminar
+                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
+                {form.status === 'Completada' ? (
+                  <div className="appt-completed-lock" title="No se puede modificar información si ya se marcó como completada">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    No se puede modificar — cita completada
+                  </div>
+                ) : (
+                  <button type="submit" className="btn btn-primary" disabled={saving}>
+                    {saving ? (
+                      <div className="agenda-topbar-section centered">
+                        <div className="spinner-sm spinner"></div>
+                        Procesando...
+                      </div>
+                    ) : (editId ? 'Guardar Cambios' : 'Agendar Cita')}
                   </button>
                 )}
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" disabled={saving}>
-                  {saving ? (
-                    <div className="agenda-topbar-section centered">
-                      <div className="spinner-sm spinner"></div>
-                      Procesando...
-                    </div>
-                  ) : (editId ? 'Guardar Cambios' : 'Agendar Cita')}
-                </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Status Change Confirmation Modal */}
+      {statusConfirmModal.show && (
+        <div className="appt-modal-overlay high-z" onClick={() => setStatusConfirmModal({ show: false, newStatus: null })}>
+          <div className="appt-modal animate-scale-in modal-conflict" onClick={e => e.stopPropagation()}>
+            <div className="conflict-modal-body">
+              <div className="conflict-modal-icon">
+                {statusConfirmModal.newStatus === 'Completada' ? '⚠️' : 'ℹ️'}
+              </div>
+              <h3 className="conflict-modal-title">
+                {statusConfirmModal.newStatus === 'Completada' ? '¿Marcar como Completada?' : '¿Cambiar estado?'}
+              </h3>
+              <p className="conflict-modal-text">
+                {statusConfirmModal.newStatus === 'Completada'
+                  ? <>Una vez marcada como <strong>Completada</strong>, la cita quedará bloqueada y <strong>no podrá ser modificada</strong>.</>
+                  : <>¿Deseas cambiar el estado de la cita a <strong>{statusConfirmModal.newStatus}</strong>?</>
+                }
+              </p>
+              <div className="gcal-disconnect-actions">
+                <button
+                  type="button"
+                  className="btn btn-outline btn-modal-action"
+                  onClick={() => setStatusConfirmModal({ show: false, newStatus: null })}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-modal-action-bold"
+                  onClick={() => {
+                    setForm(f => ({ ...f, status: statusConfirmModal.newStatus }));
+                    setStatusConfirmModal({ show: false, newStatus: null });
+                  }}
+                >
+                  Sí, cambiar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

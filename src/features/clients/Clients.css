@@ -1145,3 +1145,212 @@
   }
 }
 
+/* ── Collapsible Sections ── */
+.collapsible-section {
+  border-top: 1px solid var(--border);
+}
+
+.collapsible-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 0.75rem;
+}
+
+.collapsible-toggle:hover {
+  background: var(--hover);
+}
+
+.collapsible-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.collapsible-toggle-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.collapsible-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.collapsible-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 1px 8px;
+  border-radius: 99px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.collapsible-arrow {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  color: var(--text-4);
+}
+
+.collapsible-arrow--open {
+  transform: rotate(180deg);
+}
+
+.collapsible-body {
+  padding: 0 1.5rem 1.25rem;
+}
+
+/* ── Citas History List ── */
+.cita-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cita-history-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+.cita-history-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  gap: 0.75rem;
+  transition: background 0.15s;
+}
+
+.cita-history-row:hover {
+  background: var(--hover);
+}
+
+.cita-history-row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.cita-history-row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.cita-history-date-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 42px;
+  flex-shrink: 0;
+}
+
+.cita-history-day {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.cita-history-year {
+  font-size: 0.65rem;
+  color: var(--text-4);
+}
+
+.cita-history-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.cita-history-time {
+  font-size: 0.72rem;
+  color: var(--text-4);
+}
+
+.cita-history-services {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 240px;
+}
+
+.cita-history-status-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.cita-history-detail {
+  padding: 0.5rem 0.9rem 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--bg);
+}
+
+.cita-history-detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.cita-history-detail-row svg {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.cita-history-detail-row--services {
+  align-items: flex-start;
+}
+
+.cita-history-services-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.cita-history-svc-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.new-evolution-btn {
+  font-size: 0.75rem;
+  padding: 0.3rem 0.75rem;
+  height: auto;
+}
+

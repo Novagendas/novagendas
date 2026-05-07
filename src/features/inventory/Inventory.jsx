@@ -178,19 +178,12 @@ export default function Inventory({ tenant }) {
     }
   };
 
-  const handleDeleteProduct = async (id) => {
-    showConfirm('Eliminar Producto', '¿Seguro que deseas eliminar este producto permanentemente?', async () => {
-      setSaving(true);
-      const { error } = await supabase.from('producto').update({ deleted_at: new Date().toISOString() }).eq('idproducto', id);
-      if (!error) {
-        showSnack('Producto eliminado', 'error');
-        fetchData();
-        setShowModal(false);
-      } else {
-        showAlert('Error al eliminar', 'No se pudo eliminar el producto.');
-      }
-      setSaving(false);
-    });
+  const handleToggleEstadoProducto = async (item) => {
+    const newEstado = item.idestado === 2 ? 1 : 2;
+    const { error } = await supabase.from('producto').update({ idestado: newEstado }).eq('idproducto', item.idproducto);
+    if (error) { showSnack('Error al cambiar estado', 'error'); return; }
+    showSnack(newEstado === 1 ? `"${item.nombre}" habilitado` : `"${item.nombre}" inhabilitado`);
+    fetchData();
   };
 
   const alertas = products.filter(i => i.cantidad <= i.cantidadminima).length;
@@ -408,6 +401,31 @@ export default function Inventory({ tenant }) {
                         <td>
                           <div className="inventory-row-actions">
                             <button onClick={() => startEdit(item)} className="btn btn-ghost btn-icon" title="Editar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg></button>
+                            <button
+                              onClick={() => handleToggleEstadoProducto(item)}
+                              title={item.idestado === 2 ? 'Habilitar producto' : 'Inhabilitar producto'}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                padding: '2px 6px', borderRadius: 99,
+                                fontSize: '0.72rem', fontWeight: 700,
+                                color: item.idestado === 2 ? '#9ca3af' : '#16a34a',
+                              }}
+                            >
+                              <span style={{
+                                width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                                border: `2px solid ${item.idestado === 2 ? '#d1d5db' : '#16a34a'}`,
+                                background: item.idestado === 2 ? 'transparent' : '#16a34a',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                {item.idestado !== 2 && (
+                                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4">
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                )}
+                              </span>
+                              {item.idestado === 2 ? 'Inhabilitado' : 'Habilitado'}
+                            </button>
                             <div className="inventory-action-separator" />
                             <button onClick={() => handleUpdateStock(item, -1)} className="btn btn-secondary btn-icon btn-stock-adjust">-</button>
                             <button onClick={() => handleUpdateStock(item, 1)} className="btn btn-primary btn-icon btn-stock-adjust">+</button>
@@ -506,11 +524,6 @@ export default function Inventory({ tenant }) {
                 </button>
               </div>
 
-              {editId && (
-                <button type="button" onClick={() => handleDeleteProduct(editId)} className="btn-delete-link">
-                  Eliminar permanentemente del inventario
-                </button>
-              )}
             </form>
           </div>
         </div>

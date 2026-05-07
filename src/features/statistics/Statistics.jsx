@@ -134,8 +134,10 @@ function CitasSection({ data, loading, dateRange, setDateRange, user, tenant }) 
 
   if (loading) return <StatsLoader />;
   if (!data) return <EmptyState />;
-  const { kpis, citasByDow = [], citasByHour = [], top5 = [] } = data;
+  const { kpis, citasByDow = [], citasByHour = [], top5 = [], rawCitas = [] } = data;
   if (!kpis) return <EmptyState />;
+
+  const canceladas = rawCitas.filter(c => c.estadocita?.descripcion === 'Cancelada');
 
   return (
     <div className="stats-fade-in">
@@ -171,6 +173,45 @@ function CitasSection({ data, loading, dateRange, setDateRange, user, tenant }) 
                 <span className="stats-top-val">{s.count} citas</span>
               </div>
             ))}
+          </div>
+        )}
+      </ChartCard>
+
+      {/* ── Citas Canceladas ── */}
+      <ChartCard title={`Citas canceladas (${canceladas.length})`}>
+        {canceladas.length === 0 ? (
+          <div className="stats-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="1.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <p>Sin citas canceladas en este período</p>
+          </div>
+        ) : (
+          <div className="stats-canceladas-table">
+            <div className="stats-canceladas-header">
+              <span>Fecha</span>
+              <span>Hora</span>
+              <span>Paciente</span>
+              <span>Especialista</span>
+              <span>Servicio(s)</span>
+            </div>
+            {canceladas.map((c, i) => {
+              const fecha = new Date(c.fechahorainicio);
+              const paciente = c.cliente ? `${c.cliente.nombre} ${c.cliente.apellido}` : '—';
+              const especialista = c.usuario ? `${c.usuario.nombre} ${c.usuario.apellido}` : '—';
+              const servicios = c.citaservicios?.map(cs => cs.servicios?.nombre).filter(Boolean).join(', ') || '—';
+              return (
+                <div key={c.idcita || i} className="stats-canceladas-row">
+                  <span className="stats-canceladas-fecha">
+                    {fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                  <span className="stats-canceladas-hora">
+                    {fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                  <span className="stats-canceladas-text">{paciente}</span>
+                  <span className="stats-canceladas-text">{especialista}</span>
+                  <span className="stats-canceladas-services">{servicios}</span>
+                </div>
+              );
+            })}
           </div>
         )}
       </ChartCard>
