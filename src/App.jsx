@@ -170,64 +170,62 @@ export default function App() {
   }, [isDevelopment]);
 
   useEffect(() => {
-    // Detectar rutas legales (/terminos y /condiciones) — aplican en cualquier host
-    const pathname = window.location.pathname;
-    if (pathname === '/terminos' || pathname.startsWith('/terminos')) {
-      setView('terminos');
-      return;
-    }
-    if (pathname === '/condiciones' || pathname.startsWith('/condiciones')) {
-      setView('condiciones');
-      return;
-    }
+    const init = async () => {
+      // Detectar rutas legales (/terminos y /condiciones) — aplican en cualquier host
+      const pathname = window.location.pathname;
+      if (pathname === '/terminos' || pathname.startsWith('/terminos')) {
+        setView('terminos');
+        return;
+      }
+      if (pathname === '/condiciones' || pathname.startsWith('/condiciones')) {
+        setView('condiciones');
+        return;
+      }
 
-    // Detectar URL de recuperación de contraseña (Supabase PKCE o implicit flow)
-    const params = new URLSearchParams(window.location.search);
-    const hasCode = params.has('code');
-    const hasRecoveryHash = window.location.hash.includes('type=recovery');
-    if (hasCode || hasRecoveryHash) {
-      setResetTrigger(true);
-    } else {
-      // Limpiar sesión Supabase Auth huérfana para evitar errores 403 Forbidden
-      // al refrescar tokens de resets de contraseña previos
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) supabase.auth.signOut();
-      });
-    }
-
-    const host = window.location.hostname;
-    const parts = host.split('.');
-    let subdomain = null;
-
-    const isIp = /^[0-9.]+$/.test(host);
-    if (!isIp) {
-      if (host.includes('localhost')) {
-        if (parts.length >= 2 && parts[0] !== 'localhost' && parts[0] !== 'www') {
-          subdomain = parts[0];
-        }
+      // Detectar URL de recuperación de contraseña (Supabase PKCE o implicit flow)
+      const params = new URLSearchParams(window.location.search);
+      const hasCode = params.has('code');
+      const hasRecoveryHash = window.location.hash.includes('type=recovery');
+      if (hasCode || hasRecoveryHash) {
+        setResetTrigger(true);
       } else {
-        if (parts.length >= 3 && parts[0] !== 'www') {
-          subdomain = parts[0];
-          // En desarrollo, quitar el prefijo 'dev.' para buscar en la DB
-          if (isDevelopment && subdomain.startsWith('dev.')) {
-            subdomain = subdomain.substring(4); // Remover 'dev.'
+        // Limpiar sesión Supabase Auth (admin o huérfana) antes de cargar el tenant
+        // para evitar 403 Forbidden cuando se viene del portal superadmin
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) await supabase.auth.signOut();
+      }
+
+      const host = window.location.hostname;
+      const parts = host.split('.');
+      let subdomain = null;
+
+      const isIp = /^[0-9.]+$/.test(host);
+      if (!isIp) {
+        if (host.includes('localhost')) {
+          if (parts.length >= 2 && parts[0] !== 'localhost' && parts[0] !== 'www') {
+            subdomain = parts[0];
+          }
+        } else {
+          if (parts.length >= 3 && parts[0] !== 'www') {
+            subdomain = parts[0];
+            if (isDevelopment && subdomain.startsWith('dev.')) {
+              subdomain = subdomain.substring(4);
+            }
           }
         }
       }
-    }
 
-    if (!subdomain) {
-      setView('landing');
-      return;
-    }
+      if (!subdomain) {
+        setView('landing');
+        return;
+      }
 
-    if (subdomain === 'admin' || subdomain === 'superadmin' ||
-        (isDevelopment && (subdomain === 'dev.admin' || subdomain === 'dev.superadmin'))) {
-      setView('superadmin');
-      return;
-    }
+      if (subdomain === 'admin' || subdomain === 'superadmin' ||
+          (isDevelopment && (subdomain === 'dev.admin' || subdomain === 'dev.superadmin'))) {
+        setView('superadmin');
+        return;
+      }
 
-    const fetchTenant = async () => {
       try {
         const { data, error } = await supabase
           .from('negocios')
@@ -257,7 +255,7 @@ export default function App() {
       }
     };
 
-    fetchTenant();
+    init();
   }, [isDevelopment]);
 
   if (view === 'loading') return <LoadingScreen />;
