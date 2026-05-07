@@ -14,7 +14,7 @@
   background: var(--surface-glass);
   border-bottom: 1px solid var(--border);
   padding: 0 2rem;
-  height: 64px;
+  height: 63px;
   display: flex;
   justify-content: space-between;
   align-items: center;
