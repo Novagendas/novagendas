@@ -440,7 +440,7 @@ export default function Inventory({ tenant }) {
           ) : (
             <div className="empty-state no-border padded-xl">
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>
-              <h4 className="empty-state-title">No hay insumos</h4>
+              <h4 className="empty-state-title">No hay productos</h4>
               <p className="empty-state-text">Agrega productos para comenzar el control de stock.</p>
             </div>
           )}

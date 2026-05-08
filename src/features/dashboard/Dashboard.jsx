@@ -67,7 +67,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
         .from('cliente').select('*', { count: 'exact', head: true }).eq('idnegocios', tenant.id);
 
       const { data: allProds } = await supabase
-        .from('producto').select('*').eq('idnegocios', tenant.id);
+        .from('producto').select('*').eq('idnegocios', tenant.id).eq('idestado', 1);
       const lowStock = allProds?.filter(p => p.cantidad <= p.cantidadminima) || [];
 
       const { data: appData } = await supabase
