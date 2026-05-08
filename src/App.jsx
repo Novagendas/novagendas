@@ -182,9 +182,11 @@ export default function App() {
         return;
       }
 
-      // Limpiar cualquier sesión Supabase Auth antes de continuar
-      // (ej: sesión huérfana de reset de contraseña causa 403 en /auth/v1/user)
-      try { await supabase.auth.signOut(); } catch (_) { /* ignorar */ }
+      // Limpiar sesiones Supabase Auth del localStorage sin hacer llamadas API
+      // (supabase-js v2.64+ llama /auth/v1/user dentro de signOut → 403 con tokens expirados)
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach(k => localStorage.removeItem(k));
 
       const params = new URLSearchParams(window.location.search);
       const hasCode = params.has('code');

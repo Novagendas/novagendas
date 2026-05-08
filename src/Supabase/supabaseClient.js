@@ -19,7 +19,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 if (!globalThis.__novagendas_supabase__) {
   const client = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: true,
+      persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
     }
