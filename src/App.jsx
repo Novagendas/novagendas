@@ -189,9 +189,9 @@ export default function App() {
       if (hasCode || hasRecoveryHash) {
         setResetTrigger(true);
       } else {
-        // Limpiar sesión Supabase Auth heredada del portal superadmin
+        // Limpiar sesión Supabase Auth heredada del portal superadmin ANTES de cualquier query
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) supabase.auth.signOut(); // fire-and-forget — la query de tenant usa supabaseAnon
+        if (session) await supabase.auth.signOut();
       }
 
       const host = window.location.hostname;
