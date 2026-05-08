@@ -22,7 +22,7 @@ import HolidayCalendar from './features/agenda/HolidayCalendar';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
-import { supabase } from './Supabase/supabaseClient';
+import { supabase, supabaseAnon } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
   return (
@@ -189,10 +189,9 @@ export default function App() {
       if (hasCode || hasRecoveryHash) {
         setResetTrigger(true);
       } else {
-        // Limpiar sesión Supabase Auth (admin o huérfana) antes de cargar el tenant
-        // para evitar 403 Forbidden cuando se viene del portal superadmin
+        // Limpiar sesión Supabase Auth heredada del portal superadmin
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) await supabase.auth.signOut();
+        if (session) supabase.auth.signOut(); // fire-and-forget — la query de tenant usa supabaseAnon
       }
 
       const host = window.location.hostname;
@@ -227,7 +226,7 @@ export default function App() {
       }
 
       try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAnon
           .from('negocios')
           .select('*')
           .eq('dominio', subdomain)
