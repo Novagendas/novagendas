@@ -182,16 +182,15 @@ export default function App() {
         return;
       }
 
-      // Detectar URL de recuperación de contraseña (Supabase PKCE o implicit flow)
+      // Limpiar cualquier sesión Supabase Auth antes de continuar
+      // (ej: sesión huérfana de reset de contraseña causa 403 en /auth/v1/user)
+      try { await supabase.auth.signOut(); } catch (_) { /* ignorar */ }
+
       const params = new URLSearchParams(window.location.search);
       const hasCode = params.has('code');
       const hasRecoveryHash = window.location.hash.includes('type=recovery');
       if (hasCode || hasRecoveryHash) {
         setResetTrigger(true);
-      } else {
-        // Limpiar sesión Supabase Auth heredada del portal superadmin ANTES de cualquier query
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) await supabase.auth.signOut();
       }
 
       const host = window.location.hostname;
