@@ -332,7 +332,7 @@ export default function Payments({ user, tenant }) {
           {
             label: 'Saldo Pendiente', value: fmt(totalPendiente), color: 'var(--warning)',
             sub: 'Por cobrar según precio del servicio',
-            icon: <><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>,
+            icon: <><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></>,
           },
         ].map((s, i) => (
           <div key={i} className="card-stat payment-stat-card animate-fade-in" style={{ animationDelay: `${i * 65}ms`, '--stat-color': s.color, '--bubble-color-1': `${s.color}0D`, '--bubble-color-2': `${s.color}07`, '--icon-bg': `${s.color}14`, '--icon-shadow': `${s.color}07` }}>
@@ -357,7 +357,7 @@ export default function Payments({ user, tenant }) {
       {/* ── Search + Tabs Row ── */}
       <div className="payments-search-row">
         <div className="payments-search-wrapper">
-          <svg className="payments-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <svg className="payments-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
           <input
             className="input-field payments-search-input"
             placeholder="Buscar por nombre o cédula..."
@@ -414,96 +414,95 @@ export default function Payments({ user, tenant }) {
             </div>
           ) : (
             <div className="empty-state">
-              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+              <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
               <h4>{search || showPendingOnly ? 'Sin resultados' : 'Sin abonos registrados'}</h4>
               <p>{search || showPendingOnly ? 'Intenta con otro término o quita los filtros.' : 'Crea el primer abono con el botón "Nuevo Abono".'}</p>
             </div>
           )}
         </div>
       ) : (
-      <>
-      {/* ── Payments Table ── */}
-      <div className="card payments-table-card">
-        {filtered.length > 0 ? (
-          <div className="table-responsive">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  {['Fecha', 'Paciente', 'Servicio', 'Método', 'Monto', 'Saldo Pendiente', 'Estado'].map(h => <th key={h}>{h}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="7" className="table-loader">Cargando transacciones...</td></tr>
-                ) : filtered.map(p => {
-                  const meth = methods.find(m => m.idmetodopago === p.idmetodopago);
-                  const client = clients.find(c => c.idcliente === p.idcliente);
-                  const saldo = getSaldoPendiente(p);
-                  return (
-                    <tr key={p.idpagos} className="payment-row-clickable" onClick={() => setDetailPayment({ ...p, client, meth, saldo })}>
-                      <td>{p.fecha ? parseDate(p.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
-                      <td>
-                        <span className="payment-client-name">{client?.nombre || 'Desconocido'}</span>
-                        {client?.cedula && <div className="payment-cedula">{client.cedula}</div>}
-                      </td>
-                      <td><span className="payment-service-name">{p.servicios?.nombre || '—'}</span></td>
-                      <td>
-                        <span className="badge badge-neutral payment-method-badge">
-                          {METHOD_ICONS[meth?.tipo] || '💰'} {meth?.tipo || '—'}
-                        </span>
-                      </td>
-                      <td><span className="payment-amount">{fmt(p.monto)}</span></td>
-                      <td>
-                        {saldo > 0
-                          ? <span className="badge badge-warning payment-saldo-badge">{fmt(saldo)}</span>
-                          : <span className="payment-saldo-ok">—</span>
-                        }
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                          <span className={`badge ${isPartialPayment(p) ? 'badge-warning' : 'badge-success'}`}>
-                            {isPartialPayment(p) ? 'Pago Parcial' : 'Pagado'}
-                          </span>
-                          {isPartialPayment(p) && getSaldoPendiente(p) > 0 && (
-                            <button
-                              className="btn btn-primary"
-                              style={{ fontSize: '0.7rem', padding: '0.18rem 0.55rem', height: 'auto', lineHeight: '1.4' }}
-                              onClick={e => {
-                                e.stopPropagation();
-                                setPagarModal(p);
-                                setPagarForm({ monto: String(getSaldoPendiente(p)), method: methods[0]?.tipo || 'Efectivo' });
-                              }}
-                            >
-                              Pagar
-                            </button>
-                          )}
-                        </div>
-                      </td>
+        <>
+          {/* ── Payments Table ── */}
+          <div className="card payments-table-card">
+            {filtered.length > 0 ? (
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      {['Fecha', 'Paciente', 'Servicio', 'Método', 'Monto', 'Saldo Pendiente', 'Estado'].map(h => <th key={h}>{h}</th>)}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr><td colSpan="7" className="table-loader">Cargando transacciones...</td></tr>
+                    ) : filtered.map(p => {
+                      const meth = methods.find(m => m.idmetodopago === p.idmetodopago);
+                      const client = clients.find(c => c.idcliente === p.idcliente);
+                      const saldo = getSaldoPendiente(p);
+                      return (
+                        <tr key={p.idpagos} className="payment-row-clickable" onClick={() => setDetailPayment({ ...p, client, meth, saldo })}>
+                          <td>{p.fecha ? parseDate(p.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
+                          <td>
+                            <span className="payment-client-name">{client?.nombre || 'Desconocido'}</span>
+                            {client?.cedula && <div className="payment-cedula">{client.cedula}</div>}
+                          </td>
+                          <td><span className="payment-service-name">{p.servicios?.nombre || '—'}</span></td>
+                          <td>
+                            <span className="badge badge-neutral payment-method-badge">
+                              {METHOD_ICONS[meth?.tipo] || '💰'} {meth?.tipo || '—'}
+                            </span>
+                          </td>
+                          <td><span className="payment-amount">{fmt(p.monto)}</span></td>
+                          <td>
+                            {saldo > 0
+                              ? <span className="badge badge-warning payment-saldo-badge">{fmt(saldo)}</span>
+                              : <span className="payment-saldo-ok">—</span>
+                            }
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <span className={`badge ${isPartialPayment(p) ? 'badge-warning' : 'badge-success'}`}>
+                                {isPartialPayment(p) ? 'Pago Parcial' : 'Pagado'}
+                              </span>
+                              {isPartialPayment(p) && getSaldoPendiente(p) > 0 && (
+                                <button
+                                  className="btn btn-primary"
+                                  style={{ fontSize: '0.7rem', padding: '0.18rem 0.55rem', height: 'auto', lineHeight: '1.4' }}
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setPagarModal(p);
+                                    setPagarForm({ monto: String(getSaldoPendiente(p)), method: methods[0]?.tipo || 'Efectivo' });
+                                  }}
+                                >
+                                  Pagar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                <h4>{search || showPendingOnly ? 'Sin resultados' : 'Sin transacciones'}</h4>
+                <p>{search || showPendingOnly ? 'Intenta con otro término o quita los filtros.' : 'Registra el primer pago usando el botón de arriba.'}</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="empty-state">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
-            <h4>{search || showPendingOnly ? 'Sin resultados' : 'Sin transacciones'}</h4>
-            <p>{search || showPendingOnly ? 'Intenta con otro término o quita los filtros.' : 'Registra el primer pago usando el botón de arriba.'}</p>
-          </div>
-        )}
-      </div>
-      </>
+        </>
       )}
 
-      {/* ── Abono Modal ── */}
       {showAbonoModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowAbonoModal(false)}>
-          <div className="modal-box animate-scale-in payment-modal-box">
+          <div className="modal-content animate-scale-in payment-modal-box">
             <div className="payment-modal-header" style={{ '--payment-modal-bg': 'linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%)' }}>
               <div className="payment-modal-inner-row">
                 <div className="payment-modal-icon-box">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
                 </div>
                 <div>
                   <h3 className="payment-modal-title">Registrar Abono</h3>
@@ -576,7 +575,7 @@ export default function Payments({ user, tenant }) {
       {/* ── Register Payment Modal ── */}
       {showModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-box animate-scale-in payment-modal-box">
+          <div className="modal-content animate-scale-in payment-modal-box">
             {/* Header */}
             <div className="payment-modal-header" style={{ '--payment-modal-bg': 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)' }}>
               <div className="payment-modal-inner-row">
@@ -649,7 +648,7 @@ export default function Payments({ user, tenant }) {
                     if (!svcPrice || amt >= svcPrice) return null;
                     return (
                       <div className="payment-partial-alert">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                         Pago parcial — saldo pendiente: <strong>{fmt(svcPrice - amt)}</strong>
                       </div>
                     );
@@ -674,7 +673,7 @@ export default function Payments({ user, tenant }) {
       {/* ── Delete Confirm Modal ── */}
       {deleteTarget && (
         <div className="modal-overlay" onClick={() => setDeleteTarget(null)}>
-          <div className="modal-box animate-scale-in delete-modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-content animate-scale-in delete-modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-content-confirm">
               <div className="confirm-icon-wrapper danger">
                 <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
@@ -693,7 +692,7 @@ export default function Payments({ user, tenant }) {
       {/* ── Payment Detail Modal ── */}
       {detailPayment && (
         <div className="modal-overlay" onClick={() => setDetailPayment(null)}>
-          <div className="modal-box animate-scale-in payment-detail-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-content animate-scale-in payment-detail-box" onClick={e => e.stopPropagation()}>
             <div className="payment-detail-header">
               <div className="payment-detail-header-inner">
                 <div className="payment-detail-icon">
@@ -718,7 +717,7 @@ export default function Payments({ user, tenant }) {
               </div>
               {detailPayment.saldo > 0 && (
                 <div className="payment-detail-pending-row">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                   Saldo pendiente: <strong>{fmt(detailPayment.saldo)}</strong>
                 </div>
               )}
@@ -766,11 +765,11 @@ export default function Payments({ user, tenant }) {
       {/* ── Pagar Saldo Modal ── */}
       {pagarModal && (
         <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setPagarModal(null)}>
-          <div className="modal-box animate-scale-in payment-modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-content animate-scale-in payment-modal-box" onClick={e => e.stopPropagation()}>
             <div className="payment-modal-header" style={{ '--payment-modal-bg': 'linear-gradient(135deg, var(--warning) 0%, var(--primary) 100%)' }}>
               <div className="payment-modal-inner-row">
                 <div className="payment-modal-icon-box">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
                 </div>
                 <div>
                   <h3 className="payment-modal-title">Completar Pago</h3>
@@ -784,7 +783,7 @@ export default function Payments({ user, tenant }) {
                 </div>
               </div>
               <button className="btn btn-ghost btn-icon payment-modal-close-btn" onClick={() => setPagarModal(null)}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
               </button>
             </div>
 
@@ -828,13 +827,13 @@ export default function Payments({ user, tenant }) {
                       const restante = saldo - ingresado;
                       if (restante < 0) return (
                         <div className="payment-partial-alert">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
                           El monto supera el saldo pendiente
                         </div>
                       );
                       if (restante === 0) return (
                         <div style={{ fontSize: '0.75rem', color: 'var(--success)', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg>
                           Cubrirá el total — quedará como Pagado
                         </div>
                       );
@@ -877,7 +876,7 @@ export default function Payments({ user, tenant }) {
             <div className="payment-detail-header">
               <div className="payment-detail-header-inner">
                 <div className="payment-detail-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="1" y="4" width="22" height="16" rx="2" /><line x1="1" y1="10" x2="23" y2="10" /></svg>
                 </div>
                 <div>
                   <h3 className="payment-detail-title">Detalle del Abono</h3>

@@ -392,7 +392,7 @@ export default function Services({ user, tenant }) {
 
       {showModal && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && setShowModal(false)}>
-          <div className="modal-box animate-scale-in max-w-sm">
+          <div className="modal-content animate-scale-in max-w-sm" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="service-modal-header" style={{ '--modal-header-bg': `linear-gradient(135deg, ${form.color} 0%, ${form.color}cc 100%)` }}>
               <div className="service-modal-header-left">
@@ -475,7 +475,7 @@ export default function Services({ user, tenant }) {
 
       {showCatModal && (
         <div className="modal-overlay" onClick={e => !saving && e.target === e.currentTarget && setShowCatModal(false)}>
-          <div className="modal-box animate-scale-in max-w-sm">
+          <div className="modal-content animate-scale-in max-w-sm" onClick={e => e.stopPropagation()}>
             {/* Header */}
             <div className="cat-modal-header">
               <div className="flex items-center gap-3">
@@ -549,7 +549,7 @@ export default function Services({ user, tenant }) {
       {/* ── Custom Alert / Confirm Modal ── */}
       {alertConfig.show && (
         <div className="modal-overlay z-9999" onClick={closeAlert}>
-          <div className="modal-box animate-scale-in max-w-xs" onClick={e => e.stopPropagation()}>
+          <div className="modal-content animate-scale-in max-w-xs" onClick={e => e.stopPropagation()}>
             <div className="alert-modal-body">
               <div className={`alert-circle ${alertConfig.type === 'confirm' ? 'alert-circle--confirm' : 'alert-circle--alert'}`} 
                    style={{ '--primary-light-alpha': 'var(--primary-light-rgba)', '--danger-light-alpha': 'var(--danger-light-rgba)' }}>
