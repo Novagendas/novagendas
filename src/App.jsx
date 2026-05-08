@@ -182,16 +182,17 @@ export default function App() {
         return;
       }
 
-      // Detectar URL de recuperación de contraseña (Supabase PKCE o implicit flow)
+      // Limpiar sesiones Supabase Auth del localStorage sin hacer llamadas API
+      // (supabase-js v2.64+ llama /auth/v1/user dentro de signOut → 403 con tokens expirados)
+      Object.keys(localStorage)
+        .filter(k => k.startsWith('sb-') && k.endsWith('-auth-token'))
+        .forEach(k => localStorage.removeItem(k));
+
       const params = new URLSearchParams(window.location.search);
       const hasCode = params.has('code');
       const hasRecoveryHash = window.location.hash.includes('type=recovery');
       if (hasCode || hasRecoveryHash) {
         setResetTrigger(true);
-      } else {
-        // Limpiar sesión Supabase Auth heredada del portal superadmin
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) supabase.auth.signOut(); // fire-and-forget — la query de tenant usa supabaseAnon
       }
 
       const host = window.location.hostname;

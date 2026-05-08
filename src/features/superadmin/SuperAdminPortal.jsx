@@ -364,7 +364,7 @@ export default function SuperAdminPortal() {
   const [tenantSort, setTenantSort] = useState('newest');
   const [tenantModal, setTenantModal] = useState(null);
   const [savingT, setSavingT] = useState(false);
-  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, idestadoapp: 1, idusuarioadmin: '', usuarios: [] };
+  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, idestadoapp: 1, usuarios: [] };
   const [tForm, setTForm] = useState(blankT);
 
   const [users, setUsers] = useState([]);
@@ -517,16 +517,14 @@ export default function SuperAdminPortal() {
     const tenantUsuarios = users
       .filter(u => u._negocios?.some(n => n.idnegocios === t.idnegocios))
       .map(u => ({ idusuario: u.idusuario, es_principal: u._negocios.find(n => n.idnegocios === t.idnegocios)?.es_principal || false }));
-    setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, idestadoapp: t.idestadoapp || 1, idusuarioadmin: t.idusuarioadmin || '', usuarios: tenantUsuarios });
+    setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, idestadoapp: t.idestadoapp || 1, usuarios: tenantUsuarios });
     setTenantModal(t);
   };
 
   const handleSaveTenant = async e => {
     e.preventDefault();
     setSavingT(true);
-    const principalUser = tForm.usuarios.find(u => u.es_principal);
-    const idusuarioadminDerived = principalUser ? principalUser.idusuario : (tForm.idusuarioadmin ? parseInt(tForm.idusuarioadmin) : null);
-    const payload = { nit: tForm.nit, nombre: tForm.name, dominio: tForm.subdomain, descripcion: tForm.descripcion, direccion: tForm.direccion, telefono: tForm.telefono, deployed: tForm.deployed, idestadoapp: tForm.idestadoapp, idusuarioadmin: idusuarioadminDerived };
+    const payload = { nit: tForm.nit, nombre: tForm.name, dominio: tForm.subdomain, descripcion: tForm.descripcion, direccion: tForm.direccion, telefono: tForm.telefono, deployed: tForm.deployed, idestadoapp: tForm.idestadoapp };
     const isAdd = tenantModal === 'add';
     const { data: savedData, error } = isAdd
       ? await supabase.from('negocios').insert([payload]).select('idnegocios').maybeSingle()
@@ -638,7 +636,6 @@ export default function SuperAdminPortal() {
     if (!target) return;
     askConfirm(`¿Eliminar al usuario "${target.nombre} ${target.apellido}" (${target.email})?`, async () => {
       closeConfirm();
-      await supabase.from('negocios').update({ idusuarioadmin: null }).eq('idusuarioadmin', target.idusuario);
       await supabase.from('negociousuario').delete().eq('idusuario', target.idusuario);
       await supabase.from('rolpermisos').delete().eq('idusuario', target.idusuario);
       const { error } = await supabase.from('usuario').delete().eq('idusuario', target.idusuario);
