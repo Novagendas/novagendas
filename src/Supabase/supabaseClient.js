@@ -36,6 +36,16 @@ if (!globalThis.__novagendas_supabase__) {
 
 export const supabase = globalThis.__novagendas_supabase__
 
+// Cliente anónimo sin sesión — para consultas que deben ser siempre públicas
+// (ej: detección de tenant en App.jsx) sin riesgo de 403 por token heredado
+export const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+  }
+})
+
 export const insertLog = async ({ accion, entidad, descripcion, idUsuario, idNegocios }) => {
   try {
     const payload = {
