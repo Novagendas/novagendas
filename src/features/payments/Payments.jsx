@@ -464,7 +464,7 @@ export default function Payments({ user, tenant }) {
                           <span className={`badge ${isPartialPayment(p) ? 'badge-warning' : 'badge-success'}`}>
                             {isPartialPayment(p) ? 'Pago Parcial' : 'Pagado'}
                           </span>
-                          {isPartialPayment(p) && Number(p.monto_total) > 0 && (
+                          {isPartialPayment(p) && getSaldoPendiente(p) > 0 && (
                             <button
                               className="btn btn-primary"
                               style={{ fontSize: '0.7rem', padding: '0.18rem 0.55rem', height: 'auto', lineHeight: '1.4' }}
@@ -793,7 +793,7 @@ export default function Payments({ user, tenant }) {
                 {/* Resumen del pago */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem', marginBottom: '1.2rem' }}>
                   {[
-                    { label: 'Total servicio', value: fmt(pagarModal.monto_total || 0), color: 'var(--text-secondary)' },
+                    { label: 'Total servicio', value: fmt(Number(pagarModal.monto_total || pagarModal.servicios?.precio || 0)), color: 'var(--text-secondary)' },
                     { label: 'Ya pagado', value: fmt(pagarModal.monto), color: 'var(--success)' },
                     { label: 'Saldo pendiente', value: fmt(getSaldoPendiente(pagarModal)), color: 'var(--warning)' },
                   ].map(({ label, value, color }) => (
