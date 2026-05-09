@@ -798,6 +798,67 @@
 
 .month-day-header-row {
   display: flex;
+}
+
+/* ── Días Bloqueados (Premium Style) ── */
+.month-day-cell.is-blocked {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(220, 38, 38, 0.03),
+    rgba(220, 38, 38, 0.03) 10px,
+    rgba(220, 38, 38, 0.06) 10px,
+    rgba(220, 38, 38, 0.06) 20px
+  ) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  position: relative;
+}
+
+[data-theme="dark"] .month-day-cell.is-blocked {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(248, 113, 113, 0.03),
+    rgba(248, 113, 113, 0.03) 10px,
+    rgba(248, 113, 113, 0.06) 10px,
+    rgba(248, 113, 113, 0.06) 20px
+  ) !important;
+  border-color: rgba(248, 113, 113, 0.2) !important;
+}
+
+.month-day-number.blocked-text {
+  color: #dc2626 !important;
+  font-weight: 900;
+}
+
+[data-theme="dark"] .month-day-number.blocked-text {
+  color: #f87171 !important;
+}
+
+.blocked-badge {
+  margin-left: 4px;
+  font-size: 0.7rem;
+  filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.3));
+}
+
+/* ── Slots Bloqueados (Vista Día/Semana) ── */
+.calendar-day-column.is-blocked {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(220, 38, 38, 0.02),
+    rgba(220, 38, 38, 0.02) 10px,
+    rgba(220, 38, 38, 0.04) 10px,
+    rgba(220, 38, 38, 0.04) 20px
+  ) !important;
+}
+
+.calendar-slot.is-blocked {
+  background: transparent !important;
+  border-bottom-color: rgba(220, 38, 38, 0.1) !important;
+}
+
+.calendar-slot.is-blocked:hover {
+  background: rgba(220, 38, 38, 0.05) !important;
+}
+
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.25rem;
