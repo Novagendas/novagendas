@@ -132,7 +132,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
       <div className="dashboard-main-layout">
 
         {/* Tabla de citas */}
-        <div className="card dashboard-table-card">
+        <div className="dashboard-table-card">
           <div className="dashboard-table-header">
             <h3>Pacientes para Hoy</h3>
             <span className="badge badge-primary">{data.todayAppts.length} Citas</span>
@@ -220,7 +220,7 @@ export default function Dashboard({ user, tenant, onNavigate }) {
           )}
 
           {/* Acceso rápido */}
-          <div className="card quick-actions-card">
+          <div className="quick-actions-card">
             <h4 className="quick-actions-title">Acceso Rápido</h4>
             <div className="quick-actions-list">
               <QuickBtn label="Nueva Cita"          emoji="📅" color="var(--primary)"   onClick={() => onNavigate('agenda')} />

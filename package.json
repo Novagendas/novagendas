@@ -8,9 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "env:status": "./switch-env.sh status",
-    "env:dev": "./switch-env.sh development",
-    "env:prod": "./switch-env.sh production",
+    "env:status": "node switch-env.js status",
+    "env:dev": "node switch-env.js development",
+    "env:prod": "node switch-env.js production",
     "dev:env": "npm run env:dev && npm run dev",
     "build:prod": "npm run env:prod && npm run build"
   },

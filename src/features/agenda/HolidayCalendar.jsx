@@ -2,9 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 
 const TIPO_OPTIONS = [
-  { value: 'feriado',       label: 'Día Feriado',         color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
-  { value: 'nodisponible',  label: 'No Disponible',       color: '#d97706', bg: '#fef3c7', border: '#fcd34d' },
-  { value: 'mantenimiento', label: 'Mantenimiento',       color: '#7c3aed', bg: '#ede9fe', border: '#a5b4fc' },
+  { value: 'feriado', label: 'Día Feriado', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+  { value: 'nodisponible', label: 'No Disponible', color: '#d97706', bg: '#fef3c7', border: '#fcd34d' },
+  { value: 'mantenimiento', label: 'Mantenimiento', color: '#7c3aed', bg: '#ede9fe', border: '#a5b4fc' },
 ];
 
 const tipoInfo = (tipo) => TIPO_OPTIONS.find(t => t.value === tipo) || TIPO_OPTIONS[0];
@@ -22,7 +22,7 @@ function buildMonthGrid(year, month) {
 
 const toDateStr = (d) => d.toISOString().slice(0, 10);
 const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTH_NAMES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default function HolidayCalendar({ user, tenant, canManage = false }) {
   const [pivot, setPivot] = useState(new Date());

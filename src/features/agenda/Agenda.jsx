@@ -874,8 +874,10 @@ export default function Agenda({ user, tenant }) {
       }];
     });
 
+    const isBlocked = blockedDates.includes(dateStr);
+
     return (
-      <div className="calendar-day-column">
+      <div className={`calendar-day-column ${isBlocked ? 'is-blocked' : ''}`}>
         {HOURS.map(h => {
           const past = isPastSlot(dateStr, h);
           return (
@@ -884,7 +886,7 @@ export default function Agenda({ user, tenant }) {
               onDragOver={onDragOver}
               onDrop={e => !past && onDropCell(e, dateStr, h)}
               onClick={() => !past && openCreate(dateStr, toTimeStr(h))}
-              className={`calendar-slot${past ? ' calendar-slot--past' : ''}`}
+              className={`calendar-slot ${past ? 'calendar-slot--past' : ''} ${isBlocked ? 'is-blocked' : ''}`}
             />
           );
         })}
@@ -1033,13 +1035,12 @@ export default function Agenda({ user, tenant }) {
               <div
                 key={idx}
                 onClick={() => { setPivot(day); setView('day'); }}
-                className={`month-day-cell ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''}`}
-                style={isBlocked ? { background: '#fee2e220', borderColor: '#fca5a5' } : undefined}
+                className={`month-day-cell ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''} ${isBlocked ? 'is-blocked' : ''}`}
               >
                 <div className="month-day-header-row">
-                  <div className={`month-day-number ${isToday ? 'today' : ''}`} style={isBlocked ? { color: '#dc2626' } : undefined}>
+                  <div className={`month-day-number ${isToday ? 'today' : ''} ${isBlocked ? 'blocked-text' : ''}`}>
                     {day.getDate()}
-                    {isBlocked && <span style={{ marginLeft: 3, fontSize: '0.6rem' }}>🚫</span>}
+                    {isBlocked && <span className="blocked-badge">🚫</span>}
                   </div>
                   {dayAppts.length > 0 && (
                     <span className="month-day-count">{dayAppts.length} cita{dayAppts.length > 1 ? 's' : ''}</span>
