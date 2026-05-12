@@ -108,6 +108,7 @@ export default function Clients({ user, tenant }) {
 
   useEffect(() => {
     if (!selectedId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setOpenEvolucion(false);
       setOpenHistorialCitas(false);
       setSelectedCitaDetail(null);

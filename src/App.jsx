@@ -22,7 +22,7 @@ import HolidayCalendar from './features/agenda/HolidayCalendar';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
-import { supabase, supabaseAnon } from './Supabase/supabaseClient';
+import { supabaseAnon } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
   return (

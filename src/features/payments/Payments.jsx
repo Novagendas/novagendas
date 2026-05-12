@@ -1,14 +1,15 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import { useState, useEffect, useCallback } from 'react';
-import SelectableInput from '../../components/inputs/SelectableInput';
-import { PAYMENT_METHODS, PAYMENT_METHOD_ICONS } from '../../utils/constants';
 import { fmt } from '../../utils/formatters';
 import { parseDate } from '../../utils/dateHelpers';
 import './Payments.css';
 
-const METHOD_ICONS = PAYMENT_METHOD_ICONS;
-
-
+const METHOD_ICONS = {
+  'Efectivo': 'cash-outline',
+  'Transferencia': 'swap-horizontal-outline',
+  'Tarjeta': 'card-outline',
+  'Crédito': 'bookmark-outline'
+};
 
 export default function Payments({ user, tenant }) {
   const [payments, setPayments] = useState([]);
@@ -32,7 +33,7 @@ export default function Payments({ user, tenant }) {
   const [detailAbono, setDetailAbono] = useState(null);
   const [form, setForm] = useState({ clientId: '', serviceId: '', amount: '', method: 'Efectivo', note: '' });
   const [abonoForm, setAbonoForm] = useState({ clientId: '', monto: '', method: 'Efectivo', note: '', serviceId: '' });
-  const [filter, setFilter] = useState('all');
+  const [filter] = useState('all');
   const [activeTab, setActiveTab] = useState('pagos');
   const [search, setSearch] = useState('');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
@@ -46,20 +47,16 @@ export default function Payments({ user, tenant }) {
     setLoading(true);
 
     try {
-      // Methods
       const { data: methData } = await supabase.from('metodopago').select('*');
       const finalMethods = methData || [];
       setMethods(finalMethods);
 
-      // Clients
       const { data: cliData } = await supabase.from('cliente').select('*').eq('idnegocios', tenant.id);
       setClients(cliData || []);
 
-      // Services
       const { data: svcData } = await supabase.from('servicios').select('*').eq('idnegocios', tenant.id);
       setServices(svcData || []);
 
-      // Local Payments
       const { data: payData, error } = await supabase
         .from('pagos')
         .select('*, cliente(nombre, apellido, cedula), servicios(nombre, precio)')
@@ -69,7 +66,6 @@ export default function Payments({ user, tenant }) {
 
       if (!error) setPayments(payData || []);
 
-      // Abonos (advance payments)
       const { data: abonoData } = await supabase
         .from('abono')
         .select('*, cliente(nombre, apellido), metodopago(tipo), servicios(nombre)')
@@ -79,7 +75,6 @@ export default function Payments({ user, tenant }) {
 
       setAbonos(abonoData || []);
 
-      // Safe initialization of default method
       if (finalMethods.length > 0 && !form.method) {
         setForm(f => ({ ...f, method: finalMethods[0].tipo }));
       }
@@ -88,14 +83,12 @@ export default function Payments({ user, tenant }) {
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tenant.id]); // Removed form.method from here to break the loop
+  }, [tenant.id, form.method]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]); // Simplified effect dependency
+  }, [fetchData]);
 
-  // Auto-fill amount when service selected
   const handleServiceChange = (serviceId) => {
     const svc = services.find(s => s.idservicios === parseInt(serviceId));
     update('serviceId', serviceId);
