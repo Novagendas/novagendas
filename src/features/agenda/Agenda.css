@@ -714,14 +714,147 @@
   box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.15);
 }
 
+/* ── Slot pasado (Día / Semana) ── */
 .calendar-slot--past {
-  cursor: default;
-  background: rgba(var(--bg-main-rgb, 248, 250, 252), 0.5);
-}
-.calendar-slot--past:hover {
   cursor: not-allowed;
-  background: rgba(var(--bg-main-rgb, 248, 250, 252), 0.5);
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(var(--bg-main-rgb, 248, 250, 252), 0.6),
+    rgba(var(--bg-main-rgb, 248, 250, 252), 0.6) 6px,
+    rgba(0, 0, 0, 0.03) 6px,
+    rgba(0, 0, 0, 0.03) 12px
+  ) !important;
+  pointer-events: none;
+  opacity: 0.65;
 }
+
+[data-theme="dark"] .calendar-slot--past {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.02) 6px,
+    rgba(255, 255, 255, 0.04) 6px,
+    rgba(255, 255, 255, 0.04) 12px
+  ) !important;
+}
+
+/* ── Wrapper de columna de día (para banner de bloqueado) ── */
+.day-view-column-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ── Banner de día bloqueado (Vista Día) ── */
+.day-blocked-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 1.25rem;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.12), rgba(220, 38, 38, 0.08));
+  border-bottom: 2px solid rgba(220, 38, 38, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: slideDown 0.3s var(--ease-out, ease) forwards;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .day-blocked-banner {
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.12), rgba(248, 113, 113, 0.06));
+  border-bottom-color: rgba(248, 113, 113, 0.3);
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.day-blocked-banner-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.5));
+}
+
+.day-blocked-banner-text {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #dc2626;
+  letter-spacing: 0.01em;
+}
+
+[data-theme="dark"] .day-blocked-banner-text {
+  color: #f87171;
+}
+
+/* ── Semana — header de días bloqueados y pasados ── */
+.week-header-cell.is-blocked {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(220, 38, 38, 0.04),
+    rgba(220, 38, 38, 0.04) 8px,
+    rgba(220, 38, 38, 0.08) 8px,
+    rgba(220, 38, 38, 0.08) 16px
+  ) !important;
+  border-bottom: 2px solid rgba(220, 38, 38, 0.35) !important;
+}
+
+[data-theme="dark"] .week-header-cell.is-blocked {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(248, 113, 113, 0.04),
+    rgba(248, 113, 113, 0.04) 8px,
+    rgba(248, 113, 113, 0.08) 8px,
+    rgba(248, 113, 113, 0.08) 16px
+  ) !important;
+  border-bottom-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.week-header-cell.is-blocked:hover {
+  cursor: default;
+}
+
+.week-header-cell.is-past {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.week-header-cell.is-past .week-day-number {
+  color: var(--text-4);
+}
+
+.week-day-number.blocked-day-num {
+  color: #dc2626 !important;
+  font-weight: 900;
+  position: relative;
+}
+
+[data-theme="dark"] .week-day-number.blocked-day-num {
+  color: #f87171 !important;
+}
+
+.week-day-number.past-day-num {
+  color: var(--text-4) !important;
+  font-weight: 600;
+}
+
+/* Punto / badge de "bloqueado" en el número del día (semana) */
+.week-day-blocked-dot {
+  font-size: 0.5rem;
+  vertical-align: super;
+  margin-left: 1px;
+  filter: drop-shadow(0 0 3px rgba(220, 38, 38, 0.4));
+  line-height: 1;
+}
+
+/* ══════════════════════════════════════════════
+   SKELETON — Estado de carga del calendario
+   ══════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════
    SKELETON — Estado de carga del calendario
@@ -851,6 +984,32 @@
   margin-left: 4px;
   font-size: 0.7rem;
   filter: drop-shadow(0 0 2px rgba(220, 38, 38, 0.3));
+}
+
+/* ── Días Pasados — Vista Mes ── */
+.month-day-cell.is-past {
+  background: var(--surface-2);
+  opacity: 0.75;
+  cursor: default;
+}
+
+.month-day-cell.is-past:hover {
+  background: var(--surface-2) !important;
+  box-shadow: none !important;
+  cursor: default;
+}
+
+.month-day-number.past-text {
+  color: var(--text-4) !important;
+  font-weight: 600;
+}
+
+.past-badge {
+  margin-left: 3px;
+  font-size: 0.6rem;
+  opacity: 0.5;
+  vertical-align: middle;
+  color: var(--text-4);
 }
 
 /* ── Slots Bloqueados (Vista Día/Semana) ── */
@@ -1440,7 +1599,8 @@
 /* Footer del modal — sticky al bottom */
 .appt-modal-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
   margin-top: 0.5rem;
   padding-top: 1rem;
@@ -1454,6 +1614,21 @@
   border-top: none;
   padding-top: 0;
   margin-top: 0;
+}
+
+.appt-modal-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.appt-modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .appt-modal-footer .btn {
@@ -1471,6 +1646,50 @@
 
 .appt-modal-footer .btn-outline {
   flex: 1;
+}
+
+/* ── Botón de eliminar cita (peligroso) ── */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: 1.5px solid rgba(220, 38, 38, 0.4);
+  color: #dc2626;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0 0.9rem;
+  height: 40px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.08);
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.btn-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .btn-danger {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+[data-theme="dark"] .btn-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.12);
+}
+
+.btn-delete-appt svg {
+  flex-shrink: 0;
 }
 
 .modal-info-icon-wrapper {

@@ -467,6 +467,15 @@ export default function Agenda({ user, tenant }) {
       showSnack('⚠️ Este día está bloqueado (feriado o no disponible). No se pueden agendar citas.', 'error');
       return;
     }
+    // Impedir agendar en fecha/hora pasada (solo al crear, no al editar)
+    if (!editId) {
+      const selectedDateTime = new Date(`${form.date}T${form.time}:00`);
+      const cutoff = new Date(Date.now() - 60 * 60 * 1000); // 1h de tolerancia
+      if (selectedDateTime < cutoff) {
+        showSnack('⚠️ No se pueden agendar citas en fechas u horas pasadas.', 'error');
+        return;
+      }
+    }
 
     setSaving(true);
 
@@ -753,6 +762,14 @@ export default function Agenda({ user, tenant }) {
       attempts++;
     }
 
+    // Impedir mover a un horario pasado
+    const slotTime = new Date(`${dateStr}T${dropTime}:00`);
+    if (slotTime < new Date(Date.now() - 60 * 60 * 1000)) {
+      showSnack('⚠️ No puedes mover citas al pasado.', 'error');
+      dragging.current = null;
+      return;
+    }
+
     if (conflict) {
       showSnack(`⚠️ Imposible agendar: Demasiados conflictos después de las ${dropTime}`, 'error');
       dragging.current = null;
@@ -953,24 +970,36 @@ export default function Agenda({ user, tenant }) {
     );
   };
 
-  const ViewDay = () => (
-    <div className="calendar-view-container">
-      <div className="calendar-time-gutter">
-        {HOURS.map(h => (
-          <div key={h} className="calendar-time-label">
-            {h === 12 ? (
-              <>12:00 <span className="calendar-time-ampm">PM</span></>
-            ) : h > 12 ? (
-              <>{String(h - 12).padStart(2, '0')}:00 <span className="calendar-time-ampm">PM</span></>
-            ) : (
-              <>{String(h).padStart(2, '0')}:00 <span className="calendar-time-ampm">AM</span></>
-            )}
-          </div>
-        ))}
+  const ViewDay = () => {
+    const ds = toDateStr(pivot);
+    const isDayBlocked = blockedDates.includes(ds);
+    return (
+      <div className="calendar-view-container">
+        <div className="calendar-time-gutter">
+          {HOURS.map(h => (
+            <div key={h} className="calendar-time-label">
+              {h === 12 ? (
+                <>12:00 <span className="calendar-time-ampm">PM</span></>
+              ) : h > 12 ? (
+                <>{String(h - 12).padStart(2, '0')}:00 <span className="calendar-time-ampm">PM</span></>
+              ) : (
+                <>{String(h).padStart(2, '0')}:00 <span className="calendar-time-ampm">AM</span></>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="day-view-column-wrapper">
+          {isDayBlocked && (
+            <div className="day-blocked-banner">
+              <span className="day-blocked-banner-icon">🚫</span>
+              <span className="day-blocked-banner-text">Día bloqueado — no disponible para citas</span>
+            </div>
+          )}
+          <DayColumn dateStr={ds} maxCols={5} />
+        </div>
       </div>
-      <DayColumn dateStr={toDateStr(pivot)} maxCols={5} />
-    </div>
-  );
+    );
+  };
 
   const ViewWeek = () => (
     <div className="calendar-view-container calendar-view-week">
@@ -979,10 +1008,20 @@ export default function Agenda({ user, tenant }) {
         {weekDays.map((d, i) => {
           const ds = toDateStr(d);
           const isToday = ds === todayStr;
+          const isWeekDayBlocked = blockedDates.includes(ds);
+          const isWeekDayPast = ds < todayStr;
           return (
-            <div key={i} className="week-header-cell" onClick={() => { setPivot(d); setView('day'); }}>
-              <div className={`week-day-number ${isToday ? 'today' : ''}`}>
+            <div
+              key={i}
+              className={`week-header-cell${isWeekDayBlocked ? ' is-blocked' : ''}${isWeekDayPast && !isToday ? ' is-past' : ''}`}
+              onClick={() => { setPivot(d); setView('day'); }}
+            >
+              <div className="week-day-name">
+                {d.toLocaleDateString('es-CO', { weekday: 'short' }).replace('.', '')}
+              </div>
+              <div className={`week-day-number ${isToday ? 'today' : ''} ${isWeekDayBlocked ? 'blocked-day-num' : ''} ${isWeekDayPast && !isToday ? 'past-day-num' : ''}`}>
                 {d.getDate()}
+                {isWeekDayBlocked && <span className="week-day-blocked-dot" title="Día bloqueado">🚫</span>}
               </div>
             </div>
           );
@@ -1025,22 +1064,38 @@ export default function Agenda({ user, tenant }) {
             const ds = toDateStr(day);
             const isToday = ds === todayStr;
             const isBlocked = blockedDates.includes(ds);
+            const isPastDay = ds < todayStr && !isToday;
             const dayAppts = appointments.filter(a => {
               const isCorrectDate = a.date === ds && a.status !== 'Cancelada';
               const isCorrectSpec = selectedSpecialistId ? String(a.specialistId) === String(selectedSpecialistId) : true;
               return isCorrectDate && isCorrectSpec;
             });
             const isCurrentMonth = day.getMonth() === pivotMonth;
+            const handleMonthCellClick = () => {
+              if (isBlocked) {
+                showSnack('🚫 Este día está bloqueado — no se pueden agendar citas.', 'error');
+                return;
+              }
+              setPivot(day);
+              setView('day');
+            };
             return (
               <div
                 key={idx}
-                onClick={() => { setPivot(day); setView('day'); }}
-                className={`month-day-cell ${isToday ? 'today' : ''} ${!isCurrentMonth ? 'other-month' : ''} ${isBlocked ? 'is-blocked' : ''}`}
+                onClick={handleMonthCellClick}
+                className={[
+                  'month-day-cell',
+                  isToday ? 'today' : '',
+                  !isCurrentMonth ? 'other-month' : '',
+                  isBlocked ? 'is-blocked' : '',
+                  isPastDay && !isBlocked ? 'is-past' : '',
+                ].filter(Boolean).join(' ')}
               >
                 <div className="month-day-header-row">
-                  <div className={`month-day-number ${isToday ? 'today' : ''} ${isBlocked ? 'blocked-text' : ''}`}>
+                  <div className={`month-day-number ${isToday ? 'today' : ''} ${isBlocked ? 'blocked-text' : ''} ${isPastDay && !isBlocked ? 'past-text' : ''}`}>
                     {day.getDate()}
                     {isBlocked && <span className="blocked-badge">🚫</span>}
+                    {isPastDay && !isBlocked && <span className="past-badge">↩</span>}
                   </div>
                   {dayAppts.length > 0 && (
                     <span className="month-day-count">{dayAppts.length} cita{dayAppts.length > 1 ? 's' : ''}</span>
@@ -1824,22 +1879,40 @@ export default function Agenda({ user, tenant }) {
               </div>
 
               <div className="appt-modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
-                {form.status === 'Completada' ? (
-                  <div className="appt-completed-lock" title="No se puede modificar información si ya se marcó como completada">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                    No se puede modificar — cita completada
-                  </div>
-                ) : (
-                  <button type="submit" className="btn btn-primary" disabled={saving}>
-                    {saving ? (
-                      <div className="agenda-topbar-section centered">
-                        <div className="spinner-sm spinner"></div>
-                        Procesando...
-                      </div>
-                    ) : (editId ? 'Guardar Cambios' : 'Agendar Cita')}
-                  </button>
-                )}
+                <div className="appt-modal-footer-left">
+                  {editId && form.status !== 'Completada' && (
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-delete-appt"
+                      onClick={handleDeleteAppointment}
+                      disabled={saving}
+                      title="Eliminar esta cita permanentemente"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                      </svg>
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+                <div className="appt-modal-footer-right">
+                  <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
+                  {form.status === 'Completada' ? (
+                    <div className="appt-completed-lock" title="No se puede modificar información si ya se marcó como completada">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                      No se puede modificar — cita completada
+                    </div>
+                  ) : (
+                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                      {saving ? (
+                        <div className="agenda-topbar-section centered">
+                          <div className="spinner-sm spinner"></div>
+                          Procesando...
+                        </div>
+                      ) : (editId ? 'Guardar Cambios' : 'Agendar Cita')}
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           </div>
