@@ -41,7 +41,6 @@ const NAV_LINKS = [
   { id: 'funciones',     label: 'Funciones' },
   { id: 'como-funciona', label: 'Cómo funciona' },
   { id: 'sectores',      label: 'Sectores' },
-  { id: 'contacto',      label: 'Contacto' },
 ];
 
 const SECTORES = [
@@ -90,8 +89,8 @@ const FEATURES = [
       </svg>
     ),
     bg: '#dcfce7',
-    title: 'Pagos y facturación',
-    desc: 'Registra ingresos, aplica abonos, diferencia métodos de pago y genera reportes financieros por período.',
+    title: 'Control de pagos',
+    desc: 'Lleva el registro de lo que cobras por cada cita: monto, método de pago (efectivo, transferencia, tarjeta) y abonos parciales. Consulta cuánto ingresó en cualquier período',
   },
   {
     icon: (
@@ -173,7 +172,6 @@ export default function LandingPage() {
 
         <div className="lp-nav-actions">
           <ThemeToggle />
-          <a href="#contacto" className="lp-nav-cta">Solicitar demo →</a>
           <button
             className="lp-mobile-btn"
             onClick={() => setIsMenuOpen(o => !o)}
@@ -236,10 +234,10 @@ export default function LandingPage() {
             </div>
 
             <div className="lp-hero-ctas reveal stagger-5">
-              <a href="#contacto" className="lp-btn-primary">
-                Solicitar demostración <ArrowRight />
+              <a href="#funciones" className="lp-btn-primary">
+                Ver funcionalidades <ArrowRight />
               </a>
-              <a href="#funciones" className="lp-btn-ghost">Ver funcionalidades</a>
+              <a href="#como-funciona" className="lp-btn-ghost">Cómo funciona</a>
             </div>
           </div>
 
@@ -461,34 +459,17 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── CTA / Contacto ─── */}
-      <section id="contacto" className="lp-cta">
+      {/* ─── CTA cierre ─── */}
+      <section className="lp-cta">
         <div className="lp-cta-inner">
-          <div className="lp-section-tag reveal">Empieza hoy</div>
+          <div className="lp-section-tag reveal">Novagendas</div>
           <h2 className="lp-cta-h2 reveal stagger-1">
-            ¿Listo para organizar<br />
-            <span className="lp-gradient-text">tu negocio?</span>
+            Organiza tu negocio.<br />
+            <span className="lp-gradient-text">Todo en un solo lugar.</span>
           </h2>
           <p className="lp-cta-sub reveal stagger-2">
-            Agenda una demostración personalizada y descubre cómo Novagendas
-            se adapta a tu flujo de trabajo en menos de una semana.
+            Agenda, clientes, pagos e inventario — sin papel, sin caos, desde cualquier dispositivo.
           </p>
-          <div className="lp-contact-form-wrap reveal stagger-3">
-            <form
-              className="lp-contact-form"
-              onSubmit={e => { e.preventDefault(); alert('¡Gracias! Te contactaremos pronto.'); }}
-            >
-              <div className="lp-contact-row">
-                <input className="lp-input" type="text" placeholder="Nombre de tu negocio" required />
-                <input className="lp-input" type="email" placeholder="Correo electrónico" required />
-              </div>
-              <input className="lp-input" type="tel" placeholder="WhatsApp o teléfono (opcional)" />
-              <textarea className="lp-input lp-textarea" placeholder="Cuéntanos sobre tu negocio y qué necesitas mejorar" rows={3} />
-              <button type="submit" className="lp-btn-primary lp-btn-full">
-                Solicitar demostración gratuita <ArrowRight />
-              </button>
-            </form>
-          </div>
         </div>
       </section>
 
