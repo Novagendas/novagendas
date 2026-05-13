@@ -493,6 +493,42 @@
   background: transparent;
 }
 
+/* ViewDay */
+.calendar-view-container.calendar-view-day {
+  flex-direction: column;
+  overflow-y: hidden;
+  overflow-x: clip;
+  align-items: stretch;
+  scrollbar-width: none;
+}
+.calendar-view-container.calendar-view-day::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cuerpo del day view — espeja week-body */
+.day-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow-y: auto;
+  overflow-x: clip;
+  align-items: flex-start;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-gutter: stable;
+}
+.day-body::-webkit-scrollbar {
+  width: 5px;
+}
+.day-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+.day-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* ViewWeek */
 .calendar-view-container.calendar-view-week {
   flex-direction: column;

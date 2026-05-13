@@ -87,7 +87,10 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
                 aria-label="Abrir perfil del usuario"
               >
                 <div className="layout-avatar">
-                  {(user?.name || 'U').substring(0, 1).toUpperCase()}
+                  {user?.foto_perfil
+                    ? <img src={user.foto_perfil} alt="avatar" className="layout-avatar-img" />
+                    : (user?.name || 'U').substring(0, 1).toUpperCase()
+                  }
                 </div>
                 <div className="layout-profile-info hide-on-mobile">
                   <p className="layout-profile-name">{user?.name || 'Usuario'}</p>

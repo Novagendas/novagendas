@@ -1,4 +1,14 @@
 
+[functions.whatsapp-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/whatsapp-webhook/index.ts"
+
+[functions.whatsapp-send]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/whatsapp-send/index.ts"
+
 [functions.google-calendar-login]
 enabled = true
 verify_jwt = false

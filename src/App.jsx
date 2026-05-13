@@ -22,7 +22,7 @@ import HolidayCalendar from './features/agenda/HolidayCalendar';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
-import { supabaseAnon } from './Supabase/supabaseClient';
+import { supabase, supabaseAnon } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
   return (
@@ -92,6 +92,23 @@ function TenantApp({ tenant, initialView = 'login' }) {
       } catch { /* error ignorado intencionalmente al actualizar caché */ }
     }
   };
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.foto_perfil) return;
+    const userId = user.idusuario || user.id;
+    if (!userId) return;
+    supabase
+      .from('usuario')
+      .select('foto_perfil')
+      .eq('idusuario', userId)
+      .single()
+      .then(({ data }) => {
+        if (data?.foto_perfil) handleUserUpdate({ foto_perfil: data.foto_perfil });
+      });
+  // Solo corre al montar la sesión, no en cada render
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.idusuario ?? user?.id]);
 
   const renderRoute = () => {
     if (user.role === 'especialista' && currentRoute !== 'agenda' && currentRoute !== 'clients' && currentRoute !== 'profile') {

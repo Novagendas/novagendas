@@ -44,12 +44,13 @@ export default function Login({ tenant, onLogin, onForgotPassword }) {
         else if (u.rol_nombre === 'profesional') role = 'especialista';
         else if (u.rol_nombre === 'recepcionista' || u.rol_nombre === 'ayudante' || u.rol_nombre === 'asistente') role = 'recepcion';
 
-        onLogin({ 
-          id: u.idusuario, 
-          name: u.nombre + ' ' + u.apellido, 
-          email: u.email, 
+        onLogin({
+          id: u.idusuario,
+          name: u.nombre + ' ' + u.apellido,
+          email: u.email,
           role,
-          tenant_id: u.idnegocios 
+          tenant_id: u.idnegocios,
+          foto_perfil: u.foto_perfil || ''
         });
         return;
       } else {

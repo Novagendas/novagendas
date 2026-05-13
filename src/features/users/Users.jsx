@@ -235,7 +235,8 @@ export default function Users({ user, tenant }) {
           role: role,
           permissions: permissions,
           active: u.idestado === 1,
-          created: formatRegistration(u.fechainicio || u.fechaactualizacion)
+          created: formatRegistration(u.fechainicio || u.fechaactualizacion),
+          foto_perfil: u.foto_perfil || ''
         };
       }).sort((a, b) => (a.role === 'admin' ? -1 : b.role === 'admin' ? 1 : 0)));
     }
@@ -449,7 +450,10 @@ export default function Users({ user, tenant }) {
                   {isAdmin && <div className="user-item-admin-tag">👑 CUENTA PRINCIPAL</div>}
 
                   <div className="user-item-avatar">
-                    {u.name.charAt(0).toUpperCase()}
+                    {u.foto_perfil
+                      ? <img src={u.foto_perfil} alt={u.name} className="user-item-avatar-img" />
+                      : u.name.charAt(0).toUpperCase()
+                    }
                   </div>
 
                   <div className="user-item-content">

@@ -974,27 +974,27 @@ export default function Agenda({ user, tenant }) {
     const ds = toDateStr(pivot);
     const isDayBlocked = blockedDates.includes(ds);
     return (
-      <div className="calendar-view-container">
-        <div className="calendar-time-gutter">
-          {HOURS.map(h => (
-            <div key={h} className="calendar-time-label">
-              {h === 12 ? (
-                <>12:00 <span className="calendar-time-ampm">PM</span></>
-              ) : h > 12 ? (
-                <>{String(h - 12).padStart(2, '0')}:00 <span className="calendar-time-ampm">PM</span></>
-              ) : (
-                <>{String(h).padStart(2, '0')}:00 <span className="calendar-time-ampm">AM</span></>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="day-view-column-wrapper">
-          {isDayBlocked && (
-            <div className="day-blocked-banner">
-              <span className="day-blocked-banner-icon">🚫</span>
-              <span className="day-blocked-banner-text">Día bloqueado — no disponible para citas</span>
-            </div>
-          )}
+      <div className="calendar-view-container calendar-view-day">
+        {isDayBlocked && (
+          <div className="day-blocked-banner">
+            <span className="day-blocked-banner-icon">🚫</span>
+            <span className="day-blocked-banner-text">Día bloqueado — no disponible para citas</span>
+          </div>
+        )}
+        <div className="day-body">
+          <div className="calendar-time-gutter">
+            {HOURS.map(h => (
+              <div key={h} className="calendar-time-label">
+                {h === 12 ? (
+                  <>12:00 <span className="calendar-time-ampm">PM</span></>
+                ) : h > 12 ? (
+                  <>{String(h - 12).padStart(2, '0')}:00 <span className="calendar-time-ampm">PM</span></>
+                ) : (
+                  <>{String(h).padStart(2, '0')}:00 <span className="calendar-time-ampm">AM</span></>
+                )}
+              </div>
+            ))}
+          </div>
           <DayColumn dateStr={ds} maxCols={5} />
         </div>
       </div>
