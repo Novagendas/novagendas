@@ -215,9 +215,12 @@ export default function App() {
             subdomain = parts[0];
           }
         } else {
-          // Para *.dev.novagendas.com y *.novagendas.com, parts[0] es siempre el tenant
+          // Para *.novagendas.com, parts[0] es el tenant (con posible prefijo dev-)
           if (parts.length >= 3 && parts[0] !== 'www') {
             subdomain = parts[0];
+            if (subdomain.startsWith('dev-')) {
+              subdomain = subdomain.substring(4);
+            }
           }
         }
       }
@@ -282,7 +285,7 @@ export default function App() {
         <button
           onClick={() => {
             const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
-            const baseUrl = isLocal ? 'http://localhost:5173' : (isDevEnvironment ? 'https://dev.novagendas.com' : 'https://novagendas.com');
+            const baseUrl = isLocal ? 'http://localhost:5173' : 'https://novagendas.com';
             window.location.href = baseUrl;
           }}
           className="btn btn-primary btn-full"

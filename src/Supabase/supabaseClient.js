@@ -2,11 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 
 const hostname = window.location.hostname
 
-// Detección por URL en runtime: *.dev.novagendas.com → dev DB
+// Detección por URL en runtime: dev-{tenant}.novagendas.com → dev DB
 // Fallback a VITE_ENV para desarrollo local (localhost)
 export const isDevEnvironment =
-  hostname.includes('.dev.novagendas.com') ||
-  hostname === 'dev.novagendas.com' ||
+  hostname.split('.')[0].startsWith('dev-') ||
   import.meta.env.VITE_ENV === 'development'
 
 const supabaseUrl = isDevEnvironment
