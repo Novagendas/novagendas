@@ -473,7 +473,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── CTA Final ─── */}
+      {/* ─── CITA Final ─── */}
       <section id="contacto" className="lp-cta">
         <div className="lp-cta-inner reveal">
           <div className="lp-cta-badge">Comienza hoy</div>
