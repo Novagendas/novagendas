@@ -473,6 +473,20 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── CTA Final ─── */}
+      <section id="contacto" className="lp-cta">
+        <div className="lp-cta-inner reveal">
+          <div className="lp-cta-badge">Comienza hoy</div>
+          <h2 className="lp-cta-h2">¿Listo para modernizar tu gestión?</h2>
+          <p className="lp-cta-sub">Únete a decenas de negocios que ya optimizan su tiempo con Novagendas.</p>
+          <div className="lp-cta-actions">
+            <a href="mailto:contacto@novagendas.com" className="lp-btn-primary lp-btn-large">
+              Contactar ventas <ArrowRight />
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ─── Footer ─── */}
       <footer className="lp-footer">
         <div className="lp-footer-inner">
