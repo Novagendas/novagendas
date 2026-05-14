@@ -497,7 +497,7 @@ export default function LandingPage() {
           </div>
           <div className="lp-footer-links">
             <a href="/terminos">Términos y Privacidad</a>
-            <a href="/condiciones">Condiciones de Servicio</a>
+            <a href="/condiciones">Condiciones de Servicios</a>
           </div>
           <p className="lp-footer-copy">© {new Date().getFullYear()} Novagendas. Todos los derechos reservados.</p>
         </div>
