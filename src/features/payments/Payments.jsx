@@ -2,6 +2,7 @@ import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import { useState, useEffect, useCallback } from 'react';
 import { fmt } from '../../utils/formatters';
 import { parseDate } from '../../utils/dateHelpers';
+import SelectableInput from '../../components/inputs/SelectableInput';
 import './Payments.css';
 
 const METHOD_ICONS = {
