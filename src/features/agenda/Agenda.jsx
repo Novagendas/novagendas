@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import { supabase, insertLog, isDevEnvironment } from '../../Supabase/supabaseClient';
 import SelectableInput from '../../components/inputs/SelectableInput';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
@@ -1208,7 +1208,8 @@ export default function Agenda({ user, tenant }) {
               <button
                 className={`btn btn-outline btn-gcal-sync ${calConnected ? 'gcal-connected' : ''}`}
                 onClick={handleCalSync}
-                title={calConnected ? 'Sincronizado con Google Calendar — clic para desconectar' : 'Conectar con Google Calendar'}
+                disabled={isDevEnvironment}
+                title={isDevEnvironment ? 'Google Calendar no disponible en entorno de desarrollo' : calConnected ? 'Sincronizado con Google Calendar — clic para desconectar' : 'Conectar con Google Calendar'}
               >
                 {calConnected ? (
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34a853" strokeWidth="2.5" aria-hidden="true">

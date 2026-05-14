@@ -22,7 +22,7 @@ import HolidayCalendar from './features/agenda/HolidayCalendar';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
-import { supabase, supabaseAnon } from './Supabase/supabaseClient';
+import { supabase, supabaseAnon, isDevEnvironment } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
   return (
@@ -177,14 +177,6 @@ export default function App() {
   const [view, setView] = useState('loading');
   const [tenant, setTenant] = useState(null);
   const [resetTrigger, setResetTrigger] = useState(false);
-  const isDevelopment = import.meta.env.VITE_ENV === 'development' || import.meta.env.ENV === 'development';
-
-  // Log del entorno al iniciar
-  useEffect(() => {
-    console.log(`🚀 Novagendas - Entorno: ${isDevelopment ? 'DESARROLLO' : 'PRODUCCIÓN'}`);
-    console.log(`🌐 Host: ${window.location.hostname}`);
-    console.log(`🔗 URL: ${window.location.href}`);
-  }, [isDevelopment]);
 
   useEffect(() => {
     const init = async () => {
@@ -223,11 +215,9 @@ export default function App() {
             subdomain = parts[0];
           }
         } else {
+          // Para *.dev.novagendas.com y *.novagendas.com, parts[0] es siempre el tenant
           if (parts.length >= 3 && parts[0] !== 'www') {
             subdomain = parts[0];
-            if (isDevelopment && subdomain.startsWith('dev.')) {
-              subdomain = subdomain.substring(4);
-            }
           }
         }
       }
@@ -237,8 +227,7 @@ export default function App() {
         return;
       }
 
-      if (subdomain === 'admin' || subdomain === 'superadmin' ||
-          (isDevelopment && (subdomain === 'dev.admin' || subdomain === 'dev.superadmin'))) {
+      if (subdomain === 'admin' || subdomain === 'superadmin') {
         setView('superadmin');
         return;
       }
@@ -273,7 +262,7 @@ export default function App() {
     };
 
     init();
-  }, [isDevelopment]);
+  }, []);
 
   if (view === 'loading') return <LoadingScreen />;
   if (view === 'terminos') return <TermsPage />;
@@ -293,7 +282,7 @@ export default function App() {
         <button
           onClick={() => {
             const isLocal = window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
-            const baseUrl = isLocal ? 'http://localhost:5173' : (isDevelopment ? 'https://dev.novagendas.com' : 'https://novagendas.com');
+            const baseUrl = isLocal ? 'http://localhost:5173' : (isDevEnvironment ? 'https://dev.novagendas.com' : 'https://novagendas.com');
             window.location.href = baseUrl;
           }}
           className="btn btn-primary btn-full"

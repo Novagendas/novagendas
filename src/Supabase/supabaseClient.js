@@ -1,17 +1,24 @@
 import { createClient } from '@supabase/supabase-js'
 
-const isDevelopment = import.meta.env.VITE_ENV === 'development'
+const hostname = window.location.hostname
 
-const supabaseUrl = isDevelopment
+// Detección por URL en runtime: *.dev.novagendas.com → dev DB
+// Fallback a VITE_ENV para desarrollo local (localhost)
+export const isDevEnvironment =
+  hostname.includes('.dev.novagendas.com') ||
+  hostname === 'dev.novagendas.com' ||
+  import.meta.env.VITE_ENV === 'development'
+
+const supabaseUrl = isDevEnvironment
   ? import.meta.env.VITE_SUPABASE_URL_DEV
   : import.meta.env.VITE_SUPABASE_URL
 
-const supabaseAnonKey = isDevelopment
+const supabaseAnonKey = isDevEnvironment
   ? import.meta.env.VITE_SUPABASE_ANON_KEY_DEV
   : import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  const envLabel = isDevelopment ? 'desarrollo (VITE_SUPABASE_URL_DEV / VITE_SUPABASE_ANON_KEY_DEV)' : 'producción (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)'
+  const envLabel = isDevEnvironment ? 'desarrollo (VITE_SUPABASE_URL_DEV / VITE_SUPABASE_ANON_KEY_DEV)' : 'producción (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)'
   console.error(`Faltan variables de entorno de Supabase para ${envLabel}`)
 }
 
