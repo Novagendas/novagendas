@@ -19,6 +19,7 @@ import Statistics from './features/statistics/Statistics';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
+import BotConfig from './features/bot/BotConfig';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
@@ -136,6 +137,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'profile':       return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
       case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
       case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;
+      case 'bot':           return user.role === 'admin' ? <BotConfig user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
   };
