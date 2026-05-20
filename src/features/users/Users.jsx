@@ -384,7 +384,7 @@ export default function Users({ user, tenant }) {
               negocio: tenant.name || 'Novagendas'
             }
           })
-        }).catch(() => {});
+        }).catch((e) => console.warn('send-email failed:', e.message));
       }
 
       await supabase.from('rolpermisos').delete().eq('idusuario', userId);

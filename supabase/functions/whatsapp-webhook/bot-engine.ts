@@ -95,7 +95,7 @@ async function syncToGoogleCalendar(
       Authorization: `Bearer ${serviceKey}`,
     },
     body: JSON.stringify({ idnegocios, action: "create", eventData }),
-  }).catch(() => {});
+  }).catch((e: Error) => console.warn('google-calendar-event failed:', e.message));
 }
 
 export async function handleIncomingMessage(
@@ -608,13 +608,11 @@ async function processStep(
 
       if (client_email) {
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
-        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        if (supabaseUrl && serviceKey) {
+        if (supabaseUrl) {
           fetch(`${supabaseUrl}/functions/v1/send-email`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              "Authorization": `Bearer ${serviceKey}`,
             },
             body: JSON.stringify({
               template: "cita-confirmada",
@@ -628,7 +626,7 @@ async function processStep(
                 negocio: businessName,
               },
             }),
-          }).catch(() => {});
+          }).catch((e: Error) => console.warn('send-email failed:', e.message));
         }
       }
 

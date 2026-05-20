@@ -16,7 +16,7 @@ const json = (body: unknown, status = 200) =>
 
 const TEMPLATES: Record<string, { subject: string; html: string }> = {
   "cuenta-creada": {
-    subject: "Tu cuenta ha sido creada — {{negocio}}",
+    subject: "ACCION REQUERIDA: Tu cuenta ha sido creada — {{negocio}}",
     html: `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -58,11 +58,12 @@ const TEMPLATES: Record<string, { subject: string; html: string }> = {
                   </td>
                 </tr>
               </table>
-              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff8e1;border-radius:8px;margin-bottom:32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fdecea;border-radius:8px;border-left:4px solid #d32f2f;margin-bottom:32px;">
                 <tr>
                   <td style="padding:16px 20px;">
-                    <p style="margin:0;color:#7a6000;font-size:14px;line-height:1.6;">
-                      <strong>Importante:</strong> Por tu seguridad, te recomendamos cambiar tu contraseña la primera vez que inicies sesión.
+                    <p style="margin:0 0 6px;color:#b71c1c;font-size:14px;font-weight:700;">ACCION REQUERIDA</p>
+                    <p style="margin:0;color:#7a1c1c;font-size:14px;line-height:1.6;">
+                      Esta es una <strong>contraseña temporal</strong>. Debes cambiarla en tu primer inicio de sesión de forma inmediata. No compartas esta contraseña con nadie.
                     </p>
                   </td>
                 </tr>
@@ -201,6 +202,10 @@ serve(async (req) => {
 
   if (!templateName || !to || !data) {
     return json({ success: false, error: "Missing required fields: template, to, data" }, 400);
+  }
+
+  if (!to.includes('@') || !to.includes('.')) {
+    return json({ success: false, error: 'Invalid email address' }, 400);
   }
 
   const template = TEMPLATES[templateName];
