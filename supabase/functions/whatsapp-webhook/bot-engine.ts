@@ -605,6 +605,33 @@ async function processStep(
         day: "numeric",
         month: "long",
       });
+
+      if (client_email) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (supabaseUrl && serviceKey) {
+          fetch(`${supabaseUrl}/functions/v1/send-email`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${serviceKey}`,
+            },
+            body: JSON.stringify({
+              template: "cita-confirmada",
+              to: client_email,
+              data: {
+                nombre_cliente: client_nombre ?? "Cliente",
+                servicio: servicio_nombre ?? "Servicio",
+                fecha: fechaLabel,
+                hora: hora ?? "",
+                especialista: conv.data.especialista_nombre ?? "Nuestro equipo",
+                negocio: businessName,
+              },
+            }),
+          }).catch(() => {});
+        }
+      }
+
       await send(
         buildText(
           `✅ ¡Cita agendada con éxito!\n\n` +

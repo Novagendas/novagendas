@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bienvenido a {{negocio}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f8;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f8;padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(108,99,255,0.10);max-width:600px;width:100%;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#6c63ff 0%,#5a52d5 100%);padding:40px 40px 32px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:700;letter-spacing:-0.5px;">{{negocio}}</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:15px;">Tu cuenta ha sido creada</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <p style="margin:0 0 16px;color:#2d2d3a;font-size:16px;line-height:1.6;">Hola, <strong>{{nombre}}</strong>!</p>
+              <p style="margin:0 0 28px;color:#555566;font-size:15px;line-height:1.7;">
+                Tu cuenta en <strong>{{negocio}}</strong> ha sido creada exitosamente. A continuación encontrarás tus credenciales de acceso:
+              </p>
+
+              <!-- Credentials box -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0eeff;border-radius:10px;border-left:4px solid #6c63ff;margin-bottom:28px;">
+                <tr>
+                  <td style="padding:24px 28px;">
+                    <p style="margin:0 0 12px;color:#6c63ff;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Credenciales de acceso</p>
+                    <table cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="color:#888899;font-size:13px;padding-bottom:6px;padding-right:16px;">Correo electrónico</td>
+                        <td style="color:#2d2d3a;font-size:14px;font-weight:600;padding-bottom:6px;">{{email}}</td>
+                      </tr>
+                      <tr>
+                        <td style="color:#888899;font-size:13px;padding-right:16px;">Contraseña temporal</td>
+                        <td style="color:#2d2d3a;font-size:14px;font-weight:600;font-family:monospace;letter-spacing:1px;">{{contrasena_temporal}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Warning -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fff8e1;border-radius:8px;margin-bottom:32px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;color:#7a6000;font-size:14px;line-height:1.6;">
+                      <strong>Importante:</strong> Por tu seguridad, te recomendamos cambiar tu contraseña la primera vez que inicies sesión.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px;color:#555566;font-size:14px;line-height:1.7;">
+                Si tienes alguna pregunta, no dudes en contactarnos.
+              </p>
+              <p style="margin:0;color:#555566;font-size:14px;line-height:1.7;">
+                Bienvenido al equipo,<br>
+                <strong style="color:#2d2d3a;">{{negocio}}</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f4f4f8;padding:24px 40px;text-align:center;border-top:1px solid #eeeef5;">
+              <p style="margin:0;color:#aaaabc;font-size:12px;line-height:1.6;">
+                Este correo fue enviado automáticamente por {{negocio}}.<br>
+                Si no esperabas este mensaje, puedes ignorarlo.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
