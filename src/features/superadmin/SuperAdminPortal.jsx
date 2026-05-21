@@ -168,6 +168,15 @@ function TenantForm({ form, setForm, onSubmit, onDelete, isEdit, saving, allUser
             <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-2)' }}>Activo en producción</span>
           </label>
         </Field>
+        <Field label="¿Bot WhatsApp activo?">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', paddingTop: '0.45rem' }}>
+            <input type="checkbox" checked={form.bot_activo} onChange={e => setForm(f => ({ ...f, bot_activo: e.target.checked }))} style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#16a34a' }} />
+            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-2)' }}>Bot habilitado</span>
+          </label>
+        </Field>
+        <Field label="Número / ID del bot">
+          <input className="input-field" value={form.bot_numero} onChange={e => setForm(f => ({ ...f, bot_numero: e.target.value }))} placeholder="ej: 573001234567" />
+        </Field>
         <Field label="Usuarios del negocio" style={{ flex: '1 1 100%' }}>
           <div style={{ marginBottom: '0.4rem', position: 'relative' }}>
             <svg style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-4)' }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -359,12 +368,13 @@ export default function SuperAdminPortal() {
 
   /* ── Data state ── */
   const [tenants, setTenants] = useState([]);
+  const [botIntegrations, setBotIntegrations] = useState({});
   const [tenantLoad, setTenantLoad] = useState(false);
   const [tenantSearch, setTenantSearch] = useState('');
   const [tenantSort, setTenantSort] = useState('newest');
   const [tenantModal, setTenantModal] = useState(null);
   const [savingT, setSavingT] = useState(false);
-  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, idestadoapp: 1, usuarios: [] };
+  const blankT = { nit: '', name: '', subdomain: '', descripcion: '', direccion: '', telefono: '', deployed: false, bot_activo: false, bot_numero: '', idestadoapp: 1, usuarios: [] };
   const [tForm, setTForm] = useState(blankT);
 
   const [users, setUsers] = useState([]);
@@ -374,6 +384,7 @@ export default function SuperAdminPortal() {
   const [userRolFilter, setUserRolFilter] = useState('all');
   const [userModal, setUserModal] = useState(null);
   const [savingU, setSavingU] = useState(false);
+  const [originalUserEmail, setOriginalUserEmail] = useState('');
   const blankU = { nombre: '', apellido: '', email: '', cedula: '', contrasena: '', telefono: '', profesion: '', idestado: 1, idrol: 2, negocios: [] };
   const [uForm, setUForm] = useState(blankU);
 
@@ -400,8 +411,14 @@ export default function SuperAdminPortal() {
   /* ── Fetchers ── */
   const fetchTenants = useCallback(async () => {
     setTenantLoad(true);
-    const { data } = await supabase.from('negocios').select('*').order('idnegocios');
-    setTenants(data || []);
+    const [{ data: negociosData }, { data: botsData }] = await Promise.all([
+      supabase.from('negocios').select('*').order('idnegocios'),
+      supabase.from('whatsapp_integrations').select('idnegocios, phone_number_id'),
+    ]);
+    setTenants(negociosData || []);
+    const botsMap = {};
+    (botsData || []).forEach(b => { botsMap[b.idnegocios] = b.phone_number_id || ''; });
+    setBotIntegrations(botsMap);
     setTenantLoad(false);
   }, []);
 
@@ -517,14 +534,14 @@ export default function SuperAdminPortal() {
     const tenantUsuarios = users
       .filter(u => u._negocios?.some(n => n.idnegocios === t.idnegocios))
       .map(u => ({ idusuario: u.idusuario, es_principal: u._negocios.find(n => n.idnegocios === t.idnegocios)?.es_principal || false }));
-    setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, idestadoapp: t.idestadoapp || 1, usuarios: tenantUsuarios });
+    setTForm({ nit: t.nit || '', name: t.nombre || '', subdomain: t.dominio || '', descripcion: t.descripcion || '', direccion: t.direccion || '', telefono: t.telefono || '', deployed: !!t.deployed, bot_activo: !!t.bot_activo, bot_numero: t.bot_numero || '', idestadoapp: t.idestadoapp || 1, usuarios: tenantUsuarios });
     setTenantModal(t);
   };
 
   const handleSaveTenant = async e => {
     e.preventDefault();
     setSavingT(true);
-    const payload = { nit: tForm.nit, nombre: tForm.name, dominio: tForm.subdomain, descripcion: tForm.descripcion, direccion: tForm.direccion, telefono: tForm.telefono, deployed: tForm.deployed, idestadoapp: tForm.idestadoapp };
+    const payload = { nit: tForm.nit, nombre: tForm.name, dominio: tForm.subdomain, descripcion: tForm.descripcion, direccion: tForm.direccion, telefono: tForm.telefono, deployed: tForm.deployed, bot_activo: tForm.bot_activo, bot_numero: tForm.bot_numero || null, idestadoapp: tForm.idestadoapp };
     const isAdd = tenantModal === 'add';
     const { data: savedData, error } = isAdd
       ? await supabase.from('negocios').insert([payload]).select('idnegocios').maybeSingle()
@@ -563,6 +580,11 @@ export default function SuperAdminPortal() {
     fetchTenants();
   };
 
+  const toggleBotActivo = async (id, current) => {
+    await supabase.from('negocios').update({ bot_activo: !current }).eq('idnegocios', id);
+    fetchTenants();
+  };
+
   const updateStatus = async (id, val) => {
     await supabase.from('negocios').update({ idestadoapp: val }).eq('idnegocios', id);
     fetchTenants();
@@ -571,6 +593,7 @@ export default function SuperAdminPortal() {
   /* ── Usuarios CRUD ── */
   const openAddUser = () => { setUForm(blankU); setUserModal('add'); };
   const openEditUser = u => {
+    setOriginalUserEmail(u.email || '');
     setUForm({ nombre: u.nombre || '', apellido: u.apellido || '', email: u.email || '', cedula: u.cedula || '', contrasena: '', telefono: u.telefono || '', profesion: u.profesion || '', idestado: u.idestado || 1, idrol: u._idrol || 1, negocios: u._negocios || [] });
     setUserModal(u);
   };
@@ -622,6 +645,31 @@ export default function SuperAdminPortal() {
     if (isAdd && uForm.email && uForm.contrasena) {
       const { error: authErr } = await authHelper.auth.signUp({ email: uForm.email, password: uForm.contrasena, options: { data: { nombre: uForm.nombre, apellido: uForm.apellido, idusuario: savedId, idnegocios: idnegociosPrincipal } } });
       if (authErr && !authErr.message?.toLowerCase().includes('already registered')) console.warn('auth.users sync:', authErr.message);
+    }
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co';
+    const negocioNombre = tenants.find(t => t.idnegocios === idnegociosPrincipal)?.nombre || 'Novagendas';
+
+    if (isAdd && uForm.email && uForm.contrasena) {
+      fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template: 'cuenta-creada',
+          to: uForm.email,
+          data: { nombre: uForm.nombre, email: uForm.email, contrasena_temporal: uForm.contrasena, negocio: negocioNombre }
+        })
+      }).catch(e => console.warn('send-email failed:', e.message));
+    } else if (!isAdd && uForm.email && uForm.email !== originalUserEmail) {
+      fetch(`${supabaseUrl}/functions/v1/send-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template: 'cuenta-creada',
+          to: uForm.email,
+          data: { nombre: uForm.nombre, email: uForm.email, contrasena_temporal: uForm.contrasena || '(sin cambio)', negocio: negocioNombre }
+        })
+      }).catch(e => console.warn('send-email failed:', e.message));
     }
 
     await insertLog({ accion: isAdd ? 'CREATE' : 'UPDATE', entidad: 'Usuario', descripcion: `${isAdd ? 'Creación' : 'Edición'} de usuario: ${uForm.nombre} ${uForm.apellido} (${uForm.email})`, idUsuario: currentUser?.id, idNegocios: idnegociosPrincipal });
@@ -860,12 +908,12 @@ export default function SuperAdminPortal() {
             <FilterBar search={tenantSearch} onSearch={setTenantSearch} sort={tenantSort} onSort={setTenantSort} />
             <div className="super-table-wrapper">
               <table className="super-table">
-                <thead><tr>{['ID', 'Subdominio', 'Nombre / NIT', 'Sedes', 'Admin', 'Deployed', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+                <thead><tr>{['ID', 'Subdominio', 'Nombre / NIT', 'Sedes', 'Admin', 'Bot Activo', 'Núm. Bot', 'Deployed', 'Estado', 'Acciones'].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
                 <tbody>
                   {tenantLoad ? (
-                    <tr><td colSpan="8" className="super-empty-cell"><span className="spinner-mini" style={{ width: 18, height: 18 }} /> Cargando...</td></tr>
+                    <tr><td colSpan="10" className="super-empty-cell"><span className="spinner-mini" style={{ width: 18, height: 18 }} /> Cargando...</td></tr>
                   ) : filteredTenants.length === 0 ? (
-                    <tr><td colSpan="8" className="super-empty-cell">{tenantSearch ? 'Sin resultados.' : 'Sin negocios registrados.'}</td></tr>
+                    <tr><td colSpan="10" className="super-empty-cell">{tenantSearch ? 'Sin resultados.' : 'Sin negocios registrados.'}</td></tr>
                   ) : filteredTenants.map(t => {
                     const tenantUbic = ubicaciones.filter(u => u.idnegocios === t.idnegocios);
                     const tenantUsers = users.filter(u => u._negocios?.some(n => n.idnegocios === t.idnegocios) && u.idestado === 1);
@@ -904,6 +952,17 @@ export default function SuperAdminPortal() {
                                 })}
                               </div>
                             : <span style={{ color: '#9ca3af' }}>—</span>}
+                        </TD>
+                        <TD style={{ textAlign: 'center' }}>
+                          <input type="checkbox" checked={!!t.bot_activo} onChange={() => toggleBotActivo(t.idnegocios, t.bot_activo)}
+                            style={{ width: 17, height: 17, cursor: 'pointer', accentColor: '#16a34a' }}
+                            title={t.bot_activo ? 'Bot activo' : 'Sin bot'} />
+                        </TD>
+                        <TD style={{ fontSize: '0.78rem', color: 'var(--text-3)' }}>
+                          {t.bot_numero
+                            ? <span style={{ fontFamily: 'monospace', background: 'var(--bg-2)', padding: '2px 6px', borderRadius: 6 }}>{t.bot_numero}</span>
+                            : <span style={{ color: '#9ca3af' }}>—</span>
+                          }
                         </TD>
                         <TD style={{ textAlign: 'center' }}>
                           <input type="checkbox" checked={!!t.deployed} onChange={() => toggleDeployed(t.idnegocios, t.deployed)}

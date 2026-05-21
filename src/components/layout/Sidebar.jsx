@@ -77,7 +77,7 @@ function SectionLabel({ label }) {
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
-export default function Sidebar({ user, tenant, currentRoute, onNavigate }) {
+export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBotEnabled }) {
     // User info display
   const uRole     = user?.role || 'admin';
 
@@ -165,7 +165,7 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate }) {
                 />
               ))}
               <SectionLabel label="Administración" />
-              {ADMIN_NAV.map(item => (
+              {ADMIN_NAV.filter(item => item.id !== 'bot' || hasBotEnabled).map(item => (
                 <NavBtn
                   key={item.id}
                   item={item}

@@ -1,4 +1,9 @@
 
+[functions.send-email]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/send-email/index.ts"
+
 [functions.whatsapp-webhook]
 enabled = true
 verify_jwt = false

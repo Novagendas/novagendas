@@ -4,10 +4,21 @@ const DEFAULT_START_MINUTES = 8 * 60;   // 8:00 AM
 const DEFAULT_END_MINUTES   = 20 * 60;  // 8:00 PM
 const DEFAULT_DAYS          = [1, 2, 3, 4, 5, 6]; // Mon-Sat
 
+interface JornadaBlock {
+  habilitado: boolean;
+  inicio: string; // "HH:MM"
+  fin: string;    // "HH:MM"
+}
+
 interface BotConfig {
   dias_disponibles: number[];
-  hora_inicio: string;  // "HH:MM:SS"
-  hora_fin: string;     // "HH:MM:SS"
+  hora_inicio: string;  // "HH:MM:SS" — legacy fallback
+  hora_fin: string;     // "HH:MM:SS" — legacy fallback
+  jornadas: {
+    manana: JornadaBlock;
+    tarde: JornadaBlock;
+    noche: JornadaBlock;
+  } | null;
 }
 
 async function fetchBotConfig(
@@ -16,11 +27,28 @@ async function fetchBotConfig(
 ): Promise<BotConfig | null> {
   const { data } = await supabase
     .from("bot_config")
-    .select("dias_disponibles, hora_inicio, hora_fin")
+    .select("dias_disponibles, hora_inicio, hora_fin, jornadas")
     .eq("idnegocios", idnegocios)
     .maybeSingle();
 
   return (data as BotConfig | null) ?? null;
+}
+
+function getSlotRanges(
+  config: BotConfig | null
+): Array<{ start: number; end: number }> {
+  if (config?.jornadas) {
+    const { manana, tarde, noche } = config.jornadas;
+    const ranges: Array<{ start: number; end: number }> = [];
+    if (manana?.habilitado) ranges.push({ start: timeStrToMinutes(manana.inicio), end: timeStrToMinutes(manana.fin) });
+    if (tarde?.habilitado)  ranges.push({ start: timeStrToMinutes(tarde.inicio),  end: timeStrToMinutes(tarde.fin)  });
+    if (noche?.habilitado)  ranges.push({ start: timeStrToMinutes(noche.inicio),  end: timeStrToMinutes(noche.fin)  });
+    if (ranges.length > 0) return ranges;
+  }
+  // fallback a rango único legacy
+  const start = config?.hora_inicio ? timeStrToMinutes(config.hora_inicio) : DEFAULT_START_MINUTES;
+  const end   = config?.hora_fin    ? timeStrToMinutes(config.hora_fin)    : DEFAULT_END_MINUTES;
+  return [{ start, end }];
 }
 
 function timeStrToMinutes(timeStr: string): number {
@@ -91,14 +119,6 @@ export async function getAvailableSlots(
     })(),
   ]);
 
-  const startMinutes = config?.hora_inicio
-    ? timeStrToMinutes(config.hora_inicio)
-    : DEFAULT_START_MINUTES;
-
-  const endMinutes = config?.hora_fin
-    ? timeStrToMinutes(config.hora_fin)
-    : DEFAULT_END_MINUTES;
-
   const occupied = ((existingResult.data ?? []) as { fechahorainicio: string; fechahorafin: string }[]).map(
     (a) => ({
       startMin: isoTimeToMinutes(a.fechahorainicio),
@@ -106,7 +126,10 @@ export async function getAvailableSlots(
     })
   );
 
-  return generateSlots(durationMinutes, startMinutes, endMinutes).filter((slot) => {
+  const ranges = getSlotRanges(config);
+  const allSlots = ranges.flatMap((r) => generateSlots(durationMinutes, r.start, r.end));
+
+  return allSlots.filter((slot) => {
     const slotStart = timeStrToMinutes(slot);
     const slotEnd = slotStart + durationMinutes;
     return !occupied.some((o) => o.startMin < slotEnd && o.endMin > slotStart);
