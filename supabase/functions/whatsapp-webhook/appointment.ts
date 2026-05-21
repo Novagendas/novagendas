@@ -7,6 +7,7 @@ export interface ClientRecord {
   idcliente: number;
   nombre: string;
   apellido: string;
+  email: string | null;
 }
 
 export interface AppointmentSummary {
@@ -16,20 +17,17 @@ export interface AppointmentSummary {
   servicio: string;
 }
 
-export async function getClientByPhone(
+export async function getClientByCedula(
   supabase: SupabaseClient,
   idnegocios: number,
-  phone: string
+  cedula: string
 ): Promise<ClientRecord | null> {
-  const normalized = phone.startsWith("+") ? phone.slice(1) : phone;
-  const withPlus = `+${normalized}`;
-
   const { data } = await supabase
     .from("cliente")
-    .select("idcliente, nombre, apellido")
+    .select("idcliente, nombre, apellido, email")
     .eq("idnegocios", idnegocios)
+    .eq("cedula", cedula.trim())
     .is("deleted_at", null)
-    .or(`telefono.eq.${phone},telefono.eq.${withPlus},telefono.eq.${normalized}`)
     .limit(1)
     .maybeSingle();
 
@@ -111,6 +109,22 @@ export async function cancelAppointment(
   const { error } = await supabase
     .from("cita")
     .update({ idestadocita: STATUS_CANCELLED })
+    .eq("idcita", idcita)
+    .eq("idnegocios", idnegocios);
+
+  return !error;
+}
+
+export async function updateAppointment(
+  supabase: SupabaseClient,
+  idcita: number,
+  idnegocios: number,
+  fechahorainicio: string,
+  fechahorafin: string
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("cita")
+    .update({ fechahorainicio, fechahorafin })
     .eq("idcita", idcita)
     .eq("idnegocios", idnegocios);
 
