@@ -25,10 +25,11 @@ export function buildMenu(businessName: string): Record<string, unknown> {
           {
             title: "Opciones disponibles",
             rows: [
-              { id: "MENU_AGENDAR",   title: "📅 Agendar cita",    description: "Reserva una nueva cita" },
-              { id: "MENU_VER",       title: "🗓 Ver mis citas",    description: "Consulta tus próximas citas" },
-              { id: "MENU_CANCELAR",  title: "❌ Cancelar cita",    description: "Cancela una cita existente" },
-              { id: "MENU_SERVICIOS", title: "💆 Ver servicios",    description: "Precios, duración y categorías" },
+              { id: "MENU_AGENDAR",   title: "📅 Agendar cita",   description: "Reserva una nueva cita" },
+              { id: "MENU_EDITAR",    title: "✏️ Editar cita",    description: "Cambia fecha u hora" },
+              { id: "MENU_VER",       title: "🗓 Ver mis citas",   description: "Consulta tus próximas citas" },
+              { id: "MENU_CANCELAR",  title: "❌ Cancelar cita",   description: "Cancela una cita existente" },
+              { id: "MENU_SERVICIOS", title: "💆 Ver servicios",   description: "Precios, duración y categorías" },
             ],
           },
         ],
@@ -38,12 +39,16 @@ export function buildMenu(businessName: string): Record<string, unknown> {
 }
 
 export function buildServiceList(
-  services: Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>
+  services: Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>,
+  showPrice = true
 ): Record<string, unknown> {
   const rows = services.slice(0, 10).map((s) => ({
     id: `SVC_${s.idservicios}`,
     title: trunc(s.nombre, 24),
-    description: trunc(`${formatCOP(s.precio)} · ${s.duracion} min`, 72),
+    description: trunc(
+      showPrice ? `${formatCOP(s.precio)} · ${s.duracion} min` : `${s.duracion} min`,
+      72
+    ),
   }));
   return {
     type: "interactive",
@@ -112,18 +117,34 @@ export function buildDateList(dates: string[]): Record<string, unknown> {
   };
 }
 
-export function buildTimeList(slots: string[]): Record<string, unknown> {
-  const rows = slots.slice(0, 10).map((t) => ({
-    id: `TIME_${t}`,
-    title: t,
-    description: "",
-  }));
+export function buildJornadaSelector(
+  jornadas: Array<"mañana" | "tarde" | "noche">
+): Record<string, unknown> {
+  const MAP: Record<string, { id: string; title: string }> = {
+    "mañana": { id: "JORNADA_MANANA", title: "☀️ Mañana" },
+    "tarde":  { id: "JORNADA_TARDE",  title: "🌤 Tarde"  },
+    "noche":  { id: "JORNADA_NOCHE",  title: "🌙 Noche"  },
+  };
+  const buttons = jornadas.map((j) => ({ type: "reply", reply: MAP[j] }));
+  return {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: "¿En qué jornada prefieres tu cita?" },
+      action: { buttons },
+    },
+  };
+}
+
+export function buildTimeList(slots: string[], jornada: string): Record<string, unknown> {
+  const label = jornada.charAt(0).toUpperCase() + jornada.slice(1);
+  const rows = slots.slice(0, 10).map((t) => ({ id: `TIME_${t}`, title: t, description: "" }));
   return {
     type: "interactive",
     interactive: {
       type: "list",
-      body: { text: "Horarios disponibles para ese día:" },
-      action: { button: "Ver horarios", sections: [{ title: "Horas libres", rows }] },
+      body: { text: `Horarios disponibles — ${label}:` },
+      action: { button: "Ver horarios", sections: [{ title: label, rows }] },
     },
   };
 }
@@ -192,6 +213,61 @@ export function buildCancelConfirmation(
         buttons: [
           { type: "reply", reply: { id: "CANCEL_CONFIRM_YES", title: "✅ Sí, cancelar" } },
           { type: "reply", reply: { id: "CANCEL_CONFIRM_NO",  title: "❌ No, volver"   } },
+        ],
+      },
+    },
+  };
+}
+
+export function buildEditAppointmentList(
+  appointments: Array<{ idcita: number; fecha: string; hora: string; servicio: string }>
+): Record<string, unknown> {
+  const rows = appointments.slice(0, 10).map((a) => ({
+    id: `EDIT_${a.idcita}`,
+    title: trunc(`${a.fecha} ${a.hora}`, 24),
+    description: trunc(a.servicio, 72),
+  }));
+  return {
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: "Selecciona la cita que deseas editar:" },
+      action: { button: "Ver citas", sections: [{ title: "Mis citas", rows }] },
+    },
+  };
+}
+
+export function buildEditConfirmation(
+  serviceName: string,
+  fechaAnterior: string,
+  horaAnterior: string,
+  fechaNueva: string,
+  horaNueva: string
+): Record<string, unknown> {
+  const parseDate = (d: string): string => {
+    const [year, month, day] = d.split("-").map(Number);
+    return new Date(year, month - 1, day).toLocaleDateString("es-CO", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+  };
+  return {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: {
+        text:
+          `✏️ *Editar cita*\n\n` +
+          `🏥 Servicio: ${serviceName}\n\n` +
+          `📅 Antes: ${parseDate(fechaAnterior)} a las ${horaAnterior}\n` +
+          `📅 Nueva: ${parseDate(fechaNueva)} a las ${horaNueva}\n\n` +
+          `¿Confirmas el cambio?`,
+      },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "EDIT_CONFIRM_YES", title: "✅ Confirmar" } },
+          { type: "reply", reply: { id: "EDIT_CONFIRM_NO",  title: "❌ Cancelar"  } },
         ],
       },
     },
