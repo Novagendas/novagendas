@@ -369,6 +369,75 @@ export default function Agenda({ user, tenant }) {
     }
   };
 
+  const handlePrintAppointment = () => {
+    const client = clients.find(c => c.idcliente === Number(form.clientId));
+    const specialist = specialists.find(u => u.idusuario === Number(form.specialistId));
+    const selectedServices = services.filter(s => form.serviceIds.includes(s.idservicios));
+    const location = locations.find(l => l.idubicacion === Number(form.locationId));
+
+    const dateStr = form.date
+      ? new Date(form.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : '';
+    const totalPrice = selectedServices.reduce((sum, s) => sum + Number(s.precio || 0), 0);
+    const totalDuration = selectedServices.reduce((sum, s) => sum + Number(s.duracion || 0), 0);
+
+    const statusColors = {
+      Confirmada: '#16a34a', 'En Espera': '#a16207', Pendiente: '#64748b',
+      Cancelada: '#dc2626', Completada: '#7c3aed'
+    };
+    const statusBg = {
+      Confirmada: '#dcfce7', 'En Espera': '#fef9c3', Pendiente: '#f1f5f9',
+      Cancelada: '#fee2e2', Completada: '#ede9fe'
+    };
+
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+    <title>Recibo de Cita</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1e293b;background:#fff;padding:2rem}
+      .receipt{max-width:420px;margin:0 auto}
+      .header{text-align:center;margin-bottom:1.75rem;padding-bottom:1.25rem;border-bottom:2.5px solid #3b82f6}
+      .brand{font-size:1.6rem;font-weight:900;color:#3b82f6;letter-spacing:-0.03em}
+      .sub{font-size:0.8rem;color:#64748b;margin-top:0.2rem;font-weight:500}
+      .row{margin-bottom:1rem}
+      .lbl{font-size:0.65rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:#94a3b8;margin-bottom:0.2rem}
+      .val{font-size:0.95rem;font-weight:700;color:#1e293b}
+      .val-sm{font-size:0.82rem;color:#64748b;margin-top:1px;font-weight:500}
+      .divider{border:none;border-top:1px dashed #e2e8f0;margin:1.1rem 0}
+      .svc-item{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.7rem;background:#f8fafc;border-radius:8px;margin-bottom:0.4rem}
+      .svc-name{font-size:0.88rem;font-weight:600;color:#334155}
+      .svc-dur{font-size:0.75rem;color:#94a3b8;font-weight:500}
+      .svc-price{font-size:0.88rem;font-weight:800;color:#3b82f6}
+      .total{display:flex;justify-content:space-between;padding:0.7rem 0;border-top:1.5px solid #e2e8f0;margin-top:0.4rem}
+      .total-lbl{font-weight:800;font-size:0.9rem}
+      .total-amt{font-weight:900;font-size:1.05rem;color:#3b82f6}
+      .badge{display:inline-block;padding:0.25rem 0.75rem;border-radius:99px;font-size:0.72rem;font-weight:800}
+      .footer{text-align:center;margin-top:2rem;padding-top:1rem;border-top:1px dashed #e2e8f0;font-size:0.72rem;color:#94a3b8}
+      @media print{body{padding:0.5rem}}
+    </style></head><body><div class="receipt">
+    <div class="header">
+      <div class="brand">Novagendas</div>
+      <div class="sub">${tenant.name || ''} · Comprobante de Cita</div>
+    </div>
+    ${client ? `<div class="row"><div class="lbl">Paciente</div><div class="val">${client.nombre} ${client.apellido}</div>${client.cedula ? `<div class="val-sm">Cédula: ${client.cedula}</div>` : ''}</div>` : ''}
+    <div class="row"><div class="lbl">Fecha</div><div class="val">${dateStr}</div><div class="val-sm">${form.time || ''}</div></div>
+    ${specialist ? `<div class="row"><div class="lbl">Profesional</div><div class="val">${specialist.nombre} ${specialist.apellido}</div></div>` : ''}
+    ${location ? `<div class="row"><div class="lbl">Sede</div><div class="val">${location.nombre}</div></div>` : ''}
+    ${form.status ? `<div class="row"><div class="lbl">Estado</div><span class="badge" style="background:${statusBg[form.status]||'#f1f5f9'};color:${statusColors[form.status]||'#64748b'}">${form.status}</span></div>` : ''}
+    <hr class="divider">
+    <div class="row"><div class="lbl">Servicios</div>
+      ${selectedServices.map(s => `<div class="svc-item"><div><div class="svc-name">${s.nombre}</div>${s.duracion ? `<div class="svc-dur">${s.duracion} min</div>` : ''}</div>${s.precio ? `<div class="svc-price">$${Number(s.precio).toLocaleString('es-CO')}</div>` : ''}</div>`).join('')}
+      ${totalDuration > 0 ? `<div style="font-size:0.75rem;color:#94a3b8;padding-top:0.4rem">Duración total: ${totalDuration} min</div>` : ''}
+      ${totalPrice > 0 ? `<div class="total"><span class="total-lbl">Total</span><span class="total-amt">$${totalPrice.toLocaleString('es-CO')}</span></div>` : ''}
+    </div>
+    <div class="footer">Generado por Novagendas · ${new Date().toLocaleDateString('es-CO')}</div>
+    </div><script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}</script></body></html>`;
+
+    const win = window.open('', '_blank', 'width=520,height=720');
+    win.document.write(html);
+    win.document.close();
+  };
+
   /* ------ Drag state ------ */
   const dragging = useRef(null);
 
@@ -1881,18 +1950,18 @@ export default function Agenda({ user, tenant }) {
 
               <div className="appt-modal-footer">
                 <div className="appt-modal-footer-left">
-                  {editId && form.status !== 'Completada' && (
+                  {editId && (
                     <button
                       type="button"
-                      className="btn btn-danger btn-delete-appt"
-                      onClick={handleDeleteAppointment}
+                      className="btn btn-outline btn-print-appt"
+                      onClick={handlePrintAppointment}
                       disabled={saving}
-                      title="Eliminar esta cita permanentemente"
+                      title="Imprimir comprobante de esta cita"
                     >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
                       </svg>
-                      Eliminar
+                      Imprimir
                     </button>
                   )}
                 </div>

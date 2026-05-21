@@ -124,6 +124,15 @@
   opacity: 0;
 }
 
+.sidebar-nav-spacer {
+  height: 50px;
+  flex-shrink: 0;
+}
+
+.sidebar-nav-spacer.tour-active {
+  height: 50vh;
+}
+
 .sidebar-section-label {
   font-size: 0.65rem;
   font-weight: 800;

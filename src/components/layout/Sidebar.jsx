@@ -52,6 +52,7 @@ function NavBtn({ item, active, onNavigate }) {
         className={`nav-btn${active ? ' active' : ''}`}
         aria-current={active ? 'page' : undefined}
         title={item.label}
+        data-tour={item.id}
       >
         <div className="nav-btn-icon" aria-hidden="true">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -77,7 +78,7 @@ function SectionLabel({ label }) {
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
-export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBotEnabled }) {
+export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBotEnabled, isTourActive }) {
     // User info display
   const uRole     = user?.role || 'admin';
 
@@ -176,6 +177,7 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBot
             </>
           )}
         </ul>
+        <div className={`sidebar-nav-spacer${isTourActive ? ' tour-active' : ''}`} />
       </nav>
 
     </aside>
