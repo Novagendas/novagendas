@@ -309,7 +309,12 @@ export default function App() {
       }
 
       if (!subdomain) {
-        setView('landing');
+        if (hasCode || hasRecoveryHash) {
+          // Reset de contraseña desde www.novagendas.com (sin tenant en URL)
+          setView('reset');
+        } else {
+          setView('landing');
+        }
         return;
       }
 
@@ -379,6 +384,8 @@ export default function App() {
       </div>
     </div>
   );
+
+  if (view === 'reset') return <ResetPassword onSuccess={() => setView('landing')} />;
 
   if (view === 'superadmin') {
     return (

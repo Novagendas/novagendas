@@ -9,12 +9,16 @@ import {
 import { getAvailableDates, getAvailableSlots } from "./availability.ts";
 import {
   getClientByCedula, createAppointment, updateAppointment,
-  getUpcomingAppointments, cancelAppointment,
+  getUpcomingAppointments, cancelAppointment, createClient,
+  type ClientRecord,
 } from "./appointment.ts";
 
 type Step =
   | "MENU"
   | "ASK_CEDULA"
+  | "REGISTER_NOMBRE"
+  | "REGISTER_EMAIL"
+  | "REGISTER_TELEFONO"
   | "SELECT_SERVICE"
   | "SELECT_SPECIALIST"
   | "SELECT_DATE"
@@ -34,6 +38,9 @@ interface ConvData {
   idcliente?: number;
   client_nombre?: string;
   client_email?: string | null;
+  reg_cedula?: string;
+  reg_nombre?: string;
+  reg_email?: string;
   servicio_id?: number;
   servicio_nombre?: string;
   servicio_duracion?: number;
@@ -161,6 +168,33 @@ async function notifyAdmin(
   }).catch((e: Error) => console.warn("notifyAdmin failed:", e.message));
 }
 
+async function notifyAdminNewClient(
+  emailNotificaciones: string | null,
+  detalles: {
+    nombre_cliente: string;
+    documento_cliente: string;
+    telefono_cliente: string;
+    email_cliente: string;
+    negocio: string;
+  }
+): Promise<void> {
+  if (!emailNotificaciones?.trim()) return;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (!supabaseUrl) return;
+
+  fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "bot-cliente-registrado",
+      to: emailNotificaciones,
+      data: detalles,
+    }),
+  }).catch((e: Error) => console.warn("notifyAdminNewClient failed:", e.message));
+}
+
+
 export async function handleIncomingMessage(
   supabase: SupabaseClient,
   integration: Integration,
@@ -247,6 +281,117 @@ async function save(
     .eq("id", conv.id);
 }
 
+async function continueAfterClientFound(
+  supabase: SupabaseClient,
+  conv: Conversation,
+  client: ClientRecord,
+  idnegocios: number,
+  telefonoContacto: string | null,
+  emailNotificaciones: string | null,
+  businessName: string,
+  send: (msg: Record<string, unknown>) => Promise<void>
+): Promise<void> {
+  const baseData: ConvData = {
+    ...conv.data,
+    idcliente: client.idcliente,
+    client_nombre: client.nombre,
+    client_email: client.email,
+    reg_cedula: undefined,
+    reg_nombre: undefined,
+    reg_email: undefined,
+  };
+
+  if (conv.data.pending_action === "AGENDAR") {
+    const [svcsResult, botCfgResult] = await Promise.all([
+      supabase
+        .from("servicios")
+        .select("idservicios, nombre, precio, duracion")
+        .eq("idnegocios", idnegocios)
+        .is("deleted_at", null)
+        .neq("idestado", 2),
+      supabase
+        .from("bot_config")
+        .select("mostrar_precios")
+        .eq("idnegocios", idnegocios)
+        .maybeSingle(),
+    ]);
+
+    const svcs = svcsResult.data;
+    const mostrarPrecios =
+      (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
+
+    if (!svcs || svcs.length === 0) {
+      await send(
+        buildText(
+          "No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)
+        )
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+
+    await save(supabase, conv, "SELECT_SERVICE", baseData);
+    await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
+    await send(buildServiceList(svcs, mostrarPrecios));
+    return;
+  }
+
+  if (conv.data.pending_action === "VER") {
+    const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+    if (appts.length === 0) {
+      await send(
+        buildText(`Hola *${client.nombre}*, no tienes citas próximas registradas. 📭`)
+      );
+    } else {
+      const list = appts
+        .map(
+          (a, i) => `${i + 1}. 📅 ${a.fecha} a las ${a.hora}\n    🏥 ${a.servicio}`
+        )
+        .join("\n\n");
+      await send(buildText(`Hola *${client.nombre}*, tus próximas citas:\n\n${list}`));
+    }
+    await save(supabase, conv, "MENU", {});
+    await send(buildMenu(businessName, telefonoContacto));
+    return;
+  }
+
+  if (conv.data.pending_action === "CANCELAR") {
+    const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+    if (appts.length === 0) {
+      await send(
+        buildText(`Hola *${client.nombre}*, no tienes citas próximas para cancelar. 📭`)
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+    await save(supabase, conv, "CANCEL_SELECT", baseData);
+    await send(buildText(`Hola *${client.nombre}*, selecciona la cita a cancelar:`));
+    await send(buildAppointmentList(appts));
+    return;
+  }
+
+  if (conv.data.pending_action === "EDITAR") {
+    const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+    if (appts.length === 0) {
+      await send(
+        buildText(`Hola *${client.nombre}*, no tienes citas próximas para editar. 📭`)
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+    await save(supabase, conv, "EDIT_SELECT", baseData);
+    await send(buildText(`Hola *${client.nombre}*, selecciona la cita que deseas editar:`));
+    await send(buildEditAppointmentList(appts));
+    return;
+  }
+
+  await save(supabase, conv, "MENU", {});
+  await send(buildMenu(businessName, telefonoContacto));
+}
+
 async function processStep(
   supabase: SupabaseClient,
   conv: Conversation,
@@ -262,7 +407,7 @@ async function processStep(
   // ── FALLBACK ──────────────────────────────────────────────────────────────
   if (!isKnownAction(v, conv.step)) {
     await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName));
+    await send(buildMenu(businessName, telefonoContacto));
     return;
   }
 
@@ -342,140 +487,120 @@ async function processStep(
 
     await send(buildServiceCatalog(catalog));
     await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName));
+    await send(buildMenu(businessName, telefonoContacto));
     return;
   }
 
   // ── ASK_CEDULA → buscar cliente ───────────────────────────────────────────
   if (conv.step === "ASK_CEDULA") {
+    if (v.trim().length > 20) {
+      await send(buildText("El número de cédula ingresado no es válido. Inténtalo de nuevo:"));
+      return;
+    }
     const client = await getClientByCedula(supabase, idnegocios, v);
 
     if (!client) {
+      await save(supabase, conv, "REGISTER_NOMBRE", {
+        ...conv.data,
+        reg_cedula: v.trim(),
+      });
       await send(
         buildText(
-          "No encontramos ese número de cédula en nuestros registros. 🔍\n\n" +
-            "Verifica el número e inténtalo de nuevo, o contáctanos directamente.\n\n" +
-            "Escribe tu cédula:"
+          `No encontramos tu cédula *${v.trim()}* en nuestros registros. ` +
+          `Te registraremos para que puedas continuar. 📝\n\n` +
+          `¿Cuál es tu nombre completo?`
         )
       );
       return;
     }
 
-    const baseData: ConvData = {
+    await continueAfterClientFound(
+      supabase, conv, client, idnegocios,
+      telefonoContacto, emailNotificaciones, businessName, send
+    );
+    return;
+  }
+
+  // ── REGISTER_NOMBRE → guardar nombre, pedir email ─────────────────────────
+  if (conv.step === "REGISTER_NOMBRE") {
+    const nombre = v.trim();
+    if (nombre.length < 2 || nombre.length > 100) {
+      await send(buildText("Por favor ingresa un nombre válido (entre 2 y 100 caracteres):"));
+      return;
+    }
+    await save(supabase, conv, "REGISTER_EMAIL", {
       ...conv.data,
-      idcliente: client.idcliente,
-      client_nombre: client.nombre,
-      client_email: client.email,
-    };
+      reg_nombre: nombre,
+    });
+    await send(buildText(`Gracias *${nombre.split(" ")[0]}*. ¿Cuál es tu correo electrónico?`));
+    return;
+  }
 
-    // ── Flujo AGENDAR ─────────────────────────────────────────────────────
-    if (conv.data.pending_action === "AGENDAR") {
-      const [svcsResult, botCfgResult] = await Promise.all([
-        supabase
-          .from("servicios")
-          .select("idservicios, nombre, precio, duracion")
-          .eq("idnegocios", idnegocios)
-          .is("deleted_at", null)
-          .neq("idestado", 2),
-        supabase
-          .from("bot_config")
-          .select("mostrar_precios")
-          .eq("idnegocios", idnegocios)
-          .maybeSingle(),
-      ]);
-
-      const svcs = svcsResult.data;
-      const mostrarPrecios =
-        (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
-
-      if (!svcs || svcs.length === 0) {
-        await send(
-          buildText(
-            "No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)
-          )
-        );
-        await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
-        return;
-      }
-
-      await save(supabase, conv, "SELECT_SERVICE", baseData);
-      await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
-      await send(buildServiceList(svcs, mostrarPrecios));
-      return;
-    }
-
-    // ── Flujo VER ─────────────────────────────────────────────────────────
-    if (conv.data.pending_action === "VER") {
-      const appts = await getUpcomingAppointments(
-        supabase,
-        idnegocios,
-        client.idcliente
-      );
-      if (appts.length === 0) {
-        await send(
-          buildText(
-            `Hola *${client.nombre}*, no tienes citas próximas registradas. 📭`
-          )
-        );
-      } else {
-        const list = appts
-          .map(
-            (a, i) =>
-              `${i + 1}. 📅 ${a.fecha} a las ${a.hora}\n    🏥 ${a.servicio}`
-          )
-          .join("\n\n");
-        await send(buildText(`Hola *${client.nombre}*, tus próximas citas:\n\n${list}`));
-      }
-      await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName));
-      return;
-    }
-
-    // ── Flujo CANCELAR ────────────────────────────────────────────────────
-    if (conv.data.pending_action === "CANCELAR") {
-      const appts = await getUpcomingAppointments(
-        supabase,
-        idnegocios,
-        client.idcliente
-      );
-      if (appts.length === 0) {
-        await send(
-          buildText(
-            `Hola *${client.nombre}*, no tienes citas próximas para cancelar. 📭`
-          )
-        );
-        await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
-        return;
-      }
-      await save(supabase, conv, "CANCEL_SELECT", baseData);
+  // ── REGISTER_EMAIL → validar email, pedir teléfono ────────────────────────
+  if (conv.step === "REGISTER_EMAIL") {
+    const email = v.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       await send(
-        buildText(`Hola *${client.nombre}*, selecciona la cita a cancelar:`)
+        buildText("El correo ingresado no es válido. Por favor escribe un correo electrónico correcto:")
       );
-      await send(buildAppointmentList(appts));
+      return;
+    }
+    await save(supabase, conv, "REGISTER_TELEFONO", {
+      ...conv.data,
+      reg_email: email,
+    });
+    await send(buildText("Perfecto. ¿Cuál es tu número de teléfono?"));
+    return;
+  }
+
+  // ── REGISTER_TELEFONO → crear cliente y continuar flujo ───────────────────
+  if (conv.step === "REGISTER_TELEFONO") {
+    const telefono = v.trim();
+    if (telefono.length < 7 || telefono.length > 20) {
+      await send(buildText("Por favor ingresa un número de teléfono válido:"));
       return;
     }
 
-    // ── Flujo EDITAR ──────────────────────────────────────────────────────
-    if (conv.data.pending_action === "EDITAR") {
-      const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
-      if (appts.length === 0) {
-        await send(
-          buildText(`Hola *${client.nombre}*, no tienes citas próximas para editar. 📭`)
-        );
-        await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
-        return;
-      }
-      await save(supabase, conv, "EDIT_SELECT", baseData);
-      await send(buildText(`Hola *${client.nombre}*, selecciona la cita que deseas editar:`));
-      await send(buildEditAppointmentList(appts));
+    const cedula = conv.data.reg_cedula ?? "";
+    const nombre = conv.data.reg_nombre ?? "";
+    const email  = conv.data.reg_email  ?? "";
+
+    const newClient = await createClient(
+      supabase, idnegocios, cedula, nombre, email, telefono
+    );
+
+    if (!newClient) {
+      await send(
+        buildText(
+          "Hubo un error al registrarte. Por favor inténtalo de nuevo o contáctanos directamente." +
+          contactSuffix(telefonoContacto)
+        )
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
-    await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName));
+    await send(
+      buildText(
+        `✅ ¡Registro exitoso! Bienvenido/a *${newClient.nombre}*.\n\n` +
+        `Ya puedes continuar con tu solicitud.`
+      )
+    );
+
+    await notifyAdminNewClient(emailNotificaciones, {
+      nombre_cliente: newClient.nombre,
+      documento_cliente: cedula,
+      telefono_cliente: telefono,
+      email_cliente: email,
+      negocio: businessName,
+    });
+
+    await continueAfterClientFound(
+      supabase, conv, newClient, idnegocios,
+      telefonoContacto, emailNotificaciones, businessName, send
+    );
     return;
   }
 
@@ -580,7 +705,7 @@ async function processStep(
         )
       );
       await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -701,7 +826,7 @@ async function processStep(
     if (v === "CONFIRM_NO") {
       await save(supabase, conv, "MENU", {});
       await send(buildText("Cita no confirmada. ¿Deseas hacer algo más?"));
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -714,7 +839,7 @@ async function processStep(
           buildText("Ocurrió un error con tu sesión. Por favor inicia de nuevo.")
         );
         await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
+        await send(buildMenu(businessName, telefonoContacto));
         return;
       }
 
@@ -880,7 +1005,7 @@ async function processStep(
     if (v === "CANCEL_CONFIRM_NO") {
       await save(supabase, conv, "MENU", {});
       await send(buildText("De acuerdo, la cita no fue cancelada."));
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -975,7 +1100,7 @@ async function processStep(
         buildText("No hay fechas disponibles en los próximos 30 días." + contactSuffix(telefonoContacto))
       );
       await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -1077,7 +1202,7 @@ async function processStep(
     if (v === "EDIT_CONFIRM_NO") {
       await save(supabase, conv, "MENU", {});
       await send(buildText("Edición cancelada. ¿Deseas hacer algo más?"));
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -1149,7 +1274,7 @@ async function processStep(
 
   // Fallback
   await save(supabase, conv, "MENU", {});
-  await send(buildMenu(businessName));
+  await send(buildMenu(businessName, telefonoContacto));
 }
 
 function isKnownAction(v: string, step: Step): boolean {
@@ -1161,19 +1286,22 @@ function isKnownAction(v: string, step: Step): boolean {
     v === "MENU_SERVICIOS"
   )
     return true;
-  if (step === "ASK_CEDULA") return true;
-  if (step === "SELECT_SERVICE"  && v.startsWith("SVC_"))    return true;
-  if (step === "SELECT_SPECIALIST" && v.startsWith("ESP_"))  return true;
-  if (step === "SELECT_DATE"     && v.startsWith("DATE_"))   return true;
-  if (step === "SELECT_JORNADA"  && v.startsWith("JORNADA_")) return true;
-  if (step === "SELECT_TIME"     && v.startsWith("TIME_"))   return true;
+  if (step === "ASK_CEDULA")        return true;
+  if (step === "REGISTER_NOMBRE")   return true;
+  if (step === "REGISTER_EMAIL")    return true;
+  if (step === "REGISTER_TELEFONO") return true;
+  if (step === "SELECT_SERVICE"     && v.startsWith("SVC_"))      return true;
+  if (step === "SELECT_SPECIALIST"  && v.startsWith("ESP_"))      return true;
+  if (step === "SELECT_DATE"        && v.startsWith("DATE_"))     return true;
+  if (step === "SELECT_JORNADA"     && v.startsWith("JORNADA_"))  return true;
+  if (step === "SELECT_TIME"        && v.startsWith("TIME_"))     return true;
   if (step === "CONFIRM_APPOINTMENT" && (v === "CONFIRM_YES" || v === "CONFIRM_NO")) return true;
-  if (step === "CANCEL_SELECT"   && v.startsWith("CANCEL_")) return true;
-  if (step === "CANCEL_CONFIRM"  && (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")) return true;
-  if (step === "EDIT_SELECT"     && v.startsWith("EDIT_"))   return true;
-  if (step === "EDIT_DATE"       && v.startsWith("DATE_"))   return true;
-  if (step === "EDIT_JORNADA"    && v.startsWith("JORNADA_")) return true;
-  if (step === "EDIT_TIME"       && v.startsWith("TIME_"))   return true;
-  if (step === "EDIT_CONFIRM"    && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
+  if (step === "CANCEL_SELECT"      && v.startsWith("CANCEL_"))   return true;
+  if (step === "CANCEL_CONFIRM"     && (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")) return true;
+  if (step === "EDIT_SELECT"        && v.startsWith("EDIT_"))     return true;
+  if (step === "EDIT_DATE"          && v.startsWith("DATE_"))     return true;
+  if (step === "EDIT_JORNADA"       && v.startsWith("JORNADA_"))  return true;
+  if (step === "EDIT_TIME"          && v.startsWith("TIME_"))     return true;
+  if (step === "EDIT_CONFIRM"       && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
   return false;
 }

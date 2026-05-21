@@ -130,3 +130,37 @@ export async function updateAppointment(
 
   return !error;
 }
+
+export async function createClient(
+  supabase: SupabaseClient,
+  idnegocios: number,
+  cedula: string,
+  fullName: string,
+  email: string,
+  telefono: string
+): Promise<ClientRecord | null> {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return null;
+  const nombre = parts[0];
+  const apellido = parts.slice(1).join(" ") || ".";
+
+  const { data, error } = await supabase
+    .from("cliente")
+    .insert([{
+      idnegocios,
+      cedula: cedula.trim(),
+      nombre,
+      apellido,
+      email: email.trim().toLowerCase(),
+      telefono: telefono.trim(),
+    }])
+    .select("idcliente, nombre, apellido, email")
+    .single();
+
+  if (error || !data) {
+    console.warn("createClient failed:", error?.message);
+    return null;
+  }
+
+  return data as ClientRecord;
+}
