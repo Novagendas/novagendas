@@ -2,12 +2,13 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendMessage } from "./send.ts";
 import {
   buildMenu, buildServiceList, buildServiceCatalog, buildSpecialistList,
-  buildDateList, buildTimeList, buildConfirmation, buildAppointmentList,
-  buildCancelConfirmation, buildText,
+  buildDateList, buildTimeList, buildJornadaSelector, buildConfirmation,
+  buildAppointmentList, buildCancelConfirmation, buildText,
+  buildEditAppointmentList, buildEditConfirmation,
 } from "./messages.ts";
 import { getAvailableDates, getAvailableSlots } from "./availability.ts";
 import {
-  getClientByCedula, createAppointment,
+  getClientByCedula, createAppointment, updateAppointment,
   getUpcomingAppointments, cancelAppointment,
 } from "./appointment.ts";
 
@@ -17,13 +18,19 @@ type Step =
   | "SELECT_SERVICE"
   | "SELECT_SPECIALIST"
   | "SELECT_DATE"
+  | "SELECT_JORNADA"
   | "SELECT_TIME"
   | "CONFIRM_APPOINTMENT"
   | "CANCEL_SELECT"
-  | "CANCEL_CONFIRM";
+  | "CANCEL_CONFIRM"
+  | "EDIT_SELECT"
+  | "EDIT_DATE"
+  | "EDIT_JORNADA"
+  | "EDIT_TIME"
+  | "EDIT_CONFIRM";
 
 interface ConvData {
-  pending_action?: "AGENDAR" | "VER" | "CANCELAR";
+  pending_action?: "AGENDAR" | "VER" | "CANCELAR" | "EDITAR";
   idcliente?: number;
   client_nombre?: string;
   client_email?: string | null;
@@ -39,6 +46,12 @@ interface ConvData {
   cancel_fecha?: string;
   cancel_hora?: string;
   cancel_servicio?: string;
+  edit_cita_id?: number;
+  edit_servicio_nombre?: string;
+  edit_especialista_id?: number | null;
+  edit_duracion?: number;
+  edit_fecha_anterior?: string;
+  edit_hora_anterior?: string;
 }
 
 interface Conversation {
@@ -98,6 +111,56 @@ async function syncToGoogleCalendar(
   }).catch((e: Error) => console.warn('google-calendar-event failed:', e.message));
 }
 
+function contactSuffix(tel: string | null): string {
+  return tel
+    ? `\n\nPara comunicarte directamente: *${tel}*`
+    : "\n\nContáctanos directamente.";
+}
+
+async function insertBotLog(
+  supabase: SupabaseClient,
+  idnegocios: number,
+  accion: "CREAR" | "EDITAR" | "CANCELAR",
+  detalle: string
+): Promise<void> {
+  const { error } = await supabase.from("logsnegocio").insert([{
+    accion,
+    entidad: "cita",
+    descripcion: `Bot WhatsApp: ${accion} ${detalle}`,
+    idusuario: null,
+    idnegocios,
+  }]);
+  if (error) console.warn("insertBotLog failed:", error.message);
+}
+
+async function notifyAdmin(
+  emailNotificaciones: string | null,
+  accion: string,
+  detalles: {
+    nombre_cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+    especialista: string;
+    negocio: string;
+  }
+): Promise<void> {
+  if (!emailNotificaciones?.trim()) return;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (!supabaseUrl) return;
+
+  fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "bot-actividad-admin",
+      to: emailNotificaciones,
+      data: { accion, ...detalles },
+    }),
+  }).catch((e: Error) => console.warn("notifyAdmin failed:", e.message));
+}
+
 export async function handleIncomingMessage(
   supabase: SupabaseClient,
   integration: Integration,
@@ -109,12 +172,23 @@ export async function handleIncomingMessage(
   const content = extractContent(message);
   if (!content) return;
 
-  const { data: negocio } = await supabase
-    .from("negocios")
-    .select("nombre")
-    .eq("idnegocios", integration.idnegocios)
-    .single();
+  const [{ data: negocio }, { data: botCfgNotif }] = await Promise.all([
+    supabase
+      .from("negocios")
+      .select("nombre")
+      .eq("idnegocios", integration.idnegocios)
+      .single(),
+    supabase
+      .from("bot_config")
+      .select("telefono_contacto, email_notificaciones")
+      .eq("idnegocios", integration.idnegocios)
+      .maybeSingle(),
+  ]);
   const businessName = (negocio as { nombre: string } | null)?.nombre ?? "NovaAgendas";
+  const telefonoContacto =
+    (botCfgNotif as { telefono_contacto: string | null } | null)?.telefono_contacto ?? null;
+  const emailNotificaciones =
+    (botCfgNotif as { email_notificaciones: string | null } | null)?.email_notificaciones ?? null;
 
   const send = (msg: Record<string, unknown>) =>
     sendMessage(integration.phone_number_id, integration.access_token, from, msg);
@@ -155,6 +229,8 @@ export async function handleIncomingMessage(
     content.value,
     integration,
     businessName,
+    telefonoContacto,
+    emailNotificaciones,
     send
   );
 }
@@ -177,6 +253,8 @@ async function processStep(
   v: string,
   integration: Integration,
   businessName: string,
+  telefonoContacto: string | null,
+  emailNotificaciones: string | null,
   send: (msg: Record<string, unknown>) => Promise<void>
 ): Promise<void> {
   const idnegocios = integration.idnegocios;
@@ -285,17 +363,28 @@ async function processStep(
 
     // ── Flujo AGENDAR ─────────────────────────────────────────────────────
     if (conv.data.pending_action === "AGENDAR") {
-      const { data: svcs } = await supabase
-        .from("servicios")
-        .select("idservicios, nombre, precio, duracion")
-        .eq("idnegocios", idnegocios)
-        .is("deleted_at", null)
-        .neq("idestado", 2);
+      const [svcsResult, botCfgResult] = await Promise.all([
+        supabase
+          .from("servicios")
+          .select("idservicios, nombre, precio, duracion")
+          .eq("idnegocios", idnegocios)
+          .is("deleted_at", null)
+          .neq("idestado", 2),
+        supabase
+          .from("bot_config")
+          .select("mostrar_precios")
+          .eq("idnegocios", idnegocios)
+          .maybeSingle(),
+      ]);
+
+      const svcs = svcsResult.data;
+      const mostrarPrecios =
+        (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
 
       if (!svcs || svcs.length === 0) {
         await send(
           buildText(
-            "No hay servicios disponibles en este momento. Por favor contáctanos directamente."
+            "No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)
           )
         );
         await save(supabase, conv, "MENU", {});
@@ -305,7 +394,7 @@ async function processStep(
 
       await save(supabase, conv, "SELECT_SERVICE", baseData);
       await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
-      await send(buildServiceList(svcs));
+      await send(buildServiceList(svcs, mostrarPrecios));
       return;
     }
 
@@ -463,7 +552,7 @@ async function processStep(
     if (dates.length === 0) {
       await send(
         buildText(
-          "No hay fechas disponibles en los próximos 30 días. Por favor contáctanos directamente."
+          "No hay fechas disponibles en los próximos 30 días." + contactSuffix(telefonoContacto)
         )
       );
       await save(supabase, conv, "MENU", {});
@@ -504,8 +593,66 @@ async function processStep(
       return;
     }
 
-    await save(supabase, conv, "SELECT_TIME", { ...conv.data, fecha });
-    await send(buildTimeList(slots));
+    const hasManana = slots.some((t) => parseInt(t, 10) < 12);
+    const hasTarde  = slots.some((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; });
+    const hasNoche  = slots.some((t) => parseInt(t, 10) >= 17);
+
+    const jornadas: Array<"mañana" | "tarde" | "noche"> = [
+      ...(hasManana ? ["mañana" as const] : []),
+      ...(hasTarde  ? ["tarde"  as const] : []),
+      ...(hasNoche  ? ["noche"  as const] : []),
+    ];
+
+    if (jornadas.length === 1) {
+      await save(supabase, conv, "SELECT_TIME", { ...conv.data, fecha });
+      await send(buildTimeList(slots, jornadas[0]));
+      return;
+    }
+
+    await save(supabase, conv, "SELECT_JORNADA", { ...conv.data, fecha });
+    await send(buildJornadaSelector(jornadas));
+    return;
+  }
+
+  // ── SELECT_JORNADA → JORNADA_{...} ───────────────────────────────────────
+  if (conv.step === "SELECT_JORNADA" && v.startsWith("JORNADA_")) {
+    const fecha = conv.data.fecha ?? "";
+    const duracion = conv.data.servicio_duracion ?? 30;
+    const especialistaId = conv.data.especialista_id ?? null;
+
+    const allSlots = await getAvailableSlots(
+      supabase,
+      idnegocios,
+      especialistaId,
+      fecha,
+      duracion
+    );
+
+    const jornadaLabel =
+      v === "JORNADA_MANANA" ? "mañana" :
+      v === "JORNADA_TARDE"  ? "tarde"  : "noche";
+
+    const filtered =
+      v === "JORNADA_MANANA" ? allSlots.filter((t) => parseInt(t, 10) < 12) :
+      v === "JORNADA_TARDE"  ? allSlots.filter((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; }) :
+                               allSlots.filter((t) => parseInt(t, 10) >= 17);
+
+    if (filtered.length === 0) {
+      await send(buildText("No hay horarios disponibles en esa jornada. Elige otra:"));
+      const hasManana = allSlots.some((t) => parseInt(t, 10) < 12);
+      const hasTarde  = allSlots.some((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; });
+      const hasNoche  = allSlots.some((t) => parseInt(t, 10) >= 17);
+      const jornadas: Array<"mañana" | "tarde" | "noche"> = [
+        ...(hasManana ? ["mañana" as const] : []),
+        ...(hasTarde  ? ["tarde"  as const] : []),
+        ...(hasNoche  ? ["noche"  as const] : []),
+      ];
+      await send(buildJornadaSelector(jornadas));
+      return;
+    }
+
+    await save(supabase, conv, "SELECT_TIME", conv.data);
+    await send(buildTimeList(filtered, jornadaLabel));
     return;
   }
 
@@ -571,7 +718,7 @@ async function processStep(
       if (!idcita) {
         await send(
           buildText(
-            "No pudimos agendar la cita. Por favor intenta de nuevo o contáctanos directamente."
+            "No pudimos agendar la cita. Por favor intenta de nuevo." + contactSuffix(telefonoContacto)
           )
         );
         await save(supabase, conv, "MENU", {});
@@ -719,7 +866,7 @@ async function processStep(
       } else {
         await send(
           buildText(
-            "No pudimos cancelar la cita. Por favor contáctanos directamente."
+            "No pudimos cancelar la cita." + contactSuffix(telefonoContacto)
           )
         );
       }
@@ -745,6 +892,7 @@ function isKnownAction(v: string, step: Step): boolean {
   if (step === "SELECT_SERVICE" && v.startsWith("SVC_")) return true;
   if (step === "SELECT_SPECIALIST" && v.startsWith("ESP_")) return true;
   if (step === "SELECT_DATE" && v.startsWith("DATE_")) return true;
+  if (step === "SELECT_JORNADA" && v.startsWith("JORNADA_")) return true;
   if (step === "SELECT_TIME" && v.startsWith("TIME_")) return true;
   if (
     step === "CONFIRM_APPOINTMENT" &&
