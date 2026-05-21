@@ -12,12 +12,25 @@ const DAYS = [
   { value: 0, label: 'Domingo' },
 ];
 
+const DEFAULT_JORNADAS = {
+  manana: { habilitado: true,  inicio: '08:00', fin: '12:00' },
+  tarde:  { habilitado: true,  inicio: '13:00', fin: '18:00' },
+  noche:  { habilitado: false, inicio: '18:00', fin: '21:00' },
+};
+
+const JORNADAS_DEF = [
+  { key: 'manana', emoji: '☀️', label: 'Mañana' },
+  { key: 'tarde',  emoji: '🌤',  label: 'Tarde'  },
+  { key: 'noche',  emoji: '🌙', label: 'Noche'  },
+];
+
 const DEFAULT_CONFIG = {
   dias_disponibles: [1, 2, 3, 4, 5, 6],
-  hora_inicio: '08:00',
-  hora_fin: '20:00',
+  jornadas: DEFAULT_JORNADAS,
   servicios_excluidos: [],
   mostrar_precios: true,
+  email_notificaciones: '',
+  telefono_contacto: '',
 };
 
 export default function BotConfig({ user, tenant }) {
@@ -58,10 +71,11 @@ export default function BotConfig({ user, tenant }) {
       const raw = configResult.data;
       setConfig({
         dias_disponibles: raw.dias_disponibles ?? DEFAULT_CONFIG.dias_disponibles,
-        hora_inicio: raw.hora_inicio?.slice(0, 5) ?? DEFAULT_CONFIG.hora_inicio,
-        hora_fin: raw.hora_fin?.slice(0, 5) ?? DEFAULT_CONFIG.hora_fin,
+        jornadas: raw.jornadas ?? DEFAULT_JORNADAS,
         servicios_excluidos: raw.servicios_excluidos ?? DEFAULT_CONFIG.servicios_excluidos,
         mostrar_precios: raw.mostrar_precios ?? DEFAULT_CONFIG.mostrar_precios,
+        email_notificaciones: raw.email_notificaciones ?? '',
+        telefono_contacto: raw.telefono_contacto ?? '',
       });
     }
 
@@ -80,6 +94,26 @@ export default function BotConfig({ user, tenant }) {
     setConfig(prev => ({ ...prev, dias_disponibles: updated }));
   };
 
+  const toggleJornada = (key) => {
+    setConfig(prev => ({
+      ...prev,
+      jornadas: {
+        ...prev.jornadas,
+        [key]: { ...prev.jornadas[key], habilitado: !prev.jornadas[key].habilitado },
+      },
+    }));
+  };
+
+  const updateJornadaTime = (key, field, value) => {
+    setConfig(prev => ({
+      ...prev,
+      jornadas: {
+        ...prev.jornadas,
+        [key]: { ...prev.jornadas[key], [field]: value },
+      },
+    }));
+  };
+
   const toggleServiceExclusion = (serviceId) => {
     const isExcluded = config.servicios_excluidos.includes(serviceId);
     const updated = isExcluded
@@ -96,8 +130,25 @@ export default function BotConfig({ user, tenant }) {
       return;
     }
 
-    if (config.hora_inicio >= config.hora_fin) {
-      showSnack('La hora de inicio debe ser anterior a la hora de fin', 'error');
+    const jornadasActivas = Object.entries(config.jornadas).filter(([, j]) => j.habilitado);
+    if (jornadasActivas.length === 0) {
+      showSnack('Habilita al menos una jornada de atención', 'error');
+      return;
+    }
+
+    for (const [key, j] of jornadasActivas) {
+      if (j.inicio >= j.fin) {
+        const nombres = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' };
+        showSnack(`${nombres[key]}: la hora de inicio debe ser anterior a la hora de fin`, 'error');
+        return;
+      }
+    }
+
+    if (
+      config.email_notificaciones &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(config.email_notificaciones.trim())
+    ) {
+      showSnack('El correo de notificaciones no tiene un formato válido', 'error');
       return;
     }
 
@@ -106,10 +157,11 @@ export default function BotConfig({ user, tenant }) {
     const payload = {
       idnegocios: tenant.id,
       dias_disponibles: config.dias_disponibles,
-      hora_inicio: config.hora_inicio + ':00',
-      hora_fin: config.hora_fin + ':00',
+      jornadas: config.jornadas,
       servicios_excluidos: config.servicios_excluidos,
       mostrar_precios: config.mostrar_precios,
+      email_notificaciones: config.email_notificaciones?.trim() || null,
+      telefono_contacto: config.telefono_contacto?.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -206,7 +258,7 @@ export default function BotConfig({ user, tenant }) {
           </div>
         </div>
 
-        {/* Horario */}
+        {/* Horario de atención — jornadas */}
         <div className="card bot-config-card">
           <div className="bot-config-card-header">
             <div className="bot-config-card-icon">
@@ -217,31 +269,46 @@ export default function BotConfig({ user, tenant }) {
             </div>
             <div>
               <h3 className="bot-config-card-title">Horario de atención</h3>
-              <p className="bot-config-card-desc">Rango de horas en que el bot ofrecerá turnos disponibles</p>
+              <p className="bot-config-card-desc">Habilita las jornadas y define el rango de horas para cada una</p>
             </div>
           </div>
-          <div className="bot-config-time-row">
-            <div className="form-group">
-              <label className="bot-config-label">Hora de inicio</label>
-              <input
-                type="time"
-                className="input-field"
-                value={config.hora_inicio}
-                onChange={e => setConfig(prev => ({ ...prev, hora_inicio: e.target.value }))}
-                required
-              />
-            </div>
-            <div className="bot-config-time-separator">—</div>
-            <div className="form-group">
-              <label className="bot-config-label">Hora de fin</label>
-              <input
-                type="time"
-                className="input-field"
-                value={config.hora_fin}
-                onChange={e => setConfig(prev => ({ ...prev, hora_fin: e.target.value }))}
-                required
-              />
-            </div>
+          <div className="bot-config-jornadas">
+            {JORNADAS_DEF.map(({ key, emoji, label }) => {
+              const j = config.jornadas[key];
+              return (
+                <div key={key} className={`bot-config-jornada-row${!j.habilitado ? ' bot-config-jornada-row--off' : ''}`}>
+                  <div className="bot-config-jornada-info">
+                    <span className="bot-config-jornada-emoji">{emoji}</span>
+                    <span className="bot-config-jornada-name">{label}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleJornada(key)}
+                    className={`bot-config-toggle${j.habilitado ? ' bot-config-toggle--on' : ''}`}
+                    aria-label={`${j.habilitado ? 'Deshabilitar' : 'Habilitar'} ${label}`}
+                  >
+                    <span className="bot-config-toggle-thumb" />
+                  </button>
+                  {j.habilitado && (
+                    <div className="bot-config-jornada-times">
+                      <input
+                        type="time"
+                        className="input-field input-field--sm"
+                        value={j.inicio}
+                        onChange={e => updateJornadaTime(key, 'inicio', e.target.value)}
+                      />
+                      <span className="bot-config-time-sep">—</span>
+                      <input
+                        type="time"
+                        className="input-field input-field--sm"
+                        value={j.fin}
+                        onChange={e => updateJornadaTime(key, 'fin', e.target.value)}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -329,6 +396,56 @@ export default function BotConfig({ user, tenant }) {
               })}
             </ul>
           )}
+        </div>
+
+        {/* Notificaciones y contacto */}
+        <div className="card bot-config-card">
+          <div className="bot-config-card-header">
+            <div className="bot-config-card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+              </svg>
+            </div>
+            <div>
+              <h3 className="bot-config-card-title">Notificaciones y contacto</h3>
+              <p className="bot-config-card-desc">
+                Recibe avisos cuando el bot gestione citas, y muestra un número de contacto a tus pacientes
+              </p>
+            </div>
+          </div>
+          <div className="bot-config-notif-fields">
+            <div className="bot-config-field-group">
+              <label className="bot-config-field-label">
+                Correo de notificaciones al admin
+              </label>
+              <input
+                type="email"
+                className="input-field"
+                value={config.email_notificaciones}
+                onChange={e => setConfig(prev => ({ ...prev, email_notificaciones: e.target.value }))}
+                placeholder="admin@miclinica.com"
+              />
+              <p className="bot-config-field-hint">
+                Si está vacío, no se enviarán correos al crear, editar o cancelar citas por bot.
+              </p>
+            </div>
+            <div className="bot-config-field-group">
+              <label className="bot-config-field-label">
+                Teléfono de contacto directo
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                value={config.telefono_contacto}
+                onChange={e => setConfig(prev => ({ ...prev, telefono_contacto: e.target.value }))}
+                placeholder="+57 310 000 0000"
+              />
+              <p className="bot-config-field-hint">
+                Si está vacío, el bot no mostrará número de contacto en mensajes de error.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}

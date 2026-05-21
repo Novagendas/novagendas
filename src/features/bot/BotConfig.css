@@ -102,27 +102,68 @@
   color: #fff;
 }
 
-/* Time */
-.bot-config-time-row {
+/* Jornadas */
+.bot-config-jornadas {
+  display: flex;
+  flex-direction: column;
+}
+
+.bot-config-jornada-row {
   display: flex;
   align-items: center;
   gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
 }
 
-.bot-config-time-row .form-group {
-  flex: 1;
+.bot-config-jornada-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bot-config-jornada-row--off {
+  opacity: 0.45;
+}
+
+.bot-config-jornada-info {
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 90px;
 }
 
-.bot-config-time-separator {
-  font-size: 1.2rem;
+.bot-config-jornada-emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.bot-config-jornada-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.bot-config-jornada-times {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.bot-config-time-sep {
+  font-size: 0.9rem;
   color: var(--text-5);
-  padding-top: 1.6rem;
   flex-shrink: 0;
 }
 
+.input-field--sm {
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+  width: 100px;
+}
+
+/* Time (legacy, puede reutilizarse) */
 .bot-config-label {
   font-size: 0.8rem;
   font-weight: 600;
@@ -313,4 +354,29 @@
   .bot-config-time-separator {
     display: none;
   }
+}
+
+.bot-config-notif-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.bot-config-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.bot-config-field-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.bot-config-field-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-4);
+  line-height: 1.5;
 }
