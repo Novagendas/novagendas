@@ -801,6 +801,20 @@ async function processStep(
         }
       }
 
+      await insertBotLog(
+        supabase, idnegocios, "CREAR",
+        `cita #${idcita} — ${conv.data.client_nombre ?? "Cliente"} · ${conv.data.servicio_nombre ?? "Servicio"} ${conv.data.fecha ?? ""} ${conv.data.hora ?? ""}`
+      );
+
+      await notifyAdmin(emailNotificaciones, "Creó una cita", {
+        nombre_cliente: conv.data.client_nombre ?? "Cliente",
+        servicio: conv.data.servicio_nombre ?? "Servicio",
+        fecha: fechaLabel,
+        hora: conv.data.hora ?? "",
+        especialista: conv.data.especialista_nombre ?? "Sin preferencia",
+        negocio: businessName,
+      });
+
       await send(
         buildText(
           `✅ ¡Cita agendada con éxito!\n\n` +
@@ -887,6 +901,20 @@ async function processStep(
               `🏥 ${conv.data.cancel_servicio}\n\nHasta pronto 👋`
           )
         );
+
+        await insertBotLog(
+          supabase, idnegocios, "CANCELAR",
+          `cita #${conv.data.cancel_cita_id} — ${conv.data.client_nombre ?? "Cliente"} · ${conv.data.cancel_servicio ?? "Servicio"} ${conv.data.cancel_fecha ?? ""} ${conv.data.cancel_hora ?? ""}`
+        );
+
+        await notifyAdmin(emailNotificaciones, "Canceló una cita", {
+          nombre_cliente: conv.data.client_nombre ?? "Cliente",
+          servicio: conv.data.cancel_servicio ?? "Servicio",
+          fecha: conv.data.cancel_fecha ?? "",
+          hora: conv.data.cancel_hora ?? "",
+          especialista: "—",
+          negocio: businessName,
+        });
       } else {
         await send(
           buildText(
