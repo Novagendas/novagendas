@@ -626,6 +626,193 @@ const TEMPLATES: Record<string, { subject: string; html: string }> = {
 </body>
 </html>`,
   },
+
+  "bot-cliente-registrado": {
+    subject: "Bot WhatsApp — Nuevo cliente registrado · {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
+  <title>Bot WhatsApp — Nuevo cliente registrado · {{negocio}}</title>
+  <style>
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+    #MessageViewBody a { color: inherit; text-decoration: none; }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr>
+      <td align="center">
+        <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">
+          El bot de WhatsApp registró un nuevo cliente en {{negocio}}.&nbsp;&#8204;&nbsp;&#8204;&nbsp;&#8204;
+        </div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:580px;margin-bottom:18px;">
+          <tr>
+            <td align="center">
+              <span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">
+                Novagendas &nbsp;·&nbsp; Notificación interna del Bot
+              </span>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+          <!-- HEADER -->
+          <tr>
+            <td style="background:linear-gradient(145deg,#1e40af 0%,#1e3a8a 60%,#172554 100%);padding:48px 40px 56px;text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;">
+                <tr>
+                  <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+                    <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg"
+                      alt="Novagendas" width="62"
+                      style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">
+                Novagendas
+              </h1>
+              <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">
+                Actividad del Bot de WhatsApp
+              </p>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;">
+                <tr>
+                  <td style="width:36px;height:2px;background:rgba(139,92,246,0.35);border-radius:1px;"></td>
+                  <td style="width:8px;"></td>
+                  <td style="width:10px;height:6px;background:#8b5cf6;border-radius:3px;"></td>
+                  <td style="width:8px;"></td>
+                  <td style="width:36px;height:2px;background:rgba(139,92,246,0.35);border-radius:1px;"></td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- FLOATING ICON -->
+          <tr>
+            <td style="background:#ffffff;text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;">
+                <tr>
+                  <td style="width:58px;height:58px;background:#ffffff;border:3px solid #e2e8f0;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                      fill="none" stroke="#1e40af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+                      style="display:block;margin:0 auto;">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- BODY -->
+          <tr>
+            <td style="padding:40px 44px 16px;">
+              <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">
+                🤖 El bot registró un nuevo cliente
+              </h2>
+              <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">
+                Un usuario se registró a través del bot de WhatsApp de
+                <strong style="color:#1e40af;font-weight:700;">{{negocio}}</strong>
+                y su perfil fue creado automáticamente.
+              </p>
+            </td>
+          </tr>
+          <!-- DETAILS TABLE -->
+          <tr>
+            <td style="padding:0 44px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;">
+                <tr>
+                  <td style="padding:20px 24px;">
+                    <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.08em;">
+                      Datos del cliente
+                    </p>
+                    <table cellpadding="0" cellspacing="0" width="100%">
+                      <tr>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Nombre</td>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{nombre_cliente}}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Documento</td>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{documento_cliente}}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Teléfono</td>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{telefono_cliente}}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Email</td>
+                        <td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;">{{email_cliente}}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- DIVIDER -->
+          <tr>
+            <td style="padding:0 44px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="height:1px;background:#e2e8f0;"></td></tr>
+              </table>
+            </td>
+          </tr>
+          <!-- FOOTER -->
+          <tr>
+            <td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="vertical-align:middle;padding-right:10px;">
+                          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#1e3a8a);border-radius:8px;text-align:center;vertical-align:middle;">
+                                <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                        <td style="vertical-align:middle;">
+                          <p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p>
+                          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Notificación interna — no responder</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td align="right" style="vertical-align:middle;">
+                    <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">
+                      © 2025 Novagendas
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:580px;margin-top:20px;">
+          <tr>
+            <td align="center" style="padding:0 20px;">
+              <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#94a3b8;line-height:1.7;text-align:center;">
+                Este correo es una notificación automática interna de Novagendas. No responder.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`,
+  },
 };
 
 function interpolate(template: string, data: Record<string, string>): string {

@@ -168,6 +168,33 @@ async function notifyAdmin(
   }).catch((e: Error) => console.warn("notifyAdmin failed:", e.message));
 }
 
+async function notifyAdminNewClient(
+  emailNotificaciones: string | null,
+  detalles: {
+    nombre_cliente: string;
+    documento_cliente: string;
+    telefono_cliente: string;
+    email_cliente: string;
+    negocio: string;
+  }
+): Promise<void> {
+  if (!emailNotificaciones?.trim()) return;
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (!supabaseUrl) return;
+
+  fetch(`${supabaseUrl}/functions/v1/send-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      template: "bot-cliente-registrado",
+      to: emailNotificaciones,
+      data: detalles,
+    }),
+  }).catch((e: Error) => console.warn("notifyAdminNewClient failed:", e.message));
+}
+
+
 export async function handleIncomingMessage(
   supabase: SupabaseClient,
   integration: Integration,
@@ -561,6 +588,14 @@ async function processStep(
         `Ya puedes continuar con tu solicitud.`
       )
     );
+
+    await notifyAdminNewClient(emailNotificaciones, {
+      nombre_cliente: newClient.nombre,
+      documento_cliente: cedula,
+      telefono_cliente: telefono,
+      email_cliente: email,
+      negocio: businessName,
+    });
 
     await continueAfterClientFound(
       supabase, conv, newClient, idnegocios,

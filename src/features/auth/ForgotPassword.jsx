@@ -20,8 +20,8 @@ export default function ForgotPassword({ onBack }) {
     setLoading(true);
     setError('');
 
-    const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin,
+    const { error: authError } = await supabase.functions.invoke('send-reset-email', {
+      body: { email, redirectTo: window.location.origin },
     });
 
     if (authError) {
