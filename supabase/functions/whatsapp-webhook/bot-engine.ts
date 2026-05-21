@@ -9,12 +9,15 @@ import {
 import { getAvailableDates, getAvailableSlots } from "./availability.ts";
 import {
   getClientByCedula, createAppointment, updateAppointment,
-  getUpcomingAppointments, cancelAppointment,
+  getUpcomingAppointments, cancelAppointment, createClient,
 } from "./appointment.ts";
 
 type Step =
   | "MENU"
   | "ASK_CEDULA"
+  | "REGISTER_NOMBRE"
+  | "REGISTER_EMAIL"
+  | "REGISTER_TELEFONO"
   | "SELECT_SERVICE"
   | "SELECT_SPECIALIST"
   | "SELECT_DATE"
@@ -34,6 +37,9 @@ interface ConvData {
   idcliente?: number;
   client_nombre?: string;
   client_email?: string | null;
+  reg_cedula?: string;
+  reg_nombre?: string;
+  reg_email?: string;
   servicio_id?: number;
   servicio_nombre?: string;
   servicio_duracion?: number;
@@ -1161,19 +1167,22 @@ function isKnownAction(v: string, step: Step): boolean {
     v === "MENU_SERVICIOS"
   )
     return true;
-  if (step === "ASK_CEDULA") return true;
-  if (step === "SELECT_SERVICE"  && v.startsWith("SVC_"))    return true;
-  if (step === "SELECT_SPECIALIST" && v.startsWith("ESP_"))  return true;
-  if (step === "SELECT_DATE"     && v.startsWith("DATE_"))   return true;
-  if (step === "SELECT_JORNADA"  && v.startsWith("JORNADA_")) return true;
-  if (step === "SELECT_TIME"     && v.startsWith("TIME_"))   return true;
+  if (step === "ASK_CEDULA")        return true;
+  if (step === "REGISTER_NOMBRE")   return true;
+  if (step === "REGISTER_EMAIL")    return true;
+  if (step === "REGISTER_TELEFONO") return true;
+  if (step === "SELECT_SERVICE"     && v.startsWith("SVC_"))      return true;
+  if (step === "SELECT_SPECIALIST"  && v.startsWith("ESP_"))      return true;
+  if (step === "SELECT_DATE"        && v.startsWith("DATE_"))     return true;
+  if (step === "SELECT_JORNADA"     && v.startsWith("JORNADA_"))  return true;
+  if (step === "SELECT_TIME"        && v.startsWith("TIME_"))     return true;
   if (step === "CONFIRM_APPOINTMENT" && (v === "CONFIRM_YES" || v === "CONFIRM_NO")) return true;
-  if (step === "CANCEL_SELECT"   && v.startsWith("CANCEL_")) return true;
-  if (step === "CANCEL_CONFIRM"  && (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")) return true;
-  if (step === "EDIT_SELECT"     && v.startsWith("EDIT_"))   return true;
-  if (step === "EDIT_DATE"       && v.startsWith("DATE_"))   return true;
-  if (step === "EDIT_JORNADA"    && v.startsWith("JORNADA_")) return true;
-  if (step === "EDIT_TIME"       && v.startsWith("TIME_"))   return true;
-  if (step === "EDIT_CONFIRM"    && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
+  if (step === "CANCEL_SELECT"      && v.startsWith("CANCEL_"))   return true;
+  if (step === "CANCEL_CONFIRM"     && (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")) return true;
+  if (step === "EDIT_SELECT"        && v.startsWith("EDIT_"))     return true;
+  if (step === "EDIT_DATE"          && v.startsWith("DATE_"))     return true;
+  if (step === "EDIT_JORNADA"       && v.startsWith("JORNADA_"))  return true;
+  if (step === "EDIT_TIME"          && v.startsWith("TIME_"))     return true;
+  if (step === "EDIT_CONFIRM"       && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
   return false;
 }
