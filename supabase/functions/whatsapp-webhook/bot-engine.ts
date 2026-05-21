@@ -253,6 +253,117 @@ async function save(
     .eq("id", conv.id);
 }
 
+async function continueAfterClientFound(
+  supabase: SupabaseClient,
+  conv: Conversation,
+  client: { idcliente: number; nombre: string; email: string | null },
+  idnegocios: number,
+  telefonoContacto: string | null,
+  emailNotificaciones: string | null,
+  businessName: string,
+  send: (msg: Record<string, unknown>) => Promise<void>
+): Promise<void> {
+  const baseData: ConvData = {
+    ...conv.data,
+    idcliente: client.idcliente,
+    client_nombre: client.nombre,
+    client_email: client.email,
+    reg_cedula: undefined,
+    reg_nombre: undefined,
+    reg_email: undefined,
+  };
+
+  if (conv.data.pending_action === "AGENDAR") {
+    const [svcsResult, botCfgResult] = await Promise.all([
+      supabase
+        .from("servicios")
+        .select("idservicios, nombre, precio, duracion")
+        .eq("idnegocios", idnegocios)
+        .is("deleted_at", null)
+        .neq("idestado", 2),
+      supabase
+        .from("bot_config")
+        .select("mostrar_precios")
+        .eq("idnegocios", idnegocios)
+        .maybeSingle(),
+    ]);
+
+    const svcs = svcsResult.data;
+    const mostrarPrecios =
+      (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
+
+    if (!svcs || svcs.length === 0) {
+      await send(
+        buildText(
+          "No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)
+        )
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+
+    await save(supabase, conv, "SELECT_SERVICE", baseData);
+    await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
+    await send(buildServiceList(svcs, mostrarPrecios));
+    return;
+  }
+
+  if (conv.data.pending_action === "VER") {
+    const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+    if (appts.length === 0) {
+      await send(
+        buildText(`Hola *${client.nombre}*, no tienes citas próximas registradas. 📭`)
+      );
+    } else {
+      const list = appts
+        .map(
+          (a, i) => `${i + 1}. 📅 ${a.fecha} a las ${a.hora}\n    🏥 ${a.servicio}`
+        )
+        .join("\n\n");
+      await send(buildText(`Hola *${client.nombre}*, tus próximas citas:\n\n${list}`));
+    }
+    await save(supabase, conv, "MENU", {});
+    await send(buildMenu(businessName, telefonoContacto));
+    return;
+  }
+
+  if (conv.data.pending_action === "CANCELAR") {
+    const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+    if (appts.length === 0) {
+      await send(
+        buildText(`Hola *${client.nombre}*, no tienes citas próximas para cancelar. 📭`)
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+    await save(supabase, conv, "CANCEL_SELECT", baseData);
+    await send(buildText(`Hola *${client.nombre}*, selecciona la cita a cancelar:`));
+    await send(buildAppointmentList(appts));
+    return;
+  }
+
+  if (conv.data.pending_action === "EDITAR") {
+    const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+    if (appts.length === 0) {
+      await send(
+        buildText(`Hola *${client.nombre}*, no tienes citas próximas para editar. 📭`)
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+    await save(supabase, conv, "EDIT_SELECT", baseData);
+    await send(buildText(`Hola *${client.nombre}*, selecciona la cita que deseas editar:`));
+    await send(buildEditAppointmentList(appts));
+    return;
+  }
+
+  await save(supabase, conv, "MENU", {});
+  await send(buildMenu(businessName, telefonoContacto));
+}
+
 async function processStep(
   supabase: SupabaseClient,
   conv: Conversation,
@@ -357,131 +468,99 @@ async function processStep(
     const client = await getClientByCedula(supabase, idnegocios, v);
 
     if (!client) {
+      await save(supabase, conv, "REGISTER_NOMBRE", {
+        ...conv.data,
+        reg_cedula: v.trim(),
+      });
       await send(
         buildText(
-          "No encontramos ese número de cédula en nuestros registros. 🔍\n\n" +
-            "Verifica el número e inténtalo de nuevo, o contáctanos directamente.\n\n" +
-            "Escribe tu cédula:"
+          `No encontramos tu cédula *${v.trim()}* en nuestros registros. ` +
+          `Te registraremos para que puedas continuar. 📝\n\n` +
+          `¿Cuál es tu nombre completo?`
         )
       );
       return;
     }
 
-    const baseData: ConvData = {
+    await continueAfterClientFound(
+      supabase, conv, client, idnegocios,
+      telefonoContacto, emailNotificaciones, businessName, send
+    );
+    return;
+  }
+
+  // ── REGISTER_NOMBRE → guardar nombre, pedir email ─────────────────────────
+  if (conv.step === "REGISTER_NOMBRE") {
+    const nombre = v.trim();
+    if (nombre.length < 2) {
+      await send(buildText("Por favor ingresa un nombre válido (mínimo 2 caracteres):"));
+      return;
+    }
+    await save(supabase, conv, "REGISTER_EMAIL", {
       ...conv.data,
-      idcliente: client.idcliente,
-      client_nombre: client.nombre,
-      client_email: client.email,
-    };
+      reg_nombre: nombre,
+    });
+    await send(buildText(`Gracias *${nombre.split(" ")[0]}*. ¿Cuál es tu correo electrónico?`));
+    return;
+  }
 
-    // ── Flujo AGENDAR ─────────────────────────────────────────────────────
-    if (conv.data.pending_action === "AGENDAR") {
-      const [svcsResult, botCfgResult] = await Promise.all([
-        supabase
-          .from("servicios")
-          .select("idservicios, nombre, precio, duracion")
-          .eq("idnegocios", idnegocios)
-          .is("deleted_at", null)
-          .neq("idestado", 2),
-        supabase
-          .from("bot_config")
-          .select("mostrar_precios")
-          .eq("idnegocios", idnegocios)
-          .maybeSingle(),
-      ]);
-
-      const svcs = svcsResult.data;
-      const mostrarPrecios =
-        (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
-
-      if (!svcs || svcs.length === 0) {
-        await send(
-          buildText(
-            "No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)
-          )
-        );
-        await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
-        return;
-      }
-
-      await save(supabase, conv, "SELECT_SERVICE", baseData);
-      await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
-      await send(buildServiceList(svcs, mostrarPrecios));
-      return;
-    }
-
-    // ── Flujo VER ─────────────────────────────────────────────────────────
-    if (conv.data.pending_action === "VER") {
-      const appts = await getUpcomingAppointments(
-        supabase,
-        idnegocios,
-        client.idcliente
-      );
-      if (appts.length === 0) {
-        await send(
-          buildText(
-            `Hola *${client.nombre}*, no tienes citas próximas registradas. 📭`
-          )
-        );
-      } else {
-        const list = appts
-          .map(
-            (a, i) =>
-              `${i + 1}. 📅 ${a.fecha} a las ${a.hora}\n    🏥 ${a.servicio}`
-          )
-          .join("\n\n");
-        await send(buildText(`Hola *${client.nombre}*, tus próximas citas:\n\n${list}`));
-      }
-      await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName));
-      return;
-    }
-
-    // ── Flujo CANCELAR ────────────────────────────────────────────────────
-    if (conv.data.pending_action === "CANCELAR") {
-      const appts = await getUpcomingAppointments(
-        supabase,
-        idnegocios,
-        client.idcliente
-      );
-      if (appts.length === 0) {
-        await send(
-          buildText(
-            `Hola *${client.nombre}*, no tienes citas próximas para cancelar. 📭`
-          )
-        );
-        await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
-        return;
-      }
-      await save(supabase, conv, "CANCEL_SELECT", baseData);
+  // ── REGISTER_EMAIL → validar email, pedir teléfono ────────────────────────
+  if (conv.step === "REGISTER_EMAIL") {
+    const email = v.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       await send(
-        buildText(`Hola *${client.nombre}*, selecciona la cita a cancelar:`)
+        buildText("El correo ingresado no es válido. Por favor escribe un correo electrónico correcto:")
       );
-      await send(buildAppointmentList(appts));
+      return;
+    }
+    await save(supabase, conv, "REGISTER_TELEFONO", {
+      ...conv.data,
+      reg_email: email,
+    });
+    await send(buildText("Perfecto. ¿Cuál es tu número de teléfono?"));
+    return;
+  }
+
+  // ── REGISTER_TELEFONO → crear cliente y continuar flujo ───────────────────
+  if (conv.step === "REGISTER_TELEFONO") {
+    const telefono = v.trim();
+    if (telefono.length < 7) {
+      await send(buildText("Por favor ingresa un número de teléfono válido:"));
       return;
     }
 
-    // ── Flujo EDITAR ──────────────────────────────────────────────────────
-    if (conv.data.pending_action === "EDITAR") {
-      const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
-      if (appts.length === 0) {
-        await send(
-          buildText(`Hola *${client.nombre}*, no tienes citas próximas para editar. 📭`)
-        );
-        await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
-        return;
-      }
-      await save(supabase, conv, "EDIT_SELECT", baseData);
-      await send(buildText(`Hola *${client.nombre}*, selecciona la cita que deseas editar:`));
-      await send(buildEditAppointmentList(appts));
+    const cedula = conv.data.reg_cedula ?? "";
+    const nombre = conv.data.reg_nombre ?? "";
+    const email  = conv.data.reg_email  ?? "";
+
+    const newClient = await createClient(
+      supabase, idnegocios, cedula, nombre, email, telefono
+    );
+
+    if (!newClient) {
+      await send(
+        buildText(
+          "Hubo un error al registrarte. Por favor inténtalo de nuevo o contáctanos directamente." +
+          contactSuffix(telefonoContacto)
+        )
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
-    await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName));
+    await send(
+      buildText(
+        `✅ ¡Registro exitoso! Bienvenido/a *${newClient.nombre}*.\n\n` +
+        `Ya puedes continuar con tu solicitud.`
+      )
+    );
+
+    await continueAfterClientFound(
+      supabase, conv, newClient, idnegocios,
+      telefonoContacto, emailNotificaciones, businessName, send
+    );
     return;
   }
 
