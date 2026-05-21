@@ -13,12 +13,29 @@ export function buildText(body: string): Record<string, unknown> {
 }
 
 // Menú principal como lista (soporta 4+ opciones, botones máx 3)
-export function buildMenu(businessName: string): Record<string, unknown> {
+export function buildMenu(
+  businessName: string,
+  telefonoContacto?: string | null
+): Record<string, unknown> {
+  const contactLine = telefonoContacto?.trim()
+    ? `\n\n📞 Contacto directo: *${telefonoContacto.trim()}*`
+    : "";
+
   return {
     type: "interactive",
     interactive: {
       type: "list",
-      body: { text: `Bienvenido a *${trunc(businessName, 40)}* 👋\n\n¿Qué deseas hacer?` },
+      body: {
+        text:
+          `Hola 👋 Soy el asistente virtual de agendamiento de *${trunc(businessName, 40)}*.\n\n` +
+          `Puedo ayudarte a:\n` +
+          `📅 Agendar una nueva cita\n` +
+          `✏️ Modificar o cancelar citas\n` +
+          `🗓 Consultar tus próximas citas\n` +
+          `💆 Ver el catálogo de servicios` +
+          contactLine +
+          `\n\n¿Qué deseas hacer?`,
+      },
       action: {
         button: "Ver opciones",
         sections: [
