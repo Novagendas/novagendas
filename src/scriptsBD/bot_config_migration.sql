@@ -12,3 +12,16 @@ ALTER TABLE bot_config ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "negocios own config" ON bot_config
   USING (TRUE) WITH CHECK (TRUE);
+
+-- Migración: jornadas de atención personalizables
+ALTER TABLE bot_config
+  ADD COLUMN IF NOT EXISTS jornadas JSONB DEFAULT '{
+    "manana": {"habilitado": true,  "inicio": "08:00", "fin": "12:00"},
+    "tarde":  {"habilitado": true,  "inicio": "13:00", "fin": "18:00"},
+    "noche":  {"habilitado": false, "inicio": "18:00", "fin": "21:00"}
+  }'::jsonb;
+
+-- Notificaciones del bot al administrador
+ALTER TABLE bot_config
+  ADD COLUMN IF NOT EXISTS email_notificaciones TEXT DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS telefono_contacto TEXT DEFAULT NULL;
