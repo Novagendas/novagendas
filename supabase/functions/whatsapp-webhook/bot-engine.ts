@@ -466,6 +466,10 @@ async function processStep(
 
   // ── ASK_CEDULA → buscar cliente ───────────────────────────────────────────
   if (conv.step === "ASK_CEDULA") {
+    if (v.trim().length > 20) {
+      await send(buildText("El número de cédula ingresado no es válido. Inténtalo de nuevo:"));
+      return;
+    }
     const client = await getClientByCedula(supabase, idnegocios, v);
 
     if (!client) {
@@ -493,8 +497,8 @@ async function processStep(
   // ── REGISTER_NOMBRE → guardar nombre, pedir email ─────────────────────────
   if (conv.step === "REGISTER_NOMBRE") {
     const nombre = v.trim();
-    if (nombre.length < 2) {
-      await send(buildText("Por favor ingresa un nombre válido (mínimo 2 caracteres):"));
+    if (nombre.length < 2 || nombre.length > 100) {
+      await send(buildText("Por favor ingresa un nombre válido (entre 2 y 100 caracteres):"));
       return;
     }
     await save(supabase, conv, "REGISTER_EMAIL", {
@@ -526,7 +530,7 @@ async function processStep(
   // ── REGISTER_TELEFONO → crear cliente y continuar flujo ───────────────────
   if (conv.step === "REGISTER_TELEFONO") {
     const telefono = v.trim();
-    if (telefono.length < 7) {
+    if (telefono.length < 7 || telefono.length > 20) {
       await send(buildText("Por favor ingresa un número de teléfono válido:"));
       return;
     }
