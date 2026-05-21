@@ -19,6 +19,7 @@ import Statistics from './features/statistics/Statistics';
 
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
+import BotConfig from './features/bot/BotConfig';
 import LandingPage from './features/landing/LandingPage';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
@@ -79,6 +80,33 @@ function TenantApp({ tenant, initialView = 'login' }) {
   const [currentRoute, setCurrentRoute] = useState(() => {
     return localStorage.getItem('novagendas_route') || 'dashboard';
   });
+  const [hasBotEnabled] = useState(!!tenant?.bot_activo);
+
+  useEffect(() => {
+    if (!user || !tenant?.id) return;
+    const userId = user.idusuario || user.id;
+    if (!userId) return;
+    supabase.rpc('get_usuario_rol', { p_idusuario: userId, p_idnegocios: tenant.id })
+      .then(({ data: rolNombre }) => {
+        if (!rolNombre) return;
+        let role = 'recepcion';
+        if (rolNombre === 'admin') role = 'admin';
+        else if (rolNombre === 'profesional') role = 'especialista';
+        if (role === user.role) return;
+        const newUser = { ...user, role };
+        setUser(newUser);
+        const saved = localStorage.getItem('novagendas_user');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            parsed.user = newUser;
+            localStorage.setItem('novagendas_user', JSON.stringify(parsed));
+          } catch { /* ignorado intencionalmente */ }
+        }
+      });
+  // Solo al montar — verifica si el rol en DB cambió desde que se guardó la sesión
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUserUpdate = (updatedFields) => {
     const newUser = { ...user, ...updatedFields };
@@ -136,6 +164,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'profile':       return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
       case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
       case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;
+      case 'bot':           return user.role === 'admin' ? <BotConfig user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
     }
   };
@@ -166,7 +195,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
 
   return (
     <GlobalProvider tenantId={tenant.id}>
-      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }}>
+      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }}>
         {renderRoute()}
       </Layout>
     </GlobalProvider>
@@ -252,7 +281,8 @@ export default function App() {
             id: data.idnegocios,
             name: data.nombre,
             subdomain: data.dominio,
-            active: true
+            active: true,
+            bot_activo: !!data.bot_activo
           });
           setView('tenant');
         } else {

@@ -369,6 +369,22 @@ export default function Users({ user, tenant }) {
         if (authErr && !authErr.message?.toLowerCase().includes('already registered')) {
           console.warn('auth.users sync:', authErr.message);
         }
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co';
+        fetch(`${supabaseUrl}/functions/v1/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            template: 'cuenta-creada',
+            to: form.email,
+            data: {
+              nombre: form.name,
+              email: form.email,
+              contrasena_temporal: form.password,
+              negocio: tenant.name || 'Novagendas'
+            }
+          })
+        }).catch((e) => console.warn('send-email failed:', e.message));
       }
 
       await supabase.from('rolpermisos').delete().eq('idusuario', userId);
