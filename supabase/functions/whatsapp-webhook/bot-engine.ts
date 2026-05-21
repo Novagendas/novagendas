@@ -287,6 +287,13 @@ async function processStep(
     return;
   }
 
+  // ── MENU_EDITAR ───────────────────────────────────────────────────────────
+  if (v === "MENU_EDITAR") {
+    await save(supabase, conv, "ASK_CEDULA", { pending_action: "EDITAR" });
+    await send(buildText("Para continuar, escribe tu número de cédula:"));
+    return;
+  }
+
   // ── MENU_SERVICIOS ────────────────────────────────────────────────────────
   if (v === "MENU_SERVICIOS") {
     const [svcsResult, botConfigResult] = await Promise.all([
@@ -447,6 +454,23 @@ async function processStep(
         buildText(`Hola *${client.nombre}*, selecciona la cita a cancelar:`)
       );
       await send(buildAppointmentList(appts));
+      return;
+    }
+
+    // ── Flujo EDITAR ──────────────────────────────────────────────────────
+    if (conv.data.pending_action === "EDITAR") {
+      const appts = await getUpcomingAppointments(supabase, idnegocios, client.idcliente);
+      if (appts.length === 0) {
+        await send(
+          buildText(`Hola *${client.nombre}*, no tienes citas próximas para editar. 📭`)
+        );
+        await save(supabase, conv, "MENU", {});
+        await send(buildMenu(businessName));
+        return;
+      }
+      await save(supabase, conv, "EDIT_SELECT", baseData);
+      await send(buildText(`Hola *${client.nombre}*, selecciona la cita que deseas editar:`));
+      await send(buildEditAppointmentList(appts));
       return;
     }
 
@@ -875,6 +899,226 @@ async function processStep(
     }
   }
 
+  // ── EDIT_SELECT → EDIT_{idcita} ───────────────────────────────────────────
+  if (conv.step === "EDIT_SELECT" && v.startsWith("EDIT_")) {
+    const idcita = parseInt(v.slice(5), 10);
+
+    const { data: appt } = await supabase
+      .from("cita")
+      .select(`
+        idcita, fechahorainicio, idusuario,
+        citaservicios ( idservicios, servicios:idservicios ( nombre, duracion ) )
+      `)
+      .eq("idcita", idcita)
+      .eq("idnegocios", idnegocios)
+      .single();
+
+    if (!appt) {
+      await send(buildText("Cita no encontrada. Por favor intenta de nuevo."));
+      return;
+    }
+
+    const a = appt as {
+      idcita: number;
+      fechahorainicio: string;
+      idusuario: number | null;
+      citaservicios: Array<{ idservicios: number; servicios: { nombre: string; duracion: number } }>;
+    };
+
+    const iso = a.fechahorainicio;
+    const svcData = a.citaservicios?.[0]?.servicios;
+    const duracion = svcData?.duracion ?? 30;
+
+    const newData: ConvData = {
+      ...conv.data,
+      edit_cita_id: idcita,
+      edit_servicio_nombre: svcData?.nombre ?? "Servicio",
+      edit_especialista_id: a.idusuario,
+      edit_duracion: duracion,
+      edit_fecha_anterior: iso.slice(0, 10),
+      edit_hora_anterior: iso.slice(11, 16),
+    };
+
+    await send(buildText("Buscando fechas disponibles... ⏳"));
+    const dates = await getAvailableDates(supabase, idnegocios, a.idusuario, duracion);
+
+    if (dates.length === 0) {
+      await send(
+        buildText("No hay fechas disponibles en los próximos 30 días." + contactSuffix(telefonoContacto))
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName));
+      return;
+    }
+
+    await save(supabase, conv, "EDIT_DATE", newData);
+    await send(buildDateList(dates));
+    return;
+  }
+
+  // ── EDIT_DATE → DATE_{YYYY-MM-DD} ─────────────────────────────────────────
+  if (conv.step === "EDIT_DATE" && v.startsWith("DATE_")) {
+    const fecha = v.slice(5);
+    const duracion = conv.data.edit_duracion ?? 30;
+    const especialistaId = conv.data.edit_especialista_id ?? null;
+
+    const slots = await getAvailableSlots(supabase, idnegocios, especialistaId, fecha, duracion);
+
+    if (slots.length === 0) {
+      await send(buildText("No hay horarios disponibles para ese día. Elige otra fecha."));
+      const dates = await getAvailableDates(supabase, idnegocios, especialistaId, duracion);
+      await send(buildDateList(dates));
+      return;
+    }
+
+    const hasManana = slots.some((t) => parseInt(t, 10) < 12);
+    const hasTarde  = slots.some((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; });
+    const hasNoche  = slots.some((t) => parseInt(t, 10) >= 17);
+
+    const jornadas: Array<"mañana" | "tarde" | "noche"> = [
+      ...(hasManana ? ["mañana" as const] : []),
+      ...(hasTarde  ? ["tarde"  as const] : []),
+      ...(hasNoche  ? ["noche"  as const] : []),
+    ];
+
+    if (jornadas.length === 1) {
+      await save(supabase, conv, "EDIT_TIME", { ...conv.data, fecha });
+      await send(buildTimeList(slots, jornadas[0]));
+      return;
+    }
+
+    await save(supabase, conv, "EDIT_JORNADA", { ...conv.data, fecha });
+    await send(buildJornadaSelector(jornadas));
+    return;
+  }
+
+  // ── EDIT_JORNADA → JORNADA_{...} ──────────────────────────────────────────
+  if (conv.step === "EDIT_JORNADA" && v.startsWith("JORNADA_")) {
+    const fecha = conv.data.fecha ?? "";
+    const duracion = conv.data.edit_duracion ?? 30;
+    const especialistaId = conv.data.edit_especialista_id ?? null;
+
+    const allSlots = await getAvailableSlots(supabase, idnegocios, especialistaId, fecha, duracion);
+
+    const jornadaLabel =
+      v === "JORNADA_MANANA" ? "mañana" :
+      v === "JORNADA_TARDE"  ? "tarde"  : "noche";
+
+    const filtered =
+      v === "JORNADA_MANANA" ? allSlots.filter((t) => parseInt(t, 10) < 12) :
+      v === "JORNADA_TARDE"  ? allSlots.filter((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; }) :
+                               allSlots.filter((t) => parseInt(t, 10) >= 17);
+
+    if (filtered.length === 0) {
+      await send(buildText("No hay horarios disponibles en esa jornada. Elige otra:"));
+      const hasManana = allSlots.some((t) => parseInt(t, 10) < 12);
+      const hasTarde  = allSlots.some((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; });
+      const hasNoche  = allSlots.some((t) => parseInt(t, 10) >= 17);
+      const jornadas: Array<"mañana" | "tarde" | "noche"> = [
+        ...(hasManana ? ["mañana" as const] : []),
+        ...(hasTarde  ? ["tarde"  as const] : []),
+        ...(hasNoche  ? ["noche"  as const] : []),
+      ];
+      await send(buildJornadaSelector(jornadas));
+      return;
+    }
+
+    await save(supabase, conv, "EDIT_TIME", conv.data);
+    await send(buildTimeList(filtered, jornadaLabel));
+    return;
+  }
+
+  // ── EDIT_TIME → TIME_{HH:MM} ───────────────────────────────────────────────
+  if (conv.step === "EDIT_TIME" && v.startsWith("TIME_")) {
+    const hora = v.slice(5);
+    await save(supabase, conv, "EDIT_CONFIRM", { ...conv.data, hora });
+    await send(
+      buildEditConfirmation(
+        conv.data.edit_servicio_nombre ?? "",
+        conv.data.edit_fecha_anterior ?? "",
+        conv.data.edit_hora_anterior ?? "",
+        conv.data.fecha ?? "",
+        hora
+      )
+    );
+    return;
+  }
+
+  // ── EDIT_CONFIRM ───────────────────────────────────────────────────────────
+  if (conv.step === "EDIT_CONFIRM") {
+    if (v === "EDIT_CONFIRM_NO") {
+      await save(supabase, conv, "MENU", {});
+      await send(buildText("Edición cancelada. ¿Deseas hacer algo más?"));
+      await send(buildMenu(businessName));
+      return;
+    }
+
+    if (v === "EDIT_CONFIRM_YES") {
+      const {
+        edit_cita_id, edit_servicio_nombre, edit_duracion,
+        hora, fecha, client_nombre,
+        edit_fecha_anterior, edit_hora_anterior,
+      } = conv.data;
+
+      if (!edit_cita_id || !fecha || !hora) {
+        await send(buildText("Ocurrió un error. Por favor inicia de nuevo."));
+        await save(supabase, conv, "MENU", {});
+        return;
+      }
+
+      const duracion = edit_duracion ?? 30;
+      const start = `${fecha}T${hora}:00`;
+      const endMs = new Date(start).getTime() + duracion * 60_000;
+      const end = new Date(endMs).toISOString().slice(0, 19);
+
+      const ok = await updateAppointment(supabase, edit_cita_id, idnegocios, start, end);
+
+      if (!ok) {
+        await send(
+          buildText("No pudimos editar la cita." + contactSuffix(telefonoContacto))
+        );
+        await save(supabase, conv, "MENU", {});
+        return;
+      }
+
+      await insertBotLog(
+        supabase, idnegocios, "EDITAR",
+        `cita #${edit_cita_id} — ${client_nombre ?? "Cliente"} · ${edit_servicio_nombre ?? "Servicio"} ${fecha} ${hora}`
+      );
+
+      const [year, month, day] = fecha.split("-").map(Number);
+      const fechaLabel = new Date(year, month - 1, day).toLocaleDateString("es-CO", {
+        weekday: "long", day: "numeric", month: "long",
+      });
+
+      await notifyAdmin(emailNotificaciones, "Editó una cita", {
+        nombre_cliente: client_nombre ?? "Cliente",
+        servicio: edit_servicio_nombre ?? "Servicio",
+        fecha: fechaLabel,
+        hora: hora ?? "",
+        especialista: "—",
+        negocio: businessName,
+      });
+
+      const anteriorLabel = (() => {
+        if (!edit_fecha_anterior) return "";
+        const [y, m, d] = edit_fecha_anterior.split("-").map(Number);
+        return new Date(y, m - 1, d).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+      })();
+
+      await send(
+        buildText(
+          `✅ ¡Cita actualizada!\n\n` +
+          `Antes: ${anteriorLabel} a las ${edit_hora_anterior ?? ""}\n` +
+          `Ahora: *${fechaLabel}* a las *${hora}*\n\n` +
+          `Hasta pronto 👋`
+        )
+      );
+      await save(supabase, conv, "MENU", {});
+      return;
+    }
+  }
+
   // Fallback
   await save(supabase, conv, "MENU", {});
   await send(buildMenu(businessName));
@@ -885,25 +1129,23 @@ function isKnownAction(v: string, step: Step): boolean {
     v === "MENU_AGENDAR" ||
     v === "MENU_VER" ||
     v === "MENU_CANCELAR" ||
+    v === "MENU_EDITAR" ||
     v === "MENU_SERVICIOS"
   )
     return true;
   if (step === "ASK_CEDULA") return true;
-  if (step === "SELECT_SERVICE" && v.startsWith("SVC_")) return true;
-  if (step === "SELECT_SPECIALIST" && v.startsWith("ESP_")) return true;
-  if (step === "SELECT_DATE" && v.startsWith("DATE_")) return true;
-  if (step === "SELECT_JORNADA" && v.startsWith("JORNADA_")) return true;
-  if (step === "SELECT_TIME" && v.startsWith("TIME_")) return true;
-  if (
-    step === "CONFIRM_APPOINTMENT" &&
-    (v === "CONFIRM_YES" || v === "CONFIRM_NO")
-  )
-    return true;
-  if (step === "CANCEL_SELECT" && v.startsWith("CANCEL_")) return true;
-  if (
-    step === "CANCEL_CONFIRM" &&
-    (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")
-  )
-    return true;
+  if (step === "SELECT_SERVICE"  && v.startsWith("SVC_"))    return true;
+  if (step === "SELECT_SPECIALIST" && v.startsWith("ESP_"))  return true;
+  if (step === "SELECT_DATE"     && v.startsWith("DATE_"))   return true;
+  if (step === "SELECT_JORNADA"  && v.startsWith("JORNADA_")) return true;
+  if (step === "SELECT_TIME"     && v.startsWith("TIME_"))   return true;
+  if (step === "CONFIRM_APPOINTMENT" && (v === "CONFIRM_YES" || v === "CONFIRM_NO")) return true;
+  if (step === "CANCEL_SELECT"   && v.startsWith("CANCEL_")) return true;
+  if (step === "CANCEL_CONFIRM"  && (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")) return true;
+  if (step === "EDIT_SELECT"     && v.startsWith("EDIT_"))   return true;
+  if (step === "EDIT_DATE"       && v.startsWith("DATE_"))   return true;
+  if (step === "EDIT_JORNADA"    && v.startsWith("JORNADA_")) return true;
+  if (step === "EDIT_TIME"       && v.startsWith("TIME_"))   return true;
+  if (step === "EDIT_CONFIRM"    && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
   return false;
 }
