@@ -177,7 +177,7 @@ const RESET_HTML = (resetLink: string) => `<!DOCTYPE html>
                   </td>
                   <td align="right" style="vertical-align:middle;">
                     <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">
-                      © 2025 Novagendas
+                      © ${new Date().getFullYear()} Novagendas
                     </p>
                   </td>
                 </tr>

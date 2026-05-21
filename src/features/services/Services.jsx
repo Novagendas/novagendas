@@ -41,6 +41,13 @@ export default function Services({ user, tenant }) {
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+  const fmtDuration = (mins) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m} min`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}min`;
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -169,6 +176,10 @@ export default function Services({ user, tenant }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.price) return;
+    if (parseInt(form.duration, 10) < 15) {
+      showAlert('Duración inválida', 'La duración mínima es de 15 minutos.');
+      return;
+    }
     setSaving(true);
 
     const catId = getCategoryId(form.category);
@@ -338,7 +349,7 @@ export default function Services({ user, tenant }) {
                     <div className="service-card-meta" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
-                        <span className="service-card-meta-text">{s.duration} minutos de sesión</span>
+                        <span className="service-card-meta-text">{fmtDuration(s.duration)} de sesión</span>
                       </div>
                       <button
                         onClick={(e) => handleToggleEstado(s, e)}
@@ -435,9 +446,33 @@ export default function Services({ user, tenant }) {
                 </div>
                 <div className="input-group">
                   <label className="service-form-label">Duración</label>
-                  <select className="input-field rounded-12" value={form.duration} onChange={e => update('duration', e.target.value)}>
-                    {[15, 30, 45, 60, 90, 120].map(d => <option key={d} value={d}>{d < 60 ? `${d} min` : `${d / 60} hora${d / 60 > 1 ? 's' : ''}`}</option>)}
-                  </select>
+                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      className="input-field rounded-12"
+                      min="0"
+                      max="12"
+                      step="1"
+                      value={Math.floor(form.duration / 60)}
+                      onChange={e => {
+                        const h = Math.min(12, Math.max(0, Number(e.target.value)));
+                        const m = h === 12 ? 0 : form.duration % 60;
+                        update('duration', h * 60 + m);
+                      }}
+                      style={{ width: '60px', textAlign: 'center' }}
+                    />
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', flexShrink: 0 }}>h</span>
+                    <select
+                      className="input-field rounded-12"
+                      value={form.duration % 60}
+                      onChange={e => update('duration', Math.floor(form.duration / 60) * 60 + Number(e.target.value))}
+                      disabled={Math.floor(form.duration / 60) === 12}
+                    >
+                      {[0, 15, 30, 45].map(m => (
+                        <option key={m} value={m}>{String(m).padStart(2, '0')} min</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
