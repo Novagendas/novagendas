@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { GlobalProvider } from './context/GlobalState';
 import './index.css';
 import './App.css';
+import TourOverlay from './components/tour/TourOverlay';
+import './components/tour/TourOverlay.css';
 import Login from './features/auth/Login';
 import ForgotPassword from './features/auth/ForgotPassword';
 import ResetPassword from './features/auth/ResetPassword';
@@ -81,6 +83,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
     return localStorage.getItem('novagendas_route') || 'dashboard';
   });
   const [hasBotEnabled] = useState(!!tenant?.bot_activo);
+  const [showTour, setShowTour] = useState(false);
 
   useEffect(() => {
     if (!user || !tenant?.id) return;
@@ -137,6 +140,37 @@ function TenantApp({ tenant, initialView = 'login' }) {
   // Solo corre al montar la sesión, no en cada render
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.idusuario ?? user?.id]);
+
+  useEffect(() => {
+    if (!user || !tenant?.id) return;
+    if (user.role !== 'admin') return;
+    const userId = user.idusuario || user.id;
+    if (!userId) return;
+    supabase
+      .from('usuario')
+      .select('tour')
+      .eq('idusuario', userId)
+      .single()
+      .then(({ data, error }) => {
+        if (error) { console.error('[tour] error leyendo tour:', error.message); }
+        if (data?.tour !== true) setShowTour(true);
+      });
+  // Solo al hacer login
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.idusuario ?? user?.id]);
+
+  const completeTour = () => {
+    if (!user || !tenant?.id) return;
+    const userId = user.idusuario || user.id;
+    supabase
+      .from('usuario')
+      .update({ tour: true })
+      .eq('idusuario', userId)
+      .then(({ error }) => {
+        if (error) console.error('[tour] error guardando completado:', JSON.stringify(error));
+      });
+    setShowTour(false);
+  };
 
   const renderRoute = () => {
     if (user.role === 'especialista' && currentRoute !== 'agenda' && currentRoute !== 'clients' && currentRoute !== 'profile') {
@@ -195,9 +229,29 @@ function TenantApp({ tenant, initialView = 'login' }) {
 
   return (
     <GlobalProvider tenantId={tenant.id}>
-      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }}>
+      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }} isTourActive={showTour}>
         {renderRoute()}
       </Layout>
+
+      {showTour && (
+        <TourOverlay
+          onComplete={completeTour}
+          onSkip={() => setShowTour(false)}
+          userRole={user.role}
+          hasBotEnabled={hasBotEnabled}
+        />
+      )}
+
+      {!showTour && user.role === 'admin' && (
+        <button
+          className="tour-help-btn"
+          onClick={() => setShowTour(true)}
+          title="Iniciar tour de la aplicación"
+          aria-label="Ayuda: ver tour de la aplicación"
+        >
+          ?
+        </button>
+      )}
     </GlobalProvider>
   );
 }
