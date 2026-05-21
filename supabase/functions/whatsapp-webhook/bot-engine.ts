@@ -10,6 +10,7 @@ import { getAvailableDates, getAvailableSlots } from "./availability.ts";
 import {
   getClientByCedula, createAppointment, updateAppointment,
   getUpcomingAppointments, cancelAppointment, createClient,
+  type ClientRecord,
 } from "./appointment.ts";
 
 type Step =
@@ -256,7 +257,7 @@ async function save(
 async function continueAfterClientFound(
   supabase: SupabaseClient,
   conv: Conversation,
-  client: { idcliente: number; nombre: string; email: string | null },
+  client: ClientRecord,
   idnegocios: number,
   telefonoContacto: string | null,
   emailNotificaciones: string | null,
