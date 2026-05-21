@@ -380,7 +380,7 @@ async function processStep(
   // ── FALLBACK ──────────────────────────────────────────────────────────────
   if (!isKnownAction(v, conv.step)) {
     await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName));
+    await send(buildMenu(businessName, telefonoContacto));
     return;
   }
 
@@ -460,7 +460,7 @@ async function processStep(
 
     await send(buildServiceCatalog(catalog));
     await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName));
+    await send(buildMenu(businessName, telefonoContacto));
     return;
   }
 
@@ -666,7 +666,7 @@ async function processStep(
         )
       );
       await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -787,7 +787,7 @@ async function processStep(
     if (v === "CONFIRM_NO") {
       await save(supabase, conv, "MENU", {});
       await send(buildText("Cita no confirmada. ¿Deseas hacer algo más?"));
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -800,7 +800,7 @@ async function processStep(
           buildText("Ocurrió un error con tu sesión. Por favor inicia de nuevo.")
         );
         await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName));
+        await send(buildMenu(businessName, telefonoContacto));
         return;
       }
 
@@ -966,7 +966,7 @@ async function processStep(
     if (v === "CANCEL_CONFIRM_NO") {
       await save(supabase, conv, "MENU", {});
       await send(buildText("De acuerdo, la cita no fue cancelada."));
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -1061,7 +1061,7 @@ async function processStep(
         buildText("No hay fechas disponibles en los próximos 30 días." + contactSuffix(telefonoContacto))
       );
       await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -1163,7 +1163,7 @@ async function processStep(
     if (v === "EDIT_CONFIRM_NO") {
       await save(supabase, conv, "MENU", {});
       await send(buildText("Edición cancelada. ¿Deseas hacer algo más?"));
-      await send(buildMenu(businessName));
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
 
@@ -1235,7 +1235,7 @@ async function processStep(
 
   // Fallback
   await save(supabase, conv, "MENU", {});
-  await send(buildMenu(businessName));
+  await send(buildMenu(businessName, telefonoContacto));
 }
 
 function isKnownAction(v: string, step: Step): boolean {
