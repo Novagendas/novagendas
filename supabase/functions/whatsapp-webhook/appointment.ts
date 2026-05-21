@@ -139,7 +139,8 @@ export async function createClient(
   email: string,
   telefono: string
 ): Promise<ClientRecord | null> {
-  const parts = fullName.trim().split(/\s+/);
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return null;
   const nombre = parts[0];
   const apellido = parts.slice(1).join(" ") || ".";
 
