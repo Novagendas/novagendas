@@ -17,9 +17,8 @@ export function buildMenu(
   businessName: string,
   telefonoContacto?: string | null
 ): Record<string, unknown> {
-  const contactLine = telefonoContacto?.trim()
-    ? `\n\n📞 Contacto directo: *${telefonoContacto.trim()}*`
-    : "";
+  const phone = telefonoContacto?.trim() ?? "";
+  const contactLine = phone ? `\n\n📞 Contacto directo: *${phone}*` : "";
 
   return {
     type: "interactive",
