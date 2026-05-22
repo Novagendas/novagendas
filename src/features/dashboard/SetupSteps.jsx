@@ -330,6 +330,12 @@ export default function SetupSteps({ tenant, hasBotEnabled, onNavigate, onPendin
   useEffect(() => {
     if (loading || steps.length === 0) return;
 
+    const allDone = steps.every((s) => s.completado);
+    if (allDone) {
+      setSectionOpen(false);
+      return;
+    }
+
     const firstPending = activeConfig.find(
       (cfg) => cfg.required && !steps.find((s) => s.paso_key === cfg.key)?.completado
     );
