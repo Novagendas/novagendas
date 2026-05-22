@@ -1,6 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import './BotConfig.css';
+
+const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
+const EMBEDDED_SIGNUP_CONFIG_ID = import.meta.env.VITE_EMBEDDED_SIGNUP_CONFIG_ID;
+const ONBOARDING_URL = 'https://aulddrljywoigivxugqf.supabase.co/functions/v1/whatsapp-onboarding';
 
 const DAYS = [
   { value: 1, label: 'Lunes' },
@@ -48,10 +52,108 @@ export default function BotConfig({ user, tenant }) {
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
   const [expandedDays, setExpandedDays] = useState(new Set());
+  const [waConnected, setWaConnected] = useState(false);
+  const [waConnecting, setWaConnecting] = useState(false);
+  const wabaDataRef = useRef({ waba_id: null, phone_number_id: null });
 
   const showSnack = (message, type = 'success') => {
     setSnackbar({ show: true, message, type });
     setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  const checkWhatsAppConnection = useCallback(async () => {
+    const { data } = await supabase.rpc('has_whatsapp_integration', { p_idnegocios: tenant.id });
+    setWaConnected(!!data);
+  }, [tenant.id]);
+
+  const loadFbSdk = () =>
+    new Promise((resolve) => {
+      if (window.FB) { resolve(); return; }
+      window.fbAsyncInit = () => {
+        window.FB.init({ appId: FB_APP_ID, cookie: true, xfbml: false, version: 'v18.0' });
+        resolve();
+      };
+      const script = document.createElement('script');
+      script.src = 'https://connect.facebook.net/es_LA/sdk.js';
+      script.async = true;
+      document.body.appendChild(script);
+    });
+
+  const launchEmbeddedSignup = async () => {
+    if (!FB_APP_ID || !EMBEDDED_SIGNUP_CONFIG_ID) {
+      showSnack('Faltan variables VITE_FACEBOOK_APP_ID o VITE_EMBEDDED_SIGNUP_CONFIG_ID', 'error');
+      return;
+    }
+    setWaConnecting(true);
+    wabaDataRef.current = { waba_id: null, phone_number_id: null };
+
+    const onMessage = (event) => {
+      if (event.origin !== 'https://www.facebook.com') return;
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'WA_EMBEDDED_SIGNUP' && msg.event === 'FINISH') {
+          wabaDataRef.current = {
+            waba_id: msg.data?.waba_id ?? null,
+            phone_number_id: msg.data?.phone_number_id ?? null,
+          };
+        }
+      } catch { /* ignorar mensajes no JSON */ }
+    };
+
+    window.addEventListener('message', onMessage);
+
+    try {
+      await loadFbSdk();
+      await new Promise((resolve, reject) => {
+        window.FB.login((response) => {
+          if (response.authResponse) resolve(response.authResponse);
+          else reject(new Error('El usuario canceló el inicio de sesión'));
+        }, {
+          scope: 'whatsapp_business_management,whatsapp_business_messaging',
+          extras: {
+            feature: 'whatsapp_embedded_signup',
+            setup: {},
+            sessionInfoVersion: 2,
+            config_id: EMBEDDED_SIGNUP_CONFIG_ID,
+          },
+        });
+      }).then(async (authResponse) => {
+        const { waba_id, phone_number_id } = wabaDataRef.current;
+        if (!waba_id || !phone_number_id) {
+          throw new Error('No se recibió WABA ID o Phone Number ID de Meta');
+        }
+        const res = await fetch(ONBOARDING_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idnegocios: tenant.id,
+            waba_id,
+            phone_number_id,
+            access_token: authResponse.accessToken,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error ?? 'Error al guardar la integración');
+        }
+        setWaConnected(true);
+        await insertLog(tenant.id, user.idusuario, 'whatsapp_integrations', 'CREATE', { waba_id, phone_number_id });
+        showSnack('WhatsApp conectado correctamente');
+      });
+    } catch (err) {
+      showSnack(err.message, 'error');
+    } finally {
+      window.removeEventListener('message', onMessage);
+      setWaConnecting(false);
+    }
+  };
+
+  const disconnectWhatsApp = async () => {
+    const { error } = await supabase.rpc('disconnect_whatsapp_integration', { p_idnegocios: tenant.id });
+    if (error) { showSnack('Error al desconectar WhatsApp', 'error'); return; }
+    setWaConnected(false);
+    await insertLog(tenant.id, user.idusuario, 'whatsapp_integrations', 'DELETE', {});
+    showSnack('WhatsApp desconectado');
   };
 
   const fetchData = useCallback(async () => {
@@ -96,8 +198,11 @@ export default function BotConfig({ user, tenant }) {
   }, [tenant.id]);
 
   useEffect(() => {
-    if (tenant?.id) fetchData();
-  }, [tenant, fetchData]);
+    if (tenant?.id) {
+      fetchData();
+      checkWhatsAppConnection();
+    }
+  }, [tenant, fetchData, checkWhatsAppConnection]);
 
   const toggleDay = (dayValue) => {
     const isSelected = config.dias_disponibles.includes(dayValue);
@@ -578,6 +683,49 @@ export default function BotConfig({ user, tenant }) {
               />
               <p className="bot-config-field-hint">
                 Si están vacíos, el bot no ofrecerá la opción de pago anticipado.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Conexión WhatsApp */}
+        <div className="card bot-config-card">
+          <div className="bot-config-card-header">
+            <div className="bot-config-card-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              </svg>
+            </div>
+            <h3 className="bot-config-card-title">Número de WhatsApp</h3>
+          </div>
+          <div className="bot-config-fields">
+            <div className="bot-config-field-group">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  fontSize: '13px', fontWeight: 500,
+                  color: waConnected ? 'var(--success)' : 'var(--text-secondary)',
+                }}>
+                  <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: waConnected ? 'var(--success)' : 'var(--text-secondary)',
+                    flexShrink: 0,
+                  }} />
+                  {waConnected ? 'Número conectado' : 'Sin número conectado'}
+                </span>
+                {!waConnected && (
+                  <button type="button" className="btn btn-primary" onClick={launchEmbeddedSignup} disabled={waConnecting}>
+                    {waConnecting ? (
+                      <span className="bot-config-saving">
+                        <span className="spinner spinner-small" />
+                        Conectando...
+                      </span>
+                    ) : 'Conectar número de WhatsApp'}
+                  </button>
+                )}
+              </div>
+              <p className="bot-config-field-hint">
+                Conecta el número de WhatsApp Business de tu negocio para activar el bot.
               </p>
             </div>
           </div>
