@@ -145,6 +145,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
   useEffect(() => {
     if (!user || !tenant?.id) return;
     if (user.role !== 'admin') return;
+    if (window.innerWidth < 768) return;
     const userId = user.idusuario || user.id;
     if (!userId) return;
     supabase
