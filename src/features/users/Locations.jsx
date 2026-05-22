@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import './Locations.css';
 
@@ -226,7 +227,7 @@ export default function Locations({ user, tenant }) {
         </div>
       )}
 
-      {modalOpen && (
+      {modalOpen && ReactDOM.createPortal(
         <div className="modal-overlay" onClick={() => !saving && closeModal()}>
           <div className="modal-box locations-modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-header-gradient">
@@ -322,9 +323,9 @@ export default function Locations({ user, tenant }) {
             </form>
           </div>
         </div>
-      )}
+      , document.body)}
 
-      {confirmDel && (
+      {confirmDel && ReactDOM.createPortal(
         <div className="modal-overlay" onClick={() => setConfirmDel(null)}>
           <div className="modal-box modal-box--delete" onClick={e => e.stopPropagation()}>
             <div className="delete-confirm-box">
@@ -342,11 +343,11 @@ export default function Locations({ user, tenant }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
-      {snack && (
-        <div className={`snackbar snackbar--${snack.type}`}>{snack.message}</div>
-      )}
+      {snack && ReactDOM.createPortal(
+        <div className={`snackbar snackbar--${snack.type} locations-snackbar`}>{snack.message}</div>
+      , document.body)}
     </div>
   );
 }

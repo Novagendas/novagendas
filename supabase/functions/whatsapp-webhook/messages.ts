@@ -56,16 +56,20 @@ export function buildMenu(
 
 export function buildServiceList(
   services: Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>,
-  showPrice = true
+  showPrice = true,
+  preciosOcultos: number[] = []
 ): Record<string, unknown> {
-  const rows = services.slice(0, 10).map((s) => ({
-    id: `SVC_${s.idservicios}`,
-    title: trunc(s.nombre, 24),
-    description: trunc(
-      showPrice ? `${formatCOP(s.precio)} · ${s.duracion} min` : `${s.duracion} min`,
-      72
-    ),
-  }));
+  const rows = services.slice(0, 10).map((s) => {
+    const showThisPrice = showPrice && !preciosOcultos.includes(s.idservicios);
+    return {
+      id: `SVC_${s.idservicios}`,
+      title: trunc(s.nombre, 24),
+      description: trunc(
+        showThisPrice ? `${formatCOP(s.precio)} · ${s.duracion} min` : `${s.duracion} min`,
+        72
+      ),
+    };
+  });
   return {
     type: "interactive",
     interactive: {
@@ -74,6 +78,29 @@ export function buildServiceList(
       action: { button: "Ver servicios", sections: [{ title: "Servicios disponibles", rows }] },
     },
   };
+}
+
+export function buildCategoryList(
+  categories: Array<{ idcategoriaservicio: number; descripcion: string }>
+): Record<string, unknown> {
+  if (categories.length <= 10) {
+    const rows = categories.map((c) => ({
+      id: `CAT_${c.idcategoriaservicio}`,
+      title: trunc(c.descripcion, 24),
+      description: "",
+    }));
+    return {
+      type: "interactive",
+      interactive: {
+        type: "list",
+        body: { text: "¿Qué tipo de servicio deseas?" },
+        action: { button: "Ver categorías", sections: [{ title: "Categorías", rows }] },
+      },
+    };
+  }
+
+  const lines = categories.map((c, i) => `${i + 1}. ${c.descripcion}`).join("\n");
+  return buildText(`¿Qué tipo de servicio deseas?\n\n${lines}\n\nResponde con el número de tu elección.`);
 }
 
 export function buildServiceCatalog(
@@ -117,11 +144,17 @@ export function buildSpecialistList(
 }
 
 export function buildDateList(dates: string[]): Record<string, unknown> {
-  const rows = dates.slice(0, 10).map((d) => {
+  const rows = dates.slice(0, 9).map((d) => {
     const [year, month, day] = d.split("-").map(Number);
     const dt = new Date(year, month - 1, day);
     const label = dt.toLocaleDateString("es-CO", { weekday: "short", day: "numeric", month: "short" });
     return { id: `DATE_${d}`, title: trunc(label, 24), description: "" };
+  });
+  // Always add custom date option as last item
+  rows.push({
+    id: "DATE_CUSTOM",
+    title: "📅 Fecha personalizada",
+    description: "Escribe la fecha que necesitas",
   });
   return {
     type: "interactive",
@@ -288,4 +321,40 @@ export function buildEditConfirmation(
       },
     },
   };
+}
+
+export function buildPaymentOptions(): Record<string, unknown> {
+  return {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: {
+        text: "¿Deseas realizar un abono o pago anticipado para confirmar tu cita?",
+      },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: "PAYMENT_YES", title: "💳 Sí, abonar" } },
+          { type: "reply", reply: { id: "PAYMENT_NO",  title: "💵 No, en efectivo" } },
+        ],
+      },
+    },
+  };
+}
+
+export function buildPaymentInfo(
+  numeroNequi: string | null,
+  llaveBreb: string | null,
+  telefonoContacto: string | null
+): Record<string, unknown> {
+  const lines: string[] = ["💳 *Métodos de pago*\n"];
+  if (numeroNequi) lines.push(`📱 *NEQUI:* ${numeroNequi}`);
+  if (llaveBreb) lines.push(`🔑 *Llave Bre-B:* ${llaveBreb}`);
+  const tel = telefonoContacto?.trim();
+  if (tel) {
+    lines.push(`\nEnvía el comprobante al número *${tel}*.`);
+  } else {
+    lines.push("\nEnvía el comprobante al número de contacto del negocio.");
+  }
+  lines.push("\n¡Gracias por tu preferencia! 🙏");
+  return buildText(lines.join("\n"));
 }

@@ -43,7 +43,7 @@ const AGENDA_MGMT_NAV = [
 ];
 
 /* ── Nav button ─────────────────────────────────────────── */
-function NavBtn({ item, active, onNavigate }) {
+function NavBtn({ item, active, onNavigate, showDot }) {
   return (
     <li className="nav-item">
       <button
@@ -60,6 +60,7 @@ function NavBtn({ item, active, onNavigate }) {
             strokeLinecap="round" strokeLinejoin="round">
             {ICONS[item.id]}
           </svg>
+          {showDot && <span className="nav-btn-dot" aria-label="Pasos pendientes" />}
         </div>
         <span className="nav-btn-label">{item.label}</span>
         <div className="nav-btn-indicator" aria-hidden="true" />
@@ -78,7 +79,7 @@ function SectionLabel({ label }) {
 }
 
 /* ── Sidebar ────────────────────────────────────────────── */
-export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBotEnabled, isTourActive }) {
+export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBotEnabled, hasPendingSetupSteps, isTourActive }) {
     // User info display
   const uRole     = user?.role || 'admin';
 
@@ -123,6 +124,7 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBot
                 item={item}
                 active={currentRoute === item.id}
                 onNavigate={onNavigate}
+                showDot={item.id === 'dashboard' && hasPendingSetupSteps}
               />
             );
           })}

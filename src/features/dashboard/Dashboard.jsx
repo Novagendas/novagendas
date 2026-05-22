@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../Supabase/supabaseClient';
+import SetupSteps from './SetupSteps';
 import './Dashboard.css';
 
 /* ── Stat Card ──────────────────────────────────────────── */
@@ -45,7 +46,7 @@ const QuickBtn = ({ label, emoji, color, onClick }) => (
 );
 
 /* ── Dashboard ──────────────────────────────────────────── */
-export default function Dashboard({ user, tenant, onNavigate }) {
+export default function Dashboard({ user, tenant, onNavigate, onSetupPendingChange, hasBotEnabled }) {
   const [data, setData] = useState({
     todayAppts: [],
     clientCount: 0,
@@ -122,6 +123,13 @@ export default function Dashboard({ user, tenant, onNavigate }) {
           </button>
         </div>
       </div>
+
+      <SetupSteps
+        tenant={tenant}
+        hasBotEnabled={hasBotEnabled || false}
+        onNavigate={onNavigate}
+        onPendingChange={onSetupPendingChange || (() => {})}
+      />
 
       {/* Grid de estadísticas */}
       <div className="dashboard-stats-grid">
