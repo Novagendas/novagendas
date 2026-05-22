@@ -5,7 +5,7 @@ import NotificationsPopover from '../NotificationsPopover';
 import { ROUTE_META } from '../../utils/constants';
 import './Layout.css';
 
-export default function Layout({ children, user, tenant, currentRoute, onNavigate, hasBotEnabled, onLogout, isTourActive }) {
+export default function Layout({ children, user, tenant, currentRoute, onNavigate, hasBotEnabled, hasPendingSetupSteps, onLogout, isTourActive }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   // Acceso seguro: usamos Object.entries para obtener el metadato de ruta sin acceso dinámico por corchetes
   const routeEntry = Object.entries(ROUTE_META).find(([key]) => key === currentRoute);
@@ -36,6 +36,7 @@ export default function Layout({ children, user, tenant, currentRoute, onNavigat
           currentRoute={currentRoute}
           onNavigate={handleNavigate}
           hasBotEnabled={hasBotEnabled}
+          hasPendingSetupSteps={hasPendingSetupSteps}
           onLogout={onLogout}
           isTourActive={isTourActive}
         />

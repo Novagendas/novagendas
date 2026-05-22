@@ -24,13 +24,21 @@ const JORNADAS_DEF = [
   { key: 'noche',  emoji: '🌙', label: 'Noche'  },
 ];
 
+const JORNADA_NOMBRES = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' };
+
+const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+
 const DEFAULT_CONFIG = {
   dias_disponibles: [1, 2, 3, 4, 5, 6],
   jornadas: DEFAULT_JORNADAS,
+  horarios_por_dia: {},
   servicios_excluidos: [],
   mostrar_precios: true,
+  servicios_precios_ocultos: [],
   email_notificaciones: '',
   telefono_contacto: '',
+  numero_nequi: '',
+  llave_breb: '',
 };
 
 export default function BotConfig({ user, tenant }) {
@@ -39,6 +47,7 @@ export default function BotConfig({ user, tenant }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
+  const [expandedDays, setExpandedDays] = useState(new Set());
 
   const showSnack = (message, type = 'success') => {
     setSnackbar({ show: true, message, type });
@@ -72,10 +81,14 @@ export default function BotConfig({ user, tenant }) {
       setConfig({
         dias_disponibles: raw.dias_disponibles ?? DEFAULT_CONFIG.dias_disponibles,
         jornadas: raw.jornadas ?? DEFAULT_JORNADAS,
+        horarios_por_dia: raw.horarios_por_dia ?? {},
         servicios_excluidos: raw.servicios_excluidos ?? DEFAULT_CONFIG.servicios_excluidos,
         mostrar_precios: raw.mostrar_precios ?? DEFAULT_CONFIG.mostrar_precios,
+        servicios_precios_ocultos: raw.servicios_precios_ocultos ?? [],
         email_notificaciones: raw.email_notificaciones ?? '',
         telefono_contacto: raw.telefono_contacto ?? '',
+        numero_nequi: raw.numero_nequi ?? '',
+        llave_breb: raw.llave_breb ?? '',
       });
     }
 
@@ -94,22 +107,49 @@ export default function BotConfig({ user, tenant }) {
     setConfig(prev => ({ ...prev, dias_disponibles: updated }));
   };
 
-  const toggleJornada = (key) => {
+  const toggleDayExpanded = (dayValue) =>
+    setExpandedDays(prev => {
+      const next = new Set(prev);
+      if (next.has(dayValue)) next.delete(dayValue);
+      else next.add(dayValue);
+      return next;
+    });
+
+  const getDayJornadas = (dayValue) =>
+    config.horarios_por_dia[String(dayValue)] ?? DEFAULT_JORNADAS;
+
+  const toggleDayJornada = (dayValue, jornadaKey) => {
+    const dayKey = String(dayValue);
+    const current = config.horarios_por_dia[dayKey] ?? DEFAULT_JORNADAS;
     setConfig(prev => ({
       ...prev,
-      jornadas: {
-        ...prev.jornadas,
-        [key]: { ...prev.jornadas[key], habilitado: !prev.jornadas[key].habilitado },
+      horarios_por_dia: {
+        ...prev.horarios_por_dia,
+        [dayKey]: {
+          ...current,
+          [jornadaKey]: {
+            ...current[jornadaKey],
+            habilitado: !current[jornadaKey].habilitado,
+          },
+        },
       },
     }));
   };
 
-  const updateJornadaTime = (key, field, value) => {
+  const updateDayJornadaTime = (dayValue, jornadaKey, field, value) => {
+    const dayKey = String(dayValue);
+    const current = config.horarios_por_dia[dayKey] ?? DEFAULT_JORNADAS;
     setConfig(prev => ({
       ...prev,
-      jornadas: {
-        ...prev.jornadas,
-        [key]: { ...prev.jornadas[key], [field]: value },
+      horarios_por_dia: {
+        ...prev.horarios_por_dia,
+        [dayKey]: {
+          ...current,
+          [jornadaKey]: {
+            ...current[jornadaKey],
+            [field]: value,
+          },
+        },
       },
     }));
   };
@@ -122,6 +162,14 @@ export default function BotConfig({ user, tenant }) {
     setConfig(prev => ({ ...prev, servicios_excluidos: updated }));
   };
 
+  const toggleServicePriceVisibility = (serviceId) => {
+    const isHidden = config.servicios_precios_ocultos.includes(serviceId);
+    const updated = isHidden
+      ? config.servicios_precios_ocultos.filter(id => id !== serviceId)
+      : [...config.servicios_precios_ocultos, serviceId];
+    setConfig(prev => ({ ...prev, servicios_precios_ocultos: updated }));
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
 
@@ -130,17 +178,19 @@ export default function BotConfig({ user, tenant }) {
       return;
     }
 
-    const jornadasActivas = Object.entries(config.jornadas).filter(([, j]) => j.habilitado);
-    if (jornadasActivas.length === 0) {
-      showSnack('Habilita al menos una jornada de atención', 'error');
-      return;
-    }
-
-    for (const [key, j] of jornadasActivas) {
-      if (j.inicio >= j.fin) {
-        const nombres = { manana: 'Mañana', tarde: 'Tarde', noche: 'Noche' };
-        showSnack(`${nombres[key]}: la hora de inicio debe ser anterior a la hora de fin`, 'error');
+    for (const dayValue of config.dias_disponibles) {
+      const dayName = DAYS.find(d => d.value === dayValue)?.label ?? String(dayValue);
+      const dayJornadas = config.horarios_por_dia[String(dayValue)] ?? DEFAULT_JORNADAS;
+      const activas = Object.entries(dayJornadas).filter(([, j]) => j.habilitado);
+      if (activas.length === 0) {
+        showSnack(`${dayName}: habilita al menos una jornada de atención`, 'error');
         return;
+      }
+      for (const [key, j] of activas) {
+        if (j.inicio >= j.fin) {
+          showSnack(`${dayName} — ${JORNADA_NOMBRES[key]}: la hora de inicio debe ser anterior a la hora de fin`, 'error');
+          return;
+        }
       }
     }
 
@@ -158,10 +208,14 @@ export default function BotConfig({ user, tenant }) {
       idnegocios: tenant.id,
       dias_disponibles: config.dias_disponibles,
       jornadas: config.jornadas,
+      horarios_por_dia: config.horarios_por_dia,
       servicios_excluidos: config.servicios_excluidos,
       mostrar_precios: config.mostrar_precios,
+      servicios_precios_ocultos: config.servicios_precios_ocultos,
       email_notificaciones: config.email_notificaciones?.trim() || null,
       telefono_contacto: config.telefono_contacto?.trim() || null,
+      numero_nequi: config.numero_nequi?.trim() || null,
+      llave_breb: config.llave_breb?.trim() || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -258,7 +312,7 @@ export default function BotConfig({ user, tenant }) {
           </div>
         </div>
 
-        {/* Horario de atención — jornadas */}
+        {/* Horario de atención — por día */}
         <div className="card bot-config-card">
           <div className="bot-config-card-header">
             <div className="bot-config-card-icon">
@@ -269,47 +323,80 @@ export default function BotConfig({ user, tenant }) {
             </div>
             <div>
               <h3 className="bot-config-card-title">Horario de atención</h3>
-              <p className="bot-config-card-desc">Habilita las jornadas y define el rango de horas para cada una</p>
+              <p className="bot-config-card-desc">Configura el horario de atención para cada día activo</p>
             </div>
           </div>
-          <div className="bot-config-jornadas">
-            {JORNADAS_DEF.map(({ key, emoji, label }) => {
-              const j = config.jornadas[key];
-              return (
-                <div key={key} className={`bot-config-jornada-row${!j.habilitado ? ' bot-config-jornada-row--off' : ''}`}>
-                  <div className="bot-config-jornada-info">
-                    <span className="bot-config-jornada-emoji">{emoji}</span>
-                    <span className="bot-config-jornada-name">{label}</span>
+
+          {config.dias_disponibles.length === 0 ? (
+            <p className="bot-config-empty-hint">
+              Selecciona al menos un día de atención arriba para configurar horarios.
+            </p>
+          ) : (
+            [...config.dias_disponibles]
+              .sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b))
+              .map(dayValue => {
+                const dayName = DAYS.find(d => d.value === dayValue)?.label ?? '';
+                const dayJornadas = getDayJornadas(dayValue);
+                const isExpanded = expandedDays.has(dayValue);
+                return (
+                  <div key={dayValue} className="bot-config-day-schedule">
+                    <button
+                      type="button"
+                      onClick={() => toggleDayExpanded(dayValue)}
+                      className="bot-config-day-schedule-header"
+                    >
+                      <span className="bot-config-day-schedule-name">{dayName}</span>
+                      <svg
+                        className={`bot-config-day-chevron${isExpanded ? ' bot-config-day-chevron--open' : ''}`}
+                        width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {isExpanded && (
+                      <div className="bot-config-jornadas">
+                        {JORNADAS_DEF.map(({ key, emoji, label }) => {
+                          const j = dayJornadas[key];
+                          return (
+                            <div key={key} className={`bot-config-jornada-row${!j.habilitado ? ' bot-config-jornada-row--off' : ''}`}>
+                              <div className="bot-config-jornada-info">
+                                <span className="bot-config-jornada-emoji">{emoji}</span>
+                                <span className="bot-config-jornada-name">{label}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => toggleDayJornada(dayValue, key)}
+                                className={`bot-config-toggle${j.habilitado ? ' bot-config-toggle--on' : ''}`}
+                                aria-label={`${j.habilitado ? 'Deshabilitar' : 'Habilitar'} ${label} en ${dayName}`}
+                              >
+                                <span className="bot-config-toggle-thumb" />
+                              </button>
+                              {j.habilitado && (
+                                <div className="bot-config-jornada-times">
+                                  <input
+                                    type="time"
+                                    className="input-field input-field--sm"
+                                    value={j.inicio}
+                                    onChange={e => updateDayJornadaTime(dayValue, key, 'inicio', e.target.value)}
+                                  />
+                                  <span className="bot-config-time-sep">—</span>
+                                  <input
+                                    type="time"
+                                    className="input-field input-field--sm"
+                                    value={j.fin}
+                                    onChange={e => updateDayJornadaTime(dayValue, key, 'fin', e.target.value)}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleJornada(key)}
-                    className={`bot-config-toggle${j.habilitado ? ' bot-config-toggle--on' : ''}`}
-                    aria-label={`${j.habilitado ? 'Deshabilitar' : 'Habilitar'} ${label}`}
-                  >
-                    <span className="bot-config-toggle-thumb" />
-                  </button>
-                  {j.habilitado && (
-                    <div className="bot-config-jornada-times">
-                      <input
-                        type="time"
-                        className="input-field input-field--sm"
-                        value={j.inicio}
-                        onChange={e => updateJornadaTime(key, 'inicio', e.target.value)}
-                      />
-                      <span className="bot-config-time-sep">—</span>
-                      <input
-                        type="time"
-                        className="input-field input-field--sm"
-                        value={j.fin}
-                        onChange={e => updateJornadaTime(key, 'fin', e.target.value)}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                );
+              })
+          )}
         </div>
 
         {/* Mostrar precios */}
@@ -388,8 +475,26 @@ export default function BotConfig({ user, tenant }) {
                         {svc.nombre}
                       </span>
                     </button>
-                    {config.mostrar_precios && (
-                      <span className="bot-config-service-price">{fmt(svc.precio)}</span>
+                    {config.mostrar_precios && !isExcluded && (
+                      <button
+                        type="button"
+                        onClick={() => toggleServicePriceVisibility(svc.idservicios)}
+                        className="bot-config-price-toggle"
+                        aria-label={
+                          config.servicios_precios_ocultos.includes(svc.idservicios)
+                            ? `Mostrar precio de ${svc.nombre}`
+                            : `Ocultar precio de ${svc.nombre}`
+                        }
+                      >
+                        <span className={`bot-config-checkbox-box${!config.servicios_precios_ocultos.includes(svc.idservicios) ? ' bot-config-checkbox-box--checked' : ''}`}>
+                          {!config.servicios_precios_ocultos.includes(svc.idservicios) && (
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="bot-config-price-toggle-label">Mostrar precio</span>
+                      </button>
                     )}
                   </li>
                 );
@@ -443,6 +548,36 @@ export default function BotConfig({ user, tenant }) {
               />
               <p className="bot-config-field-hint">
                 Si está vacío, el bot no mostrará número de contacto en mensajes de error.
+              </p>
+            </div>
+            <div className="bot-config-field-group">
+              <label className="bot-config-field-label">
+                Número NEQUI (abono)
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                value={config.numero_nequi}
+                onChange={e => setConfig(prev => ({ ...prev, numero_nequi: e.target.value }))}
+                placeholder="3XX XXX XXXX"
+              />
+              <p className="bot-config-field-hint">
+                Si está vacío, el bot no ofrecerá la opción de abono por NEQUI.
+              </p>
+            </div>
+            <div className="bot-config-field-group">
+              <label className="bot-config-field-label">
+                Llave Bre-B (abono)
+              </label>
+              <input
+                type="text"
+                className="input-field"
+                value={config.llave_breb}
+                onChange={e => setConfig(prev => ({ ...prev, llave_breb: e.target.value }))}
+                placeholder="Ingresa tu llave Bre-B"
+              />
+              <p className="bot-config-field-hint">
+                Si están vacíos, el bot no ofrecerá la opción de pago anticipado.
               </p>
             </div>
           </div>

@@ -10,15 +10,18 @@ interface JornadaBlock {
   fin: string;    // "HH:MM"
 }
 
+interface DayJornadas {
+  manana: JornadaBlock;
+  tarde: JornadaBlock;
+  noche: JornadaBlock;
+}
+
 interface BotConfig {
   dias_disponibles: number[];
   hora_inicio: string;  // "HH:MM:SS" — legacy fallback
   hora_fin: string;     // "HH:MM:SS" — legacy fallback
-  jornadas: {
-    manana: JornadaBlock;
-    tarde: JornadaBlock;
-    noche: JornadaBlock;
-  } | null;
+  jornadas: DayJornadas | null;
+  horarios_por_dia: Record<string, DayJornadas> | null;
 }
 
 async function fetchBotConfig(
@@ -27,7 +30,7 @@ async function fetchBotConfig(
 ): Promise<BotConfig | null> {
   const { data } = await supabase
     .from("bot_config")
-    .select("dias_disponibles, hora_inicio, hora_fin, jornadas")
+    .select("dias_disponibles, hora_inicio, hora_fin, jornadas, horarios_por_dia")
     .eq("idnegocios", idnegocios)
     .maybeSingle();
 
@@ -49,6 +52,23 @@ function getSlotRanges(
   const start = config?.hora_inicio ? timeStrToMinutes(config.hora_inicio) : DEFAULT_START_MINUTES;
   const end   = config?.hora_fin    ? timeStrToMinutes(config.hora_fin)    : DEFAULT_END_MINUTES;
   return [{ start, end }];
+}
+
+function getSlotRangesForDay(
+  config: BotConfig | null,
+  dayOfWeek: string
+): Array<{ start: number; end: number }> {
+  const dayJornadas = config?.horarios_por_dia?.[dayOfWeek];
+  if (dayJornadas) {
+    const { manana, tarde, noche } = dayJornadas;
+    const ranges: Array<{ start: number; end: number }> = [];
+    if (manana?.habilitado) ranges.push({ start: timeStrToMinutes(manana.inicio), end: timeStrToMinutes(manana.fin) });
+    if (tarde?.habilitado)  ranges.push({ start: timeStrToMinutes(tarde.inicio),  end: timeStrToMinutes(tarde.fin)  });
+    if (noche?.habilitado)  ranges.push({ start: timeStrToMinutes(noche.inicio),  end: timeStrToMinutes(noche.fin)  });
+    if (ranges.length > 0) return ranges;
+  }
+  // fall back to global jornadas
+  return getSlotRanges(config);
 }
 
 function timeStrToMinutes(timeStr: string): number {
@@ -93,6 +113,27 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+async function getSpecialistIds(
+  supabase: SupabaseClient,
+  idnegocios: number
+): Promise<number[]> {
+  const { data: links } = await supabase
+    .from("negociousuario")
+    .select("idusuario")
+    .eq("idnegocios", idnegocios);
+
+  const userIds = (links ?? []).map((l: { idusuario: number }) => l.idusuario);
+  if (userIds.length === 0) return [];
+
+  const { data: rolData } = await supabase
+    .from("rolpermisos")
+    .select("idusuario")
+    .eq("idrol", 3)
+    .in("idusuario", userIds);
+
+  return (rolData ?? []).map((r: { idusuario: number }) => r.idusuario);
+}
+
 export async function getAvailableSlots(
   supabase: SupabaseClient,
   idnegocios: number,
@@ -100,40 +141,99 @@ export async function getAvailableSlots(
   fecha: string,
   durationMinutes: number
 ): Promise<string[]> {
-  const [config, existingResult] = await Promise.all([
-    fetchBotConfig(supabase, idnegocios),
-    (() => {
-      let query = supabase
-        .from("cita")
-        .select("fechahorainicio, fechahorafin")
-        .eq("idnegocios", idnegocios)
-        .neq("idestadocita", 3)
-        .gte("fechahorainicio", `${fecha}T00:00:00`)
-        .lt("fechahorainicio", `${fecha}T24:00:00`);
+  const config = await fetchBotConfig(supabase, idnegocios);
 
-      if (especialistaId) {
-        query = query.eq("idusuario", especialistaId);
-      }
-
-      return query;
-    })(),
-  ]);
-
-  const occupied = ((existingResult.data ?? []) as { fechahorainicio: string; fechahorafin: string }[]).map(
-    (a) => ({
-      startMin: isoTimeToMinutes(a.fechahorainicio),
-      endMin: isoTimeToMinutes(a.fechahorafin),
-    })
-  );
-
-  const ranges = getSlotRanges(config);
+  const [year, month, day] = fecha.split("-").map(Number);
+  const dayOfWeek = new Date(year, month - 1, day).getDay();
+  const ranges = getSlotRangesForDay(config, String(dayOfWeek));
   const allSlots = ranges.flatMap((r) => generateSlots(durationMinutes, r.start, r.end));
 
+  if (allSlots.length === 0) return [];
+
+  if (especialistaId !== null) {
+    // Especialista específico: verificar solo sus citas
+    const { data } = await supabase
+      .from("cita")
+      .select("fechahorainicio, fechahorafin")
+      .eq("idnegocios", idnegocios)
+      .eq("idusuario", especialistaId)
+      .neq("idestadocita", 3)
+      .gte("fechahorainicio", `${fecha}T00:00:00`)
+      .lt("fechahorainicio", `${fecha}T24:00:00`);
+
+    const occupied = ((data ?? []) as { fechahorainicio: string; fechahorafin: string }[]).map(
+      (a) => ({ startMin: isoTimeToMinutes(a.fechahorainicio), endMin: isoTimeToMinutes(a.fechahorafin) })
+    );
+
+    return allSlots.filter((slot) => {
+      const s = timeStrToMinutes(slot);
+      const e = s + durationMinutes;
+      return !occupied.some((o) => o.startMin < e && o.endMin > s);
+    });
+  }
+
+  // Sin preferencia de especialista: un slot está disponible si al menos uno está libre
+  const specialistIds = await getSpecialistIds(supabase, idnegocios);
+
+  if (specialistIds.length === 0) return allSlots;
+
+  const { data: apptData } = await supabase
+    .from("cita")
+    .select("fechahorainicio, fechahorafin, idusuario")
+    .eq("idnegocios", idnegocios)
+    .neq("idestadocita", 3)
+    .gte("fechahorainicio", `${fecha}T00:00:00`)
+    .lt("fechahorainicio", `${fecha}T24:00:00`);
+
+  type ApptRow = { fechahorainicio: string; fechahorafin: string; idusuario: number | null };
+  const appointments = (apptData ?? []) as ApptRow[];
+
   return allSlots.filter((slot) => {
-    const slotStart = timeStrToMinutes(slot);
-    const slotEnd = slotStart + durationMinutes;
-    return !occupied.some((o) => o.startMin < slotEnd && o.endMin > slotStart);
+    const s = timeStrToMinutes(slot);
+    const e = s + durationMinutes;
+    return specialistIds.some((espId) => {
+      const espAppts = appointments.filter((a) => a.idusuario === espId);
+      return !espAppts.some((a) =>
+        isoTimeToMinutes(a.fechahorainicio) < e && isoTimeToMinutes(a.fechahorafin) > s
+      );
+    });
   });
+}
+
+async function fetchBlockedDates(
+  supabase: SupabaseClient,
+  idnegocios: number
+): Promise<Set<string>> {
+  const { data } = await supabase
+    .from("diasbloqueados")
+    .select("fecha")
+    .eq("idnegocios", idnegocios);
+  return new Set((data ?? []).map((r: { fecha: string }) => r.fecha));
+}
+
+export type CustomDateValidation =
+  | { valid: true }
+  | { valid: false; reason: "day_of_week"; allowedDays: number[] }
+  | { valid: false; reason: "blocked" };
+
+export async function validateCustomDate(
+  supabase: SupabaseClient,
+  idnegocios: number,
+  fecha: string
+): Promise<CustomDateValidation> {
+  const config = await fetchBotConfig(supabase, idnegocios);
+  const allowedDays = config?.dias_disponibles ?? DEFAULT_DAYS;
+
+  if (!isAllowedDay(fecha, allowedDays)) {
+    return { valid: false, reason: "day_of_week", allowedDays };
+  }
+
+  const blocked = await fetchBlockedDates(supabase, idnegocios);
+  if (blocked.has(fecha)) {
+    return { valid: false, reason: "blocked" };
+  }
+
+  return { valid: true };
 }
 
 export async function getAvailableDates(
@@ -144,13 +244,14 @@ export async function getAvailableDates(
 ): Promise<string[]> {
   const config = await fetchBotConfig(supabase, idnegocios);
   const allowedDays = config?.dias_disponibles ?? DEFAULT_DAYS;
+  const blocked = await fetchBlockedDates(supabase, idnegocios);
 
   const dates: string[] = [];
   let cursor = addDays(todayStr(), 1);
   let checked = 0;
 
   while (dates.length < 7 && checked < 30) {
-    if (isAllowedDay(cursor, allowedDays)) {
+    if (isAllowedDay(cursor, allowedDays) && !blocked.has(cursor)) {
       const slots = await getAvailableSlots(supabase, idnegocios, especialistaId, cursor, durationMinutes);
       if (slots.length > 0) dates.push(cursor);
     }

@@ -201,6 +201,18 @@
   flex-shrink: 0;
   font-size: 1rem;
   transition: all 0.2s var(--ease);
+  position: relative;
+}
+
+.nav-btn-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--danger);
+  border-radius: 50%;
+  border: 2px solid var(--surface);
 }
 
 .nav-btn.active .nav-btn-icon {

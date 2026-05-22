@@ -83,6 +83,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
     return localStorage.getItem('novagendas_route') || 'dashboard';
   });
   const [hasBotEnabled] = useState(!!tenant?.bot_activo);
+  const [hasPendingSetupSteps, setHasPendingSetupSteps] = useState(false);
   const [showTour, setShowTour] = useState(false);
 
   useEffect(() => {
@@ -177,20 +178,20 @@ function TenantApp({ tenant, initialView = 'login' }) {
       return <Agenda user={user} tenant={tenant} />;
     }
     if (user.role === 'recepcion' && (currentRoute === 'payments' || currentRoute === 'users' || currentRoute === 'estadisticas')) {
-      return <Dashboard user={user} onNavigate={setCurrentRoute} />;
+      return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
     if (currentRoute === 'estadisticas' && user.role !== 'admin') {
-      return <Dashboard user={user} onNavigate={setCurrentRoute} />;
+      return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
 
     switch (currentRoute) {
-      case 'dashboard': return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
+      case 'dashboard': return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
       case 'agenda': return <Agenda user={user} tenant={tenant} />;
       case 'clients': return <Clients user={user} tenant={tenant} />;
       case 'services': return <Services user={user} tenant={tenant} />;
       case 'payments': return <Payments user={user} tenant={tenant} />;
       case 'inventory': return <Inventory user={user} tenant={tenant} />;
-      case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} onNavigate={setCurrentRoute} />;
+      case 'users': return user.role === 'admin' ? <Users user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
       case 'feriados': {
         const canManageFeriados = user.role === 'admin' || (Array.isArray(user.permissions) && user.permissions.includes('feriados'));
         return <HolidayCalendar user={user} tenant={tenant} canManage={canManageFeriados} />;
@@ -198,8 +199,8 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'profile':       return <Profile user={user} tenant={tenant} onUserUpdate={handleUserUpdate} />;
       case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
       case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;
-      case 'bot':           return user.role === 'admin' ? <BotConfig user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
-      default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} />;
+      case 'bot':           return user.role === 'admin' ? <BotConfig user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
+      default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
   };
 
@@ -229,7 +230,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
 
   return (
     <GlobalProvider tenantId={tenant.id}>
-      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }} isTourActive={showTour}>
+      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} hasPendingSetupSteps={hasPendingSetupSteps} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }} isTourActive={showTour}>
         {renderRoute()}
       </Layout>
 

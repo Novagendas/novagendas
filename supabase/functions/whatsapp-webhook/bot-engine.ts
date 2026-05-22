@@ -1,12 +1,13 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendMessage } from "./send.ts";
 import {
-  buildMenu, buildServiceList, buildServiceCatalog, buildSpecialistList,
+  buildMenu, buildCategoryList, buildServiceList, buildServiceCatalog, buildSpecialistList,
   buildDateList, buildTimeList, buildJornadaSelector, buildConfirmation,
   buildAppointmentList, buildCancelConfirmation, buildText,
   buildEditAppointmentList, buildEditConfirmation,
+  buildPaymentOptions, buildPaymentInfo,
 } from "./messages.ts";
-import { getAvailableDates, getAvailableSlots } from "./availability.ts";
+import { getAvailableDates, getAvailableSlots, validateCustomDate } from "./availability.ts";
 import {
   getClientByCedula, createAppointment, updateAppointment,
   getUpcomingAppointments, cancelAppointment, createClient,
@@ -19,16 +20,20 @@ type Step =
   | "REGISTER_NOMBRE"
   | "REGISTER_EMAIL"
   | "REGISTER_TELEFONO"
+  | "SELECT_CATEGORY"
   | "SELECT_SERVICE"
   | "SELECT_SPECIALIST"
   | "SELECT_DATE"
+  | "SELECT_DATE_CUSTOM"
   | "SELECT_JORNADA"
   | "SELECT_TIME"
   | "CONFIRM_APPOINTMENT"
+  | "ASK_PAYMENT"
   | "CANCEL_SELECT"
   | "CANCEL_CONFIRM"
   | "EDIT_SELECT"
   | "EDIT_DATE"
+  | "EDIT_DATE_CUSTOM"
   | "EDIT_JORNADA"
   | "EDIT_TIME"
   | "EDIT_CONFIRM";
@@ -41,6 +46,7 @@ interface ConvData {
   reg_cedula?: string;
   reg_nombre?: string;
   reg_email?: string;
+  selectedCategory?: { id: number; descripcion: string } | null;
   servicio_id?: number;
   servicio_nombre?: string;
   servicio_duracion?: number;
@@ -59,6 +65,9 @@ interface ConvData {
   edit_duracion?: number;
   edit_fecha_anterior?: string;
   edit_hora_anterior?: string;
+  payment_servicio?: string;
+  payment_fecha_label?: string;
+  payment_hora?: string;
 }
 
 interface Conversation {
@@ -214,7 +223,7 @@ export async function handleIncomingMessage(
       .single(),
     supabase
       .from("bot_config")
-      .select("telefono_contacto, email_notificaciones")
+      .select("telefono_contacto, email_notificaciones, numero_nequi, llave_breb")
       .eq("idnegocios", integration.idnegocios)
       .maybeSingle(),
   ]);
@@ -223,6 +232,10 @@ export async function handleIncomingMessage(
     (botCfgNotif as { telefono_contacto: string | null } | null)?.telefono_contacto ?? null;
   const emailNotificaciones =
     (botCfgNotif as { email_notificaciones: string | null } | null)?.email_notificaciones ?? null;
+  const numeroNequi =
+    (botCfgNotif as { numero_nequi: string | null } | null)?.numero_nequi ?? null;
+  const llaveBreb =
+    (botCfgNotif as { llave_breb: string | null } | null)?.llave_breb ?? null;
 
   const send = (msg: Record<string, unknown>) =>
     sendMessage(integration.phone_number_id, integration.access_token, from, msg);
@@ -265,6 +278,8 @@ export async function handleIncomingMessage(
     businessName,
     telefonoContacto,
     emailNotificaciones,
+    numeroNequi,
+    llaveBreb,
     send
   );
 }
@@ -302,38 +317,61 @@ async function continueAfterClientFound(
   };
 
   if (conv.data.pending_action === "AGENDAR") {
-    const [svcsResult, botCfgResult] = await Promise.all([
+    const [catsResult, botCfgResult] = await Promise.all([
       supabase
-        .from("servicios")
-        .select("idservicios, nombre, precio, duracion")
+        .from("categoriaservicio")
+        .select("idcategoriaservicio, descripcion")
         .eq("idnegocios", idnegocios)
-        .is("deleted_at", null)
-        .neq("idestado", 2),
+        .order("idcategoriaservicio"),
       supabase
         .from("bot_config")
-        .select("mostrar_precios")
+        .select("mostrar_precios, servicios_precios_ocultos")
         .eq("idnegocios", idnegocios)
         .maybeSingle(),
     ]);
 
-    const svcs = svcsResult.data;
+    const cats = (catsResult.data ?? []) as Array<{ idcategoriaservicio: number; descripcion: string }>;
     const mostrarPrecios =
       (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
+    const preciosOcultos: number[] =
+      (botCfgResult.data as { servicios_precios_ocultos: number[] } | null)
+        ?.servicios_precios_ocultos ?? [];
 
-    if (!svcs || svcs.length === 0) {
-      await send(
-        buildText(
-          "No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)
-        )
-      );
-      await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName, telefonoContacto));
+    if (cats.length <= 1) {
+      const cat = cats[0] ?? null;
+      const selectedCategory = cat
+        ? { id: cat.idcategoriaservicio, descripcion: cat.descripcion }
+        : null;
+
+      const svcQuery = supabase
+        .from("servicios")
+        .select("idservicios, nombre, precio, duracion")
+        .eq("idnegocios", idnegocios)
+        .is("deleted_at", null)
+        .neq("idestado", 2);
+
+      const { data: svcs } = selectedCategory
+        ? await svcQuery.eq("idcategoriaservicio", selectedCategory.id)
+        : await svcQuery;
+
+      if (!svcs || svcs.length === 0) {
+        await send(
+          buildText("No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto))
+        );
+        await save(supabase, conv, "MENU", {});
+        await send(buildMenu(businessName, telefonoContacto));
+        return;
+      }
+
+      await save(supabase, conv, "SELECT_SERVICE", { ...baseData, selectedCategory });
+      await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
+      await send(buildServiceList(svcs, mostrarPrecios, preciosOcultos));
       return;
     }
 
-    await save(supabase, conv, "SELECT_SERVICE", baseData);
-    await send(buildText(`Hola *${client.nombre}* 👋 Selecciona el servicio:`));
-    await send(buildServiceList(svcs, mostrarPrecios));
+    await save(supabase, conv, "SELECT_CATEGORY", { ...baseData });
+    await send(buildText(`Hola *${client.nombre}* 👋 ¿Qué tipo de servicio deseas?`));
+    await send(buildCategoryList(cats));
     return;
   }
 
@@ -392,6 +430,43 @@ async function continueAfterClientFound(
   await send(buildMenu(businessName, telefonoContacto));
 }
 
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function parseCustomDate(input: string): string | null {
+  // Try DD/MM/AAAA or DD/MM/YYYY
+  const ddmmyyyy = input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const [, d, m, y] = ddmmyyyy;
+    const day = d.padStart(2, "0");
+    const month = m.padStart(2, "0");
+    const year = y;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    if (
+      date.getFullYear() === Number(year) &&
+      date.getMonth() === Number(month) - 1 &&
+      date.getDate() === Number(day)
+    ) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+  // Also try YYYY-MM-DD
+  const yyyymmdd = input.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (yyyymmdd) {
+    const [, y, m, d] = yyyymmdd;
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
+    if (
+      date.getFullYear() === Number(y) &&
+      date.getMonth() === Number(m) - 1 &&
+      date.getDate() === Number(d)
+    ) {
+      return input;
+    }
+  }
+  return null;
+}
+
 async function processStep(
   supabase: SupabaseClient,
   conv: Conversation,
@@ -400,6 +475,8 @@ async function processStep(
   businessName: string,
   telefonoContacto: string | null,
   emailNotificaciones: string | null,
+  numeroNequi: string | null,
+  llaveBreb: string | null,
   send: (msg: Record<string, unknown>) => Promise<void>
 ): Promise<void> {
   const idnegocios = integration.idnegocios;
@@ -453,7 +530,7 @@ async function processStep(
         .order("idcategoriaservicio"),
       supabase
         .from("bot_config")
-        .select("servicios_excluidos, mostrar_precios")
+        .select("servicios_excluidos, mostrar_precios, servicios_precios_ocultos")
         .eq("idnegocios", idnegocios)
         .maybeSingle(),
     ]);
@@ -464,6 +541,9 @@ async function processStep(
     const mostrarPrecios: boolean =
       (botConfigResult.data as { mostrar_precios: boolean } | null)
         ?.mostrar_precios ?? true;
+    const preciosOcultos: number[] =
+      (botConfigResult.data as { servicios_precios_ocultos: number[] } | null)
+        ?.servicios_precios_ocultos ?? [];
 
     const catalog = (svcsResult.data ?? [])
       .filter((s: unknown) => {
@@ -472,6 +552,7 @@ async function processStep(
       })
       .map((s: unknown) => {
         const row = s as {
+          idservicios: number;
           nombre: string;
           precio: number;
           duracion: number;
@@ -479,7 +560,7 @@ async function processStep(
         };
         return {
           nombre: row.nombre,
-          precio: mostrarPrecios ? row.precio : null,
+          precio: (mostrarPrecios && !preciosOcultos.includes(row.idservicios)) ? row.precio : null,
           duracion: row.duracion,
           categoria: row.categoriaservicio?.descripcion ?? "General",
         };
@@ -604,6 +685,79 @@ async function processStep(
     return;
   }
 
+  // ── SELECT_CATEGORY → CAT_{id} | número ──────────────────────────────────
+  if (conv.step === "SELECT_CATEGORY") {
+    let selectedCategory: { id: number; descripcion: string };
+
+    if (v.startsWith("CAT_")) {
+      const id = parseInt(v.slice(4), 10);
+      const { data: cat } = await supabase
+        .from("categoriaservicio")
+        .select("idcategoriaservicio, descripcion")
+        .eq("idcategoriaservicio", id)
+        .eq("idnegocios", idnegocios)
+        .single();
+
+      if (!cat) {
+        await send(buildText("Categoría no encontrada. Por favor intenta de nuevo."));
+        return;
+      }
+      const c = cat as { idcategoriaservicio: number; descripcion: string };
+      selectedCategory = { id: c.idcategoriaservicio, descripcion: c.descripcion };
+    } else {
+      const num = parseInt(v.trim(), 10);
+      const { data: cats } = await supabase
+        .from("categoriaservicio")
+        .select("idcategoriaservicio, descripcion")
+        .eq("idnegocios", idnegocios)
+        .order("idcategoriaservicio");
+      const catList = (cats ?? []) as Array<{ idcategoriaservicio: number; descripcion: string }>;
+
+      if (isNaN(num) || num < 1 || num > catList.length) {
+        await send(buildText(`Por favor responde con el número de la categoría (1-${catList.length}):`));
+        await send(buildCategoryList(catList));
+        return;
+      }
+      const chosen = catList[num - 1];
+      selectedCategory = { id: chosen.idcategoriaservicio, descripcion: chosen.descripcion };
+    }
+
+    const [svcsResult, botCfgResult] = await Promise.all([
+      supabase
+        .from("servicios")
+        .select("idservicios, nombre, precio, duracion")
+        .eq("idnegocios", idnegocios)
+        .eq("idcategoriaservicio", selectedCategory.id)
+        .is("deleted_at", null)
+        .neq("idestado", 2),
+      supabase
+        .from("bot_config")
+        .select("mostrar_precios, servicios_precios_ocultos")
+        .eq("idnegocios", idnegocios)
+        .maybeSingle(),
+    ]);
+
+    const mostrarPrecios =
+      (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
+    const preciosOcultos: number[] =
+      (botCfgResult.data as { servicios_precios_ocultos: number[] } | null)
+        ?.servicios_precios_ocultos ?? [];
+    const svcs = svcsResult.data ?? [];
+
+    if (svcs.length === 0) {
+      await send(
+        buildText("Lo sentimos, no hay servicios disponibles en esa categoría." + contactSuffix(telefonoContacto))
+      );
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+
+    await save(supabase, conv, "SELECT_SERVICE", { ...conv.data, selectedCategory });
+    await send(buildServiceList(svcs, mostrarPrecios, preciosOcultos));
+    return;
+  }
+
   // ── SELECT_SERVICE → SVC_{id} ─────────────────────────────────────────────
   if (conv.step === "SELECT_SERVICE" && v.startsWith("SVC_")) {
     const idservicios = parseInt(v.slice(4), 10);
@@ -714,30 +868,114 @@ async function processStep(
     return;
   }
 
-  // ── SELECT_DATE → DATE_{YYYY-MM-DD} ──────────────────────────────────────
-  if (conv.step === "SELECT_DATE" && v.startsWith("DATE_")) {
-    const fecha = v.slice(5);
-    const duracion = conv.data.servicio_duracion ?? 30;
-    const especialistaId = conv.data.especialista_id ?? null;
+  // ── SELECT_DATE → DATE_CUSTOM | DATE_{YYYY-MM-DD} ────────────────────────
+  if (conv.step === "SELECT_DATE") {
+    if (v === "DATE_CUSTOM") {
+      await save(supabase, conv, "SELECT_DATE_CUSTOM", conv.data);
+      await send(buildText(
+        "Por favor, ingresa la fecha deseada para tu cita en el siguiente formato:\n\n" +
+        "*DD/MM/AAAA*\n\n" +
+        "Ejemplo: *25/06/2026*"
+      ));
+      return;
+    }
 
-    const slots = await getAvailableSlots(
-      supabase,
-      idnegocios,
-      especialistaId,
-      fecha,
-      duracion
-    );
+    if (v.startsWith("DATE_")) {
+      const fecha = v.slice(5);
+      const duracion = conv.data.servicio_duracion ?? 30;
+      const especialistaId = conv.data.especialista_id ?? null;
 
-    if (slots.length === 0) {
-      await send(
-        buildText("No hay horarios disponibles para ese día. Elige otra fecha.")
-      );
-      const dates = await getAvailableDates(
+      const slots = await getAvailableSlots(
         supabase,
         idnegocios,
         especialistaId,
+        fecha,
         duracion
       );
+
+      if (slots.length === 0) {
+        await send(
+          buildText("No hay horarios disponibles para ese día. Elige otra fecha.")
+        );
+        const dates = await getAvailableDates(
+          supabase,
+          idnegocios,
+          especialistaId,
+          duracion
+        );
+        await send(buildDateList(dates));
+        return;
+      }
+
+      const hasManana = slots.some((t) => parseInt(t, 10) < 12);
+      const hasTarde  = slots.some((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; });
+      const hasNoche  = slots.some((t) => parseInt(t, 10) >= 17);
+
+      const jornadas: Array<"mañana" | "tarde" | "noche"> = [
+        ...(hasManana ? ["mañana" as const] : []),
+        ...(hasTarde  ? ["tarde"  as const] : []),
+        ...(hasNoche  ? ["noche"  as const] : []),
+      ];
+
+      if (jornadas.length === 1) {
+        await save(supabase, conv, "SELECT_TIME", { ...conv.data, fecha });
+        await send(buildTimeList(slots, jornadas[0]));
+        return;
+      }
+
+      await save(supabase, conv, "SELECT_JORNADA", { ...conv.data, fecha });
+      await send(buildJornadaSelector(jornadas));
+      return;
+    }
+  }
+
+  // ── SELECT_DATE_CUSTOM → fecha libre ──────────────────────────────────────
+  if (conv.step === "SELECT_DATE_CUSTOM") {
+    const parsed = parseCustomDate(v.trim());
+    if (!parsed) {
+      await send(buildText(
+        "Formato de fecha inválido. Por favor ingresa la fecha así:\n\n" +
+        "*DD/MM/AAAA*\n\n" +
+        "Ejemplo: *25/06/2026*"
+      ));
+      return;
+    }
+    if (parsed <= todayStr()) {
+      await send(buildText(
+        "La fecha ingresada ya pasó o es hoy. Por favor elige una fecha futura.\n\n" +
+        "Ejemplo: *25/06/2026*"
+      ));
+      return;
+    }
+    const fecha = parsed;
+
+    const dateValidation = await validateCustomDate(supabase, idnegocios, fecha);
+    if (!dateValidation.valid) {
+      if (dateValidation.reason === "day_of_week") {
+        const DAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+        const allowedStr = dateValidation.allowedDays.map((d) => DAY_NAMES[d]).join(", ");
+        await send(buildText(
+          `Ese día no está disponible para citas. El negocio atiende los: *${allowedStr}*.\n\n` +
+          "Por favor ingresa otra fecha (*DD/MM/AAAA*):"
+        ));
+      } else {
+        await send(buildText(
+          "Ese día está bloqueado (festivo o sin atención). Por favor elige otra fecha:\n\n*DD/MM/AAAA*"
+        ));
+      }
+      return;
+    }
+
+    const duracion = conv.data.servicio_duracion ?? 30;
+    const especialistaId = conv.data.especialista_id ?? null;
+
+    const slots = await getAvailableSlots(supabase, idnegocios, especialistaId, fecha, duracion);
+
+    if (slots.length === 0) {
+      await send(buildText(
+        `No hay horarios disponibles para el ${v.trim()}. Elige otra fecha:`
+      ));
+      const dates = await getAvailableDates(supabase, idnegocios, especialistaId, duracion);
       await send(buildDateList(dates));
       return;
     }
@@ -940,14 +1178,46 @@ async function processStep(
         negocio: businessName,
       });
 
-      await send(
-        buildText(
-          `✅ ¡Cita agendada con éxito!\n\n` +
-            `Te esperamos el *${fechaLabel}* a las *${hora}*.\n\n` +
-            `Hasta pronto 👋`
-        )
-      );
+      const hasPayment = !!(numeroNequi || llaveBreb);
+      if (hasPayment) {
+        const newData: ConvData = {
+          ...conv.data,
+          payment_servicio: servicio_nombre ?? "Servicio",
+          payment_fecha_label: fechaLabel,
+          payment_hora: hora,
+        };
+        await save(supabase, conv, "ASK_PAYMENT", newData);
+        await send(buildPaymentOptions());
+      } else {
+        await send(
+          buildText(
+            `✅ ¡Cita agendada con éxito!\n\n📋 ${servicio_nombre ?? "Servicio"}\n📅 *${fechaLabel}* a las *${hora}*\n\nTe esperamos. ¡Hasta pronto! 👋`
+          )
+        );
+        await save(supabase, conv, "MENU", {});
+        await send(buildMenu(businessName, telefonoContacto));
+      }
+      return;
+    }
+  }
+
+  // ── ASK_PAYMENT ──────────────────────────────────────────────────────────────
+  if (conv.step === "ASK_PAYMENT") {
+    const { payment_servicio, payment_fecha_label, payment_hora } = conv.data;
+    const confirmText =
+      `✅ ¡Cita agendada con éxito!\n\n📋 ${payment_servicio ?? "Servicio"}\n📅 *${payment_fecha_label ?? ""}* a las *${payment_hora ?? ""}*\n\nTe esperamos. ¡Hasta pronto! 👋`;
+
+    if (v === "PAYMENT_NO") {
+      await send(buildText(confirmText));
       await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+    if (v === "PAYMENT_YES") {
+      await send(buildText(confirmText));
+      await send(buildPaymentInfo(numeroNequi, llaveBreb, telefonoContacto));
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
   }
@@ -1109,16 +1379,77 @@ async function processStep(
     return;
   }
 
-  // ── EDIT_DATE → DATE_{YYYY-MM-DD} ─────────────────────────────────────────
-  if (conv.step === "EDIT_DATE" && v.startsWith("DATE_")) {
-    const fecha = v.slice(5);
+  // ── EDIT_DATE → DATE_CUSTOM | DATE_{YYYY-MM-DD} ──────────────────────────
+  if (conv.step === "EDIT_DATE") {
+    if (v === "DATE_CUSTOM") {
+      await save(supabase, conv, "EDIT_DATE_CUSTOM", conv.data);
+      await send(buildText(
+        "Por favor, ingresa la fecha deseada en el siguiente formato:\n\n" +
+        "*DD/MM/AAAA*\n\n" +
+        "Ejemplo: *25/06/2026*"
+      ));
+      return;
+    }
+
+    if (v.startsWith("DATE_")) {
+      const fecha = v.slice(5);
+      const duracion = conv.data.edit_duracion ?? 30;
+      const especialistaId = conv.data.edit_especialista_id ?? null;
+
+      const slots = await getAvailableSlots(supabase, idnegocios, especialistaId, fecha, duracion);
+
+      if (slots.length === 0) {
+        await send(buildText("No hay horarios disponibles para ese día. Elige otra fecha."));
+        const dates = await getAvailableDates(supabase, idnegocios, especialistaId, duracion);
+        await send(buildDateList(dates));
+        return;
+      }
+
+      const hasManana = slots.some((t) => parseInt(t, 10) < 12);
+      const hasTarde  = slots.some((t) => { const h = parseInt(t, 10); return h >= 12 && h < 17; });
+      const hasNoche  = slots.some((t) => parseInt(t, 10) >= 17);
+
+      const jornadas: Array<"mañana" | "tarde" | "noche"> = [
+        ...(hasManana ? ["mañana" as const] : []),
+        ...(hasTarde  ? ["tarde"  as const] : []),
+        ...(hasNoche  ? ["noche"  as const] : []),
+      ];
+
+      if (jornadas.length === 1) {
+        await save(supabase, conv, "EDIT_TIME", { ...conv.data, fecha });
+        await send(buildTimeList(slots, jornadas[0]));
+        return;
+      }
+
+      await save(supabase, conv, "EDIT_JORNADA", { ...conv.data, fecha });
+      await send(buildJornadaSelector(jornadas));
+      return;
+    }
+  }
+
+  // ── EDIT_DATE_CUSTOM → fecha libre ────────────────────────────────────────
+  if (conv.step === "EDIT_DATE_CUSTOM") {
+    const parsed = parseCustomDate(v.trim());
+    if (!parsed) {
+      await send(buildText(
+        "Formato de fecha inválido. Por favor ingresa así:\n\n*DD/MM/AAAA*\n\nEjemplo: *25/06/2026*"
+      ));
+      return;
+    }
+    if (parsed <= todayStr()) {
+      await send(buildText(
+        "La fecha ingresada ya pasó o es hoy. Por favor elige una fecha futura.\n\nEjemplo: *25/06/2026*"
+      ));
+      return;
+    }
+    const fecha = parsed;
     const duracion = conv.data.edit_duracion ?? 30;
     const especialistaId = conv.data.edit_especialista_id ?? null;
 
     const slots = await getAvailableSlots(supabase, idnegocios, especialistaId, fecha, duracion);
 
     if (slots.length === 0) {
-      await send(buildText("No hay horarios disponibles para ese día. Elige otra fecha."));
+      await send(buildText("No hay horarios disponibles para esa fecha. Elige otra:"));
       const dates = await getAvailableDates(supabase, idnegocios, especialistaId, duracion);
       await send(buildDateList(dates));
       return;
@@ -1290,9 +1621,11 @@ function isKnownAction(v: string, step: Step): boolean {
   if (step === "REGISTER_NOMBRE")   return true;
   if (step === "REGISTER_EMAIL")    return true;
   if (step === "REGISTER_TELEFONO") return true;
+  if (step === "SELECT_CATEGORY")                                  return true;
   if (step === "SELECT_SERVICE"     && v.startsWith("SVC_"))      return true;
   if (step === "SELECT_SPECIALIST"  && v.startsWith("ESP_"))      return true;
   if (step === "SELECT_DATE"        && v.startsWith("DATE_"))     return true;
+  if (step === "SELECT_DATE_CUSTOM")                               return true;
   if (step === "SELECT_JORNADA"     && v.startsWith("JORNADA_"))  return true;
   if (step === "SELECT_TIME"        && v.startsWith("TIME_"))     return true;
   if (step === "CONFIRM_APPOINTMENT" && (v === "CONFIRM_YES" || v === "CONFIRM_NO")) return true;
@@ -1300,8 +1633,10 @@ function isKnownAction(v: string, step: Step): boolean {
   if (step === "CANCEL_CONFIRM"     && (v === "CANCEL_CONFIRM_YES" || v === "CANCEL_CONFIRM_NO")) return true;
   if (step === "EDIT_SELECT"        && v.startsWith("EDIT_"))     return true;
   if (step === "EDIT_DATE"          && v.startsWith("DATE_"))     return true;
+  if (step === "EDIT_DATE_CUSTOM")                                 return true;
   if (step === "EDIT_JORNADA"       && v.startsWith("JORNADA_"))  return true;
   if (step === "EDIT_TIME"          && v.startsWith("TIME_"))     return true;
   if (step === "EDIT_CONFIRM"       && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
+  if (step === "ASK_PAYMENT"        && (v === "PAYMENT_YES" || v === "PAYMENT_NO"))           return true;
   return false;
 }
