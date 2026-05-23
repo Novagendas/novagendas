@@ -1,517 +1,876 @@
-import React, { useState, useEffect } from 'react';
-import ThemeToggle from '../../components/ThemeToggle';
+import { useState, useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import Lenis from 'lenis';
 import './LandingPage.css';
 
-function useReveal() {
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) e.target.classList.add('reveal-visible');
-      }),
-      { threshold: 0.08, rootMargin: '0px 0px -40px 0px' }
-    );
-    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-}
+// Registrar ScrollTrigger de GSAP
+gsap.registerPlugin(ScrollTrigger);
 
-const GCalIcon = ({ size = 18 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-  </svg>
+// --- ICONOS SVG INLINE PREMIUM (CON DIMENSIONES PRECISAS DE DISEÑO) ---
+const CalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2zm-7 5h5v2h-5zm0 3h5v2h-5z" /></svg>
 );
 
-const ArrowRight = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-    <line x1="5" y1="12" x2="19" y2="12" />
-    <polyline points="12 5 19 12 12 19" />
-  </svg>
+const SyncIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-6 8c0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z" /></svg>
 );
 
-const CheckIcon = () => (
-  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="3">
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
+const UserIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
 );
 
-const NAV_LINKS = [
-  { id: 'funciones', label: 'Funciones' },
-  { id: 'como-funciona', label: 'Cómo funciona' },
-  { id: 'sectores', label: 'Sectores' },
-];
+const ArrowRightIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" /></svg>
+);
 
-const SECTORES = [
-  { label: '🏥 Clínicas estéticas', highlight: true },
-  { label: '🧖 Spas & bienestar' },
-  { label: '🦷 Consultorios' },
-  { label: '✂️ Barberías & salones' },
-  { label: '🧠 Psicólogos' },
-  { label: '💪 Centros deportivos' },
-  { label: '🐾 Veterinarias' },
-  { label: '+ Más' },
-];
+const LotusIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 18c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 9.74C4.46 10.97 4 12.43 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8c0-1.57-.46-3.03-1.24-4.26l-1.46 1.46c.45.83.7 1.79.7 2.8 0 3.31-2.69 6-6 6zm4-6c0 2.21-1.79 4-4 4s-4-1.79-4-4c0-.68.17-1.31.47-1.87l1.46 1.46C9.64 12.83 9.5 13.4 9.5 14c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5c0-.6-.14-1.17-.37-1.67l1.46-1.46c.3.56.47 1.19.47 1.87z" /></svg>
+);
 
-const FEATURES = [
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="18" height="18" rx="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
-      </svg>
-    ),
-    bg: '#ede9fe',
-    title: 'Agenda drag & drop',
-    desc: 'Vistas día, semana y mes. Arrastra citas para moverlas. Múltiples especialistas y detección automática de conflictos de horario.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
-    bg: '#dbeafe',
-    title: 'Gestión de clientes',
-    desc: 'Historial completo por cliente, evolución por sesión, notas privadas y datos de contacto centralizados.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <line x1="12" y1="1" x2="12" y2="23" />
-        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-      </svg>
-    ),
-    bg: '#dcfce7',
-    title: 'Control de pagos',
-    desc: 'Lleva el registro de lo que cobras por cada cita: monto, método de pago (efectivo, transferencia, tarjeta) y abonos parciales. Consulta cuánto ingresó en cualquier período',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-      </svg>
-    ),
-    bg: '#ffedd5',
-    title: 'Control de inventario',
-    desc: 'Seguimiento de productos e insumos. Alertas de stock bajo. Registro automático de lo consumido por sesión.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="12" width="5" height="9" />
-        <rect x="9" y="7" width="5" height="14" />
-        <rect x="15" y="3" width="5" height="18" />
-      </svg>
-    ),
-    bg: '#f0fdf4',
-    title: 'Estadísticas y reportes',
-    desc: 'Ingresos, citas por especialista, servicios más rentables y tendencias mes a mes en tiempo real.',
-  },
-  {
-    icon: (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <line x1="20" y1="8" x2="20" y2="14" />
-        <line x1="23" y1="11" x2="17" y2="11" />
-      </svg>
-    ),
-    bg: '#fce7f3',
-    title: 'Roles y permisos',
-    desc: 'Admin, recepcionista y especialista. Cada usuario ve solo lo que le corresponde, con trazabilidad completa.',
-  },
-];
+const BriefcaseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" /></svg>
+);
 
-const DIFF_ITEMS = [
-  'Acceso desde cualquier dispositivo con navegador',
-  'Multi-tenant: cada negocio en su propio subdominio',
-  'Sincronización nativa con Google Calendar',
-  'Días festivos y bloqueos de agenda configurables',
-  'Registro de auditoría de cada acción del equipo',
-];
+const ScissorsIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M6 2c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.03-.81L10 9.22v5.56l-1.97 2.03c-.53-.5-1.24-.81-2.03-.81-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3c0-.79-.31-1.5-.81-2.03L10 14.78v-1.56l4-4.11 4.11 4.11c-.5.53-.81 1.24-.81 2.03 0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3c-.79 0-1.5.31-2.03.81L14 13.22V7.66l1.97-2.03c.53.5 1.24.81 2.03.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .79.31 1.5.81 2.03L14 9.22V7.66L10 3.56l-1.97 2.03c.5-.53.81-1.24.81-2.03 0-1.66-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 12c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" /></svg>
+);
 
-const DEMO_STATS = [
-  { val: '24', label: 'Citas hoy' },
-  { val: '8', label: 'Especialistas' },
-  { val: '312', label: 'Clientes' },
-];
+const BrainIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.13 19.55 10.51 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" /></svg>
+);
 
-const DEMO_BARS = [
-  ['Servicio A', 78],
-  ['Servicio B', 63],
-  ['Servicio C', 45],
-];
+const DumbbellIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20.57 14.86L22 13.43c.78-.78.78-2.05 0-2.83l-1.43-1.43c-.78-.78-2.05-.78-2.83 0l-1.43 1.43-3.57-3.57 1.43-1.43c.78-.78.78-2.05 0-2.83L12.74 1.3c-.78-.78-2.05-.78-2.83 0L8.48 2.73c-.78.78-.78 2.05 0 2.83l1.43 1.43-3.57 3.57-1.43-1.43c-.78-.78-2.05-.78-2.83 0L.65 10.57c-.78.78-.78 2.05 0 2.83l1.43 1.43c.78.78 2.05.78 2.83 0l1.43-1.43 3.57 3.57-1.43 1.43c-.78.78-.78 2.05 0 2.83l1.43 1.43c.78.78 2.05.78 2.83 0l1.43-1.43 3.57-3.57 1.43 1.43c.78.78 2.05.78 2.83 0l1.43-1.43z" /></svg>
+);
+
+const PawIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 14c-1.66 0-3 1.34-3 3 0 2 2 3.5 3 4 1-.5 3-2 3-4 0-1.66-1.34-3-3-3zm-4.5-2c-.83 0-1.5-.67-1.5-1.5S6.67 9 7.5 9s1.5.67 1.5 1.5S8.33 12 7.5 12zm9 0c-.83 0-1.5-.67-1.5-1.5S15.67 9 16.5 9s1.5.67 1.5 1.5S17.33 12 16.5 12zm-9.3-5.2c-.55 0-1-.45-1-1 0-.8.7-1.5 1.5-1.5.55 0 1 .45 1 1 0 .8-.7 1.5-1.5 1.5zm7.6 0c-.8 0-1.5-.7-1.5-1.5 0-.55.45-1 1-1 .8 0 1.5.7 1.5 1.5 0 .55-.45 1-1 1z" /></svg>
+);
+
+const DragIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 12c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" /></svg>
+);
+
+const MedicalIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" /></svg>
+);
+
+const CardIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" /></svg>
+);
+
+const BoxIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z" /></svg>
+);
+
+const ReportIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14H7v-7h3v7zm4 0h-3V7h3v10zm4 0h-3v-4h3v4z" /></svg>
+);
+
+const ShareIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" /></svg>
+);
 
 export default function LandingPage() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  useReveal();
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const [hideHint, setHideHint] = useState(false);
+
+  // Selector de paleta de diseño dinámico (para cumplir con "haz varias opciones de colores, que prime un azul")
+  const [selectedPalette, setSelectedPalette] = useState(() => {
+    return localStorage.getItem('novagendas_palette') || 'classic';
+  });
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+
+  const canvasRef = useRef(null);
+  const heroRef = useRef(null);
+  const sectorsRef = useRef(null);
+  const featuresRef = useRef(null);
+
+  const TOTAL_FRAMES = 160;
+  const imagesRef = useRef([]);
+  const currentFrameRef = useRef(0);
+  const currentScaleRef = useRef(1);
+
+  // Función para rellenar ceros a la izquierda (ej. 1 -> 001)
+  const padZero = (num) => String(num).padStart(3, '0');
+
+  // Modificar dinámicamente los estilos de #root para habilitar el scroll de ventana
+  useEffect(() => {
+    const rootElement = document.getElementById('root');
+    if (!rootElement) return;
+
+    const originalHeight = rootElement.style.height;
+    const originalMinHeight = rootElement.style.minHeight;
+    const originalDisplay = rootElement.style.display;
+
+    rootElement.style.setProperty('height', 'auto', 'important');
+    rootElement.style.setProperty('min-height', '100vh', 'important');
+    rootElement.style.setProperty('display', 'block', 'important');
+
+    return () => {
+      if (originalHeight) rootElement.style.height = originalHeight;
+      else rootElement.style.removeProperty('height');
+
+      if (originalMinHeight) rootElement.style.minHeight = originalMinHeight;
+      else rootElement.style.removeProperty('min-height');
+
+      if (originalDisplay) rootElement.style.display = originalDisplay;
+      else rootElement.style.removeProperty('display');
+    };
+  }, []);
+
+  // Pre-cargar todas las imágenes (formato PNG de alta calidad)
+  useEffect(() => {
+    let active = true;
+    let count = 0;
+    const loadedImages = [];
+
+    const handleImageLoad = () => {
+      if (!active) return;
+      count++;
+      setLoadedCount(count);
+      if (count === TOTAL_FRAMES) {
+        setIsLoading(false);
+      }
+    };
+
+    const handleImageError = (e) => {
+      console.warn(`Error cargando imagen: ${e.target.src}`);
+      handleImageLoad(); // Continuamos de todos modos
+    };
+
+    for (let i = 1; i <= TOTAL_FRAMES; i++) {
+      const img = new Image();
+      img.src = `/animacion novegandas/ezgif-frame-${padZero(i)}.png`;
+      img.onload = handleImageLoad;
+      img.onerror = handleImageError;
+      loadedImages.push(img);
+    }
+
+    imagesRef.current = loadedImages;
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Función de dibujo optimizada con cálculo de aspecto (cover) y zoom
+  const drawFrame = (frameIndex, scale = 1) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return;
+
+    // Habilitar suavizado de imágenes de alta calidad para máxima nitidez
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // eslint-disable-next-line security/detect-object-injection
+    const img = imagesRef.current[frameIndex];
+    if (!img || !img.complete) return;
+
+    // Guardar valores actuales para redibujar en resize
+    currentFrameRef.current = frameIndex;
+    currentScaleRef.current = scale;
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+
+    // Limpiar canvas con el color de fondo dinámico de la paleta
+    const computedStyle = window.getComputedStyle(document.body);
+    const bgColor = computedStyle.getPropertyValue('--bg').trim() || '#f8fafc';
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Dimensiones de la imagen
+    const imgWidth = img.naturalWidth || img.width;
+    const imgHeight = img.naturalHeight || img.height;
+
+    const imageRatio = imgWidth / imgHeight;
+    const canvasRatio = canvasWidth / canvasHeight;
+
+    let drawWidth, drawHeight, drawX, drawY;
+
+    // Lógica object-fit: cover
+    if (canvasRatio > imageRatio) {
+      drawWidth = canvasWidth;
+      drawHeight = canvasWidth / imageRatio;
+      drawX = 0;
+      drawY = (canvasHeight - drawHeight) / 2;
+    } else {
+      drawWidth = canvasHeight * imageRatio;
+      drawHeight = canvasHeight;
+      drawX = (canvasWidth - drawWidth) / 2;
+      drawY = 0;
+    }
+
+    // Dibujar con el efecto sutil de escala (zoom) desde el centro
+    ctx.save();
+    ctx.translate(canvasWidth / 2, canvasHeight / 2);
+    ctx.scale(scale, scale);
+    ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
+    ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+    ctx.restore();
+  };
+
+  // Manejar el redimensionamiento del Canvas de forma nítida (Retina/High-DPI)
+  useEffect(() => {
+    if (isLoading) return;
+
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      // Super-sampling: forzar dpr mínimo de 2 para lograr nitidez y detalle extremo
+      const dpr = Math.max(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = `${window.innerWidth}px`;
+      canvas.style.height = `${window.innerHeight}px`;
+
+      // Redibujar el frame actual tras redimensionar
+      drawFrame(currentFrameRef.current, currentScaleRef.current);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Disparo inicial para dimensionar correctamente
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isLoading]);
+
+  // Configurar las animaciones con GSAP, ScrollTrigger y Lenis
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Asegurar que el canvas muestra el frame 0 inicialmente
+    drawFrame(0, 1);
+
+    // 1. Inicializar Lenis para Scroll Suave
+    const lenis = new Lenis({
+      duration: 1.4,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1.05,
+      touchMultiplier: 1.5,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    // Sincronizar el ticker de GSAP con Lenis
+    const tickerCallback = (time) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tickerCallback);
+    gsap.ticker.lagSmoothing(0);
+
+    // 2. Línea de tiempo GSAP para la secuencia controlada por ScrollTrigger
+    const animObj = { frame: 0, scale: 1.0 };
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '.landing-scroll-spacer',
+        start: 'top top',
+        end: 'bottom bottom',
+        scrub: 1.3, // Inercia fluida
+        snap: {
+          snapTo: (value, self) => {
+            const snapPoints = [0.0, 0.33, 0.61, 1.0];
+            const currentProgress = self.progress;
+
+            if (self.direction === 1) {
+              // Scrolleando hacia abajo: siempre avanza al siguiente hito adelante, nunca retrocede
+              const nextPoint = snapPoints.find(p => p >= currentProgress - 0.02);
+              return nextPoint !== undefined ? nextPoint : 1.0;
+            } else {
+              // Scrolleando hacia arriba: regresa al hito anterior atrás
+              const prevPoints = [...snapPoints].reverse();
+              const prevPoint = prevPoints.find(p => p <= currentProgress + 0.02);
+              return prevPoint !== undefined ? prevPoint : 0.0;
+            }
+          },
+          duration: { min: 0.8, max: 1.5 },
+          delay: 0.05,
+          ease: 'power2.out'
+        },
+        onUpdate: (self) => {
+          // Ocultar indicador de scroll cuando el usuario empieza a bajar
+          if (self.progress > 0.015) {
+            setHideHint(true);
+          } else {
+            setHideHint(false);
+          }
+        }
+      }
+    });
+
+    // --- CONFIGURACIÓN DE LOS ESTADOS INICIALES EN DOM ---
+    gsap.set(heroRef.current, { opacity: 1, y: 0, autoAlpha: 1 });
+    gsap.set(sectorsRef.current, { opacity: 0, y: 30, autoAlpha: 0 });
+    gsap.set(featuresRef.current, { opacity: 0, y: 30, autoAlpha: 0 });
+
+    // --- SECUENCIA DE PAUSAS Y TRANSICIONES CINEMÁTICAS SINCRONIZADAS ---
+    // Total duración virtual = 27.0 unidades de scroll (mucho más lenta y controlada)
+
+    // A. Hold Inicial: Frame 1 (Index 0) -> Hero Activo
+    tl.to(animObj, {
+      frame: 0,
+      scale: 1.0,
+      duration: 1.5,
+      ease: 'none',
+      onUpdate: () => drawFrame(0, animObj.scale)
+    });
+
+    // B. Transición 1: De Frame 1 a 62 -> Fades del Hero y Sectores
+    tl.to(animObj, {
+      frame: 61,
+      scale: 1.018,
+      duration: 6.0,
+      ease: 'power1.inOut',
+      onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
+    });
+    // Ocultar Hero
+    tl.to(heroRef.current, {
+      opacity: 0,
+      y: -30,
+      autoAlpha: 0,
+      duration: 2.5,
+      ease: 'power1.inOut'
+    }, '<');
+    // Mostrar Sectores
+    tl.to(sectorsRef.current, {
+      opacity: 1,
+      y: 0,
+      autoAlpha: 1,
+      duration: 3.0,
+      ease: 'power1.inOut'
+    }, '>-2.0');
+
+    // C. Pausa 1: Mantener Frame 62 -> Sectores Activo
+    tl.to(animObj, {
+      frame: 61,
+      scale: 1.022,
+      duration: 3.0,
+      ease: 'none',
+      onUpdate: () => drawFrame(61, animObj.scale)
+    });
+
+    // D. Transición 2: De Frame 62 a 131 -> Fades de Sectores y Características
+    tl.to(animObj, {
+      frame: 130,
+      scale: 1.038,
+      duration: 6.0,
+      ease: 'power1.inOut',
+      onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
+    });
+    // Ocultar Sectores
+    tl.to(sectorsRef.current, {
+      opacity: 0,
+      y: -30,
+      autoAlpha: 0,
+      duration: 2.5,
+      ease: 'power1.inOut'
+    }, '<');
+    // Mostrar Características
+    tl.to(featuresRef.current, {
+      opacity: 1,
+      y: 0,
+      autoAlpha: 1,
+      duration: 3.0,
+      ease: 'power1.inOut'
+    }, '>-2.0');
+
+    // E. Pausa 2: Mantener Frame 131 -> Características Activo
+    tl.to(animObj, {
+      frame: 130,
+      scale: 1.042,
+      duration: 3.0,
+      ease: 'none',
+      onUpdate: () => drawFrame(130, animObj.scale)
+    });
+
+    // F. Transición 3: De Frame 131 a 160 -> Fades de Características a Vacío
+    tl.to(animObj, {
+      frame: 159,
+      scale: 1.055,
+      duration: 6.0,
+      ease: 'power1.inOut',
+      onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
+    });
+    // Ocultar Características
+    tl.to(featuresRef.current, {
+      opacity: 0,
+      y: -30,
+      autoAlpha: 0,
+      duration: 2.5,
+      ease: 'power1.inOut'
+    }, '<');
+
+    // G. Hold Final: Frame 160 (Index 159)
+    tl.to(animObj, {
+      frame: 159,
+      scale: 1.055,
+      duration: 1.5,
+      ease: 'none',
+      onUpdate: () => drawFrame(159, animObj.scale)
+    });
+
+    // Limpieza al desmontar
+    return () => {
+      lenis.destroy();
+      gsap.ticker.remove(tickerCallback);
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+    };
+  }, [isLoading]);
+
+  // Porcentaje de progreso de carga
+  const progressPercent = Math.round((loadedCount / TOTAL_FRAMES) * 100);
 
   return (
-    <div className="lp">
-
-      {/* ─── Nav ─── */}
-      <nav className="lp-nav">
-        <div className="lp-nav-brand">
-          <img src="/logoclaro.jpeg" alt="Novagendas" className="lp-logo-img" />
-          <span className="lp-brand-name">Novagendas</span>
-        </div>
-
-        <div className="lp-nav-links">
-          {NAV_LINKS.map(({ id, label }) => (
-            <a key={id} href={`#${id}`}>{label}</a>
-          ))}
-        </div>
-
-        <div className="lp-nav-actions">
-          <ThemeToggle />
-          <button
-            className="lp-mobile-btn"
-            onClick={() => setIsMenuOpen(o => !o)}
-            aria-label="Menú"
-          >
-            {isMenuOpen
-              ? <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
-            }
-          </button>
-        </div>
-      </nav>
-
-      {isMenuOpen && (
-        <div className="lp-mobile-menu">
-          <button className="lp-mobile-close" onClick={() => setIsMenuOpen(false)}>✕</button>
-          {NAV_LINKS.map(({ id, label }) => (
-            <a key={id} href={`#${id}`} onClick={() => setIsMenuOpen(false)} className="lp-mobile-link">
-              {label}
-            </a>
-          ))}
+    <div className={`landing-page-root palette-${selectedPalette}`}>
+      {/* Pantalla de Carga Clara Premium */}
+      {isLoading && (
+        <div className={`landing-loader-overlay ${!isLoading ? 'fade-out' : ''}`}>
+          <div className="landing-loader-content">
+            <h1 className="landing-loader-brand">Nova<span>gendas</span></h1>
+            <p className="landing-loader-tagline">Software de Agendamiento</p>
+            <div className="landing-loader-progress-wrapper">
+              <div className="landing-loader-bar-outer">
+                <div
+                  className="landing-loader-bar-inner"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="landing-loader-percentage">{progressPercent}%</span>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* ─── Hero ─── */}
-      <div className="lp-hero-wrap">
-        <div className="lp-hero">
+      {/* Experiencia Cinemática */}
+      {!isLoading && (
+        <>
+          {/* Header Fijo Premium */}
+          <header className="landing-header">
+            <a href="/" className="landing-header-brand">
+              Nova<span>gendas</span>
+            </a>
+            <nav className="landing-header-menu">
+              <a href="#funciones" className="landing-header-link">Funciones</a>
+              <a href="#como-funciona" className="landing-header-link">Cómo funciona</a>
+              <a href="#sectores" className="landing-header-link">Sectores</a>
+            </nav>
+            <a href="#probar" className="landing-header-cta">
+              Probar gratis
+            </a>
+          </header>
 
-          {/* Left */}
-          <div className="lp-hero-left">
-            <div className="lp-pill-row reveal stagger-1">
-              <span className="lp-pill lp-pill--primary">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                Software de agendamiento
-              </span>
-              <span className="lp-pill lp-pill--green">✓ Sincroniza con Google Calendar</span>
-              <span className="lp-pill">Multi-usuario</span>
-            </div>
-
-            <h1 className="lp-hero-h1 reveal stagger-2">
-              Agenda tu negocio.<br />
-              <span className="lp-gradient-text">Sin caos. Sin papel.</span>
-            </h1>
-
-            <p className="lp-hero-sub reveal stagger-3">
-              Novagendas centraliza citas, clientes, pagos e inventario en una sola plataforma.
-              Para clínicas, spas, consultorios y cualquier negocio que trabaje con citas.
-            </p>
-
-            <div className="lp-gcal-proof reveal stagger-4">
-              <GCalIcon size={20} />
-              <span>Integración nativa con Google Calendar</span>
-              <span className="lp-gcal-proof-sync">
-                <span className="lp-gcal-dot" />
-                Sincronización en tiempo real
-              </span>
-            </div>
-
-            <div className="lp-hero-ctas reveal stagger-5">
-              <a href="#funciones" className="lp-btn-primary">
-                Ver funcionalidades <ArrowRight />
-              </a>
-              <a href="#como-funciona" className="lp-btn-ghost">Cómo funciona</a>
-            </div>
+          {/* Contenedor del Canvas Sticky */}
+          <div className="landing-canvas-wrapper">
+            <canvas ref={canvasRef} id="scroll-canvas" />
           </div>
 
-          {/* Right — Bento */}
-          <div className="lp-bento reveal stagger-2">
+          {/* Viñeta sutil por encima del canvas */}
+          <div className="landing-vignette" />
 
-            <div className="lp-bento-card lp-bento-card--purple">
-              <span className="lp-bento-label">Citas hoy</span>
-              <div className="lp-bento-num">24</div>
-              <span className="lp-bento-sub lp-bento-sub--green">↑ 3 vs ayer</span>
-            </div>
+          {/* --- CAPAS DE CONTENIDO (OVERLAYS FIJOS) --- */}
 
-            <div className="lp-bento-card lp-bento-card--dark">
-              <div className="lp-gcal-sync">
-                <div className="lp-gcal-sync-dot" />
-                <span className="lp-gcal-sync-text">Google Calendar activo</span>
-              </div>
-              <span className="lp-gcal-sync-sub">Último sync hace 2 min · 8 eventos</span>
-              <div className="lp-gcal-sync-tag">
-                <GCalIcon size={11} />
-                novagendas ↔ tu calendario
-              </div>
-            </div>
-
-            <div className="lp-bento-card lp-bento-card--wide">
-              <div className="lp-bento-week-header">
-                <span className="lp-bento-label">Agenda esta semana</span>
-                <span className="lp-bento-new-btn">+ Nueva cita</span>
-              </div>
-              <div className="lp-bento-week">
-                <div className="lp-week-day">
-                  <span className="lp-week-hd">LUN</span>
-                  <div className="lp-week-ev lp-ev-blue">09:00 · Cita</div>
-                  <div className="lp-week-ev lp-ev-purple">11:30</div>
+          {/* 1. HITOS: HERO SECTION */}
+          <section ref={heroRef} className="landing-section active">
+            <div className="hero-content">
+              <div className="hero-left">
+                <div className="hero-tags">
+                  <div className="hero-tag">
+                    <UserIcon />
+                    Software de agendamiento multi-usuario
+                  </div>
+                  <div className="hero-tag">
+                    <SyncIcon />
+                    Google Calendar Sync
+                  </div>
                 </div>
-                <div className="lp-week-day">
-                  <span className="lp-week-hd">MAR</span>
-                  <div className="lp-week-ev lp-ev-green">10:00 · Cita</div>
-                </div>
-                <div className="lp-week-day">
-                  <span className="lp-week-hd">MIÉ</span>
-                  <div className="lp-week-ev lp-ev-new">09:00 · Nueva</div>
-                  <div className="lp-week-ev lp-ev-orange">14:00</div>
-                </div>
-                <div className="lp-week-day">
-                  <span className="lp-week-hd">JUE</span>
-                  <div className="lp-week-ev lp-ev-pink">📅 GCal</div>
-                  <div className="lp-week-ev lp-ev-blue">11:00</div>
-                </div>
-                <div className="lp-week-day">
-                  <span className="lp-week-hd">VIE</span>
-                  <div className="lp-week-ev lp-ev-green">09:30</div>
-                  <div className="lp-week-ev lp-ev-purple">15:00</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="lp-bento-card">
-              <span className="lp-bento-label">Ingresos este mes</span>
-              <div className="lp-bento-num" style={{ fontSize: '1.7rem' }}>$4.2M</div>
-              <div className="lp-bar-group">
-                <div className="lp-bar lp-bar-1" />
-                <div className="lp-bar lp-bar-2" />
-                <div className="lp-bar lp-bar-3" />
-                <div className="lp-bar lp-bar-4" />
-                <div className="lp-bar lp-bar-5" />
-                <div className="lp-bar lp-bar-6" />
-              </div>
-            </div>
-
-            <div className="lp-bento-card">
-              <span className="lp-bento-label">Módulos activos</span>
-              <div className="lp-fpills">
-                <span className="lp-fpill lp-fpill-blue">📅 Agenda</span>
-                <span className="lp-fpill lp-fpill-green">💰 Pagos</span>
-                <span className="lp-fpill lp-fpill-purple">👥 Clientes</span>
-                <span className="lp-fpill lp-fpill-orange">📦 Inventario</span>
-                <span className="lp-fpill lp-fpill-blue">📊 Reportes</span>
-                <span className="lp-fpill lp-fpill-green">👤 Equipo</span>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Sectores ─── */}
-      <div id="sectores" className="lp-sectores">
-        <div className="lp-sectores-inner">
-          <div className="lp-sectores-label">Para cualquier negocio que trabaje con citas</div>
-          <div className="lp-sectores-chips">
-            {SECTORES.map(({ label, highlight }) => (
-              <div key={label} className={`lp-sector-chip${highlight ? ' lp-sector-chip--highlight' : ''}`}>
-                {label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Funcionalidades ─── */}
-      <section id="funciones" className="lp-section lp-section--alt">
-        <div className="lp-section-inner">
-          <div className="lp-section-tag reveal">Funcionalidades</div>
-          <h2 className="lp-section-h2 reveal stagger-1">
-            Todo lo que tu negocio <span className="lp-gradient-text">realmente necesita</span>
-          </h2>
-          <p className="lp-section-sub reveal stagger-2">
-            Cada módulo fue construido para el flujo real de un negocio con citas. Sin funciones de relleno.
-          </p>
-
-          <div className="lp-features-grid">
-
-            {/* GCal — banner ancho */}
-            <div className="lp-feat-card lp-feat-card--gcal reveal">
-              <div className="lp-feat-gcal-content">
-                <div className="lp-feat-icon" style={{ background: '#f0fdf4', marginBottom: '0.75rem' }}>📅</div>
-                <div className="lp-feat-title" style={{ fontSize: '1.15rem' }}>
-                  Sincronización con Google Calendar
-                </div>
-                <p className="lp-feat-desc" style={{ marginTop: '0.5rem' }}>
-                  Todas las citas se sincronizan automáticamente con Google Calendar de tu negocio.
-                  Tus clientes reciben invitaciones con recordatorios — tú ves todo desde un solo lugar, sin duplicar trabajo.
+                <h1 className="hero-title">
+                  Agenda tu negocio.<br />
+                  <span className="caos">Sin caos.</span> <span className="papel">Sin papel.</span>
+                </h1>
+                <p className="hero-subtitle">
+                  La plataforma integral para gestionar citas, clientes y operaciones en tiempo real.
+                  Sincronización total, control absoluto.
                 </p>
-                <div className="lp-gcal-flow">
-                  <div className="lp-gcal-flow-node"><GCalIcon size={14} /> Google Calendar</div>
-                  <span className="lp-gcal-flow-arrow">⇄</span>
-                  <div className="lp-gcal-flow-node">📅 Novagendas</div>
-                  <span className="lp-gcal-flow-arrow">→</span>
-                  <div className="lp-gcal-flow-node">✉️ Invitación al cliente</div>
+                <div className="hero-actions">
+                  <a href="#probar" className="btn-green">
+                    Probar gratis <ArrowRightIcon />
+                  </a>
+                  <a href="#funcionalidades" className="btn-outline-grey">
+                    Ver funcionalidades
+                  </a>
                 </div>
               </div>
-              <div className="lp-feat-gcal-visual">
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-4)', marginBottom: 6 }}>
-                  Vista sincronizada
+
+              <div className="hero-right">
+                <div className="card-stat-row">
+                  <div className="premium-card">
+                    <div className="card-stat-title">
+                      <CalendarIcon /> Citas hoy
+                    </div>
+                    <div className="card-stat-val">24</div>
+                  </div>
+                  <div className="premium-card">
+                    <div className="card-stat-title">
+                      💸 Ingresos
+                    </div>
+                    <div className="card-stat-val gold">$4.2M</div>
+                  </div>
                 </div>
-                <div className="lp-gcal-mini-week">
-                  <div className="lp-week-day">
-                    <span className="lp-week-hd">HOY</span>
-                    <div className="lp-week-ev lp-ev-new">10:00 Cita</div>
-                    <div className="lp-week-ev lp-ev-pink">📅 GCal</div>
+
+                <div className="premium-card citas-list-card">
+                  <div className="citas-card-header">
+                    <span>Próximas Citas</span>
+                    <CalendarIcon />
                   </div>
-                  <div className="lp-week-day">
-                    <span className="lp-week-hd">MAÑ</span>
-                    <div className="lp-week-ev lp-ev-green">09:30</div>
-                    <div className="lp-week-ev lp-ev-blue">14:00</div>
-                  </div>
-                  <div className="lp-week-day">
-                    <span className="lp-week-hd">JUE</span>
-                    <div className="lp-week-ev lp-ev-purple">11:00</div>
+                  <div className="citas-list">
+                    <div className="cita-item">
+                      <div className="cita-left">
+                        <span className="cita-name">Consulta General</span>
+                        <span className="cita-time">09:00 AM - Maria Lopez</span>
+                      </div>
+                      <span className="badge-status confirmada">Confirmada</span>
+                    </div>
+                    <div className="cita-item">
+                      <div className="cita-left">
+                        <span className="cita-name">Limpieza Facial</span>
+                        <span className="cita-time">10:30 AM - Carlos R.</span>
+                      </div>
+                      <span className="badge-status pendiente">Pendiente</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
+          </section>
 
-            {/* Feature cards */}
-            {FEATURES.map((f, i) => (
-              <div key={i} className="lp-feat-card reveal" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="lp-feat-icon" style={{ background: f.bg }}>{f.icon}</div>
-                <div className="lp-feat-title">{f.title}</div>
-                <p className="lp-feat-desc">{f.desc}</p>
-              </div>
-            ))}
+          {/* 2. HITOS: SECTORES */}
+          <section ref={sectorsRef} className="landing-section">
+            <div className="section-center-content">
+              <h2 className="section-title">Diseñado para sectores que no se detienen</h2>
+              <p className="section-subtitle">Adaptable a las <span className="highlight">necesidades específicas</span> de tu <span className="gold">industria</span>.</p>
 
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Diferenciadores ─── */}
-      <section id="como-funciona" className="lp-diff">
-        <div className="lp-diff-inner">
-          <div className="lp-diff-text reveal">
-            <div className="lp-diff-tag">Por qué elegirnos</div>
-            <h2 className="lp-diff-h2">No es solo software.<br />Es tu socio operativo.</h2>
-            <p className="lp-diff-sub">
-              Novagendas se adapta a tu modelo de negocio, no al revés. Cada clínica, spa o consultorio
-              tiene su propio subdominio, sus propios datos y su propia configuración.
-            </p>
-            <ul className="lp-diff-list">
-              {DIFF_ITEMS.map((item, i) => (
-                <li key={i} className="lp-diff-item">
-                  <div className="lp-diff-check"><CheckIcon /></div>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="lp-demo-card reveal stagger-2">
-            <div className="lp-demo-header">
-              <div className="lp-demo-avatar">TN</div>
-              <div>
-                <div className="lp-demo-name">Tu Negocio</div>
-                <div className="lp-demo-url">tunegocio.novagendas.com</div>
-              </div>
-              <div className="lp-demo-badge">Activo</div>
-            </div>
-            <div className="lp-demo-stats">
-              {DEMO_STATS.map(({ val, label }) => (
-                <div key={label} className="lp-demo-stat">
-                  <div className="lp-demo-stat-val">{val}</div>
-                  <div className="lp-demo-stat-label">{label}</div>
-                </div>
-              ))}
-            </div>
-            <div className="lp-demo-bars">
-              <div className="lp-demo-bar-title">Servicios más solicitados</div>
-              {DEMO_BARS.map(([name, pct]) => (
-                <div key={name} className="lp-demo-bar-row">
-                  <span className="lp-demo-bar-name">{name}</span>
-                  <div className="lp-demo-bar-track">
-                    <div className="lp-demo-bar-fill" style={{ width: `${pct}%` }} />
+              <div className="sectores-grid">
+                <div className="sector-card featured">
+                  <div className="sector-icon-wrapper">
+                    <LotusIcon />
                   </div>
-                  <span className="lp-demo-bar-pct">{pct}%</span>
+                  <h3 className="sector-name">Clínicos y Spas</h3>
+                  <p className="sector-desc">Gestión de cubículos, especialistas y aparatología.</p>
                 </div>
-              ))}
+
+                <div className="sector-card">
+                  <div className="sector-icon-wrapper">
+                    <BriefcaseIcon />
+                  </div>
+                  <h3 className="sector-name">Consultorios</h3>
+                </div>
+
+                <div className="sector-card">
+                  <div className="sector-icon-wrapper">
+                    <ScissorsIcon />
+                  </div>
+                  <h3 className="sector-name">Barberías</h3>
+                </div>
+
+                <div className="sector-card">
+                  <div className="sector-icon-wrapper">
+                    <BrainIcon />
+                  </div>
+                  <h3 className="sector-name">Psicólogos</h3>
+                </div>
+
+                <div className="sector-card">
+                  <div className="sector-icon-wrapper">
+                    <DumbbellIcon />
+                  </div>
+                  <h3 className="sector-name">Centros Deportivos</h3>
+                </div>
+
+                <div className="sector-card">
+                  <div className="sector-icon-wrapper">
+                    <PawIcon />
+                  </div>
+                  <h3 className="sector-name">Veterinarios</h3>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 3. HITOS: CARACTERÍSTICAS (CONTROL TOTAL) */}
+          <section ref={featuresRef} className="landing-section">
+            <div className="section-center-content">
+              <h2 className="section-title">Control total en un solo lugar</h2>
+              <p className="section-subtitle">Herramientas <span className="highlight">poderosas</span> diseñadas para potenciar tu <span className="gold">productividad</span>.</p>
+
+              <div className="features-grid">
+                <div className="feature-card">
+                  <div className="feature-icon-box">
+                    <SyncIcon />
+                  </div>
+                  <h3 className="feature-title">Google Calendar</h3>
+                  <p className="feature-desc">Sincronización bidireccional automática.</p>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon-box green-bg">
+                    <DragIcon />
+                  </div>
+                  <h3 className="feature-title">Agenda Drag & Drop</h3>
+                  <p className="feature-desc">Organiza tu día con un solo movimiento.</p>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon-box">
+                    <MedicalIcon />
+                  </div>
+                  <h3 className="feature-title">Historial Clínico</h3>
+                  <p className="feature-desc">Gestión completa de clientes y evolución.</p>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon-box green-bg">
+                    <CardIcon />
+                  </div>
+                  <h3 className="feature-title">Control de Pagos</h3>
+                  <p className="feature-desc">Múltiples métodos y registro en COP.</p>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon-box">
+                    <BoxIcon />
+                  </div>
+                  <h3 className="feature-title">Inventario</h3>
+                  <p className="feature-desc">Control de insumos y productos.</p>
+                </div>
+
+                <div className="feature-card">
+                  <div className="feature-icon-box green-bg">
+                    <ReportIcon />
+                  </div>
+                  <h3 className="feature-title">Reportes</h3>
+                  <p className="feature-desc">Estadísticas clave para crecer.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Indicador de Scroll Minimalista */}
+          <div className={`landing-scroll-hint ${hideHint ? 'hidden' : ''}`}>
+            <span className="landing-scroll-text">Desliza para explorar</span>
+            <div className="landing-scroll-line-outer">
+              <div className="landing-scroll-line-inner" />
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ─── CTA cierre ─── */}
-      <section className="lp-cta">
-        <div className="lp-cta-inner">
-          <div className="lp-section-tag reveal">Novagendas</div>
-          <h2 className="lp-cta-h2 reveal stagger-1">
-            Organiza tu negocio.<br />
-            <span className="lp-gradient-text">Todo en un solo lugar.</span>
-          </h2>
-          <p className="lp-cta-sub reveal stagger-2">
-            Agenda, clientes, pagos e inventario — sin papel, sin caos, desde cualquier dispositivo.
-          </p>
-        </div>
-      </section>
+          {/* Espaciador de Scroll Físico */}
+          <div className="landing-scroll-spacer" />
 
-      {/* ─── CTA Final ─── */}
-      <section id="contacto" className="lp-cta">
-        <div className="lp-cta-inner reveal">
-          <div className="lp-cta-badge">Comienza hoy</div>
-          <h2 className="lp-cta-h2">¿Listo para modernizar tu gestión?</h2>
-          <p className="lp-cta-sub">Únete a decenas de negocios que ya optimizan su tiempo con Novagendas.</p>
-          <div className="lp-cta-actions">
-            <a href="mailto:sanabria3210@gmail.com" className="lp-btn-primary lp-btn-large">
-              Contactar ventas <ArrowRight />
-            </a>
+          {/* --- 4. SECCIÓN FINAL EN FLUJO (SCROLL NATURAL) --- */}
+          <div className="landing-footer-flow">
+            {/* Detalles & Mockup */}
+            <section className="features-detail-section">
+              <div className="lotus-bg">
+                <LotusIcon />
+              </div>
+              <div className="detail-content">
+                <div className="detail-left">
+                  <h2 className="detail-title">No es solo software.<br />Es tu socio operativo.</h2>
+                  <div className="detail-list">
+                    <div className="detail-item">
+                      <div className="detail-item-num">1</div>
+                      <div className="detail-item-text">
+                        <span className="detail-item-title">Acceso multi-dispositivo</span>
+                        <span className="detail-item-desc">Gestiona desde tu PC, tablet o celular sin instalar nada.</span>
+                      </div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-item-num">2</div>
+                      <div className="detail-item-text">
+                        <span className="detail-item-title">Subdominio propio</span>
+                        <span className="detail-item-desc">ej: tunegocio.novagendas.com. Presencia profesional.</span>
+                      </div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-item-num">3</div>
+                      <div className="detail-item-text">
+                        <span className="detail-item-title">Días festivos configurables</span>
+                        <span className="detail-item-desc">Bloquea fechas automáticamente según tu calendario local.</span>
+                      </div>
+                    </div>
+                    <div className="detail-item">
+                      <div className="detail-item-num">4</div>
+                      <div className="detail-item-text">
+                        <span className="detail-item-title">Auditoría de cambios</span>
+                        <span className="detail-item-desc">Registro detallado de quién agendó, movió o canceló una cita.</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="detail-right">
+                  <div className="browser-mockup">
+                    <div className="browser-header">
+                      <div className="browser-dots">
+                        <div className="browser-dot" />
+                        <div className="browser-dot" />
+                        <div className="browser-dot" />
+                      </div>
+                      <div className="browser-address">
+                        🔒 tunegocio.novagendas.com
+                      </div>
+                    </div>
+                    <div className="browser-dashboard">
+                      <div className="browser-sidebar">
+                        <div className="browser-side-item active" />
+                        <div className="browser-side-item" />
+                        <div className="browser-side-item" />
+                        <div className="browser-side-item" />
+                      </div>
+                      <div className="browser-main">
+                        <div className="browser-nav" />
+                        <div className="browser-grid">
+                          <div className="browser-left-pane">
+                            <div className="browser-skeleton-line short" />
+                            <div className="browser-skeleton-line medium" />
+                            <div className="browser-skeleton-block" />
+                          </div>
+                          <div className="browser-right-pane">
+                            <div className="browser-skeleton-line" />
+                            <div className="browser-skeleton-block" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Banner de Cierre (CTA) */}
+            <section className="landing-cta-banner">
+              <h2 className="cta-banner-title">¿Listo para eliminar el caos?</h2>
+              <p className="cta-banner-desc">Únete a los negocios que ya optimizan su tiempo con Novagendas.</p>
+              <div className="cta-banner-actions">
+                <a href="#demo" className="btn-white">Solicitar demo</a>
+                <a href="https://wa.me/573026060889" className="btn-outline-white" target="_blank" rel="noopener noreferrer">
+                  WhatsApp
+                </a>
+              </div>
+            </section>
+
+            {/* Footer Detallado */}
+            <footer className="landing-footer">
+              <div className="footer-top">
+                <div className="footer-column">
+                  <div className="footer-brand">Nova<span>gendas</span></div>
+                  <p className="footer-brand-text">
+                    La solución definitiva en agendamiento y gestión para centros estéticos, spas y consultorios.
+                  </p>
+                </div>
+                <div className="footer-column">
+                  <span className="footer-col-title">Contacto</span>
+                  <div className="footer-contact-item">
+                    📱 <a href="tel:+573026060889">WhatsApp: +57 302 606 0889</a>
+                  </div>
+                  <div className="footer-contact-item">
+                    ✉️ <a href="mailto:notificaciog@novagendas.com">notificaciog@novagendas.com</a>
+                  </div>
+                </div>
+                <div className="footer-column">
+                  <span className="footer-col-title">Legal</span>
+                  <a href="/terminos" className="footer-link">Términos y Condiciones</a>
+                  <a href="/condiciones" className="footer-link">Privacidad</a>
+                </div>
+                <div className="footer-column">
+                  <span className="footer-col-title">Social</span>
+                  <button className="footer-share-btn" aria-label="Compartir Novagendas">
+                    <ShareIcon />
+                  </button>
+                </div>
+              </div>
+              <div className="footer-bottom">
+                <span>© {new Date().getFullYear()} Novagendas. Todos los derechos reservados.</span>
+                <span>Bogotá, Colombia</span>
+              </div>
+            </footer>
+
+            {/* Selector de Paleta Interactivo Flotante (Wow Factor) */}
+            <div className={`landing-theme-selector ${isThemeOpen ? 'open' : ''}`}>
+              <button
+                className="landing-theme-trigger"
+                onClick={() => setIsThemeOpen(!isThemeOpen)}
+                title="Personalizar Paleta de Colores"
+                aria-label="Personalizar Paleta de Colores"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                  <path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 1.5 1.5 0 0 0 1.5-1.5c0-.39-.15-.74-.39-1.01a.39.39 0 0 1-.1-.24c0-.22.18-.4.4-.4h1.6c3.3 0 6-2.7 6-6 0-4.96-4.04-9-9-9zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4.5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z" />
+                </svg>
+              </button>
+
+              {isThemeOpen && (
+                <div className="landing-theme-panel">
+                  <span className="theme-panel-title">Estilo de Marca</span>
+                  <span className="theme-panel-subtitle">Predominancia de Azul</span>
+                  <div className="theme-options">
+                    <button
+                      className={`theme-option-btn ${selectedPalette === 'classic' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedPalette('classic');
+                        localStorage.setItem('novagendas_palette', 'classic');
+                      }}
+                    >
+                      <span className="option-color-preview" style={{ background: 'linear-gradient(135deg, #3b82f6 50%, #8b5cf6 50%)' }} />
+                      <span className="option-label">Azul Premium</span>
+                    </button>
+                    <button
+                      className={`theme-option-btn ${selectedPalette === 'sapphire' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedPalette('sapphire');
+                        localStorage.setItem('novagendas_palette', 'sapphire');
+                      }}
+                    >
+                      <span className="option-color-preview" style={{ background: 'linear-gradient(135deg, #0f52ba 50%, #06b6d4 50%)' }} />
+                      <span className="option-label">Zafiro Eléctrico</span>
+                    </button>
+                    <button
+                      className={`theme-option-btn ${selectedPalette === 'indigo' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedPalette('indigo');
+                        localStorage.setItem('novagendas_palette', 'indigo');
+                      }}
+                    >
+                      <span className="option-color-preview" style={{ background: 'linear-gradient(135deg, #4f46e5 50%, #ec4899 50%)' }} />
+                      <span className="option-label">Índigo Real</span>
+                    </button>
+                    <button
+                      className={`theme-option-btn ${selectedPalette === 'ocean' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedPalette('ocean');
+                        localStorage.setItem('novagendas_palette', 'ocean');
+                      }}
+                    >
+                      <span className="option-color-preview" style={{ background: 'linear-gradient(135deg, #0284c7 50%, #10b981 50%)' }} />
+                      <span className="option-label">Océano Fresco</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* ─── Footer ─── */}
-      <footer className="lp-footer">
-        <div className="lp-footer-inner">
-          <div className="lp-footer-brand">
-            <img src="/logoclaro.jpeg" alt="Novagendas" className="lp-footer-logo" />
-            <span className="lp-footer-name">Novagendas</span>
-          </div>
-          <div className="lp-footer-contact">
-            <a href="https://wa.me/573026060889" className="lp-footer-contact-item" target="_blank" rel="noopener noreferrer">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-              +57 302 606 0889
-            </a>
-            <a href="mailto:notificacion@novagendas.com" className="lp-footer-contact-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              notificacion@novagendas.com
-            </a>
-            <a href="mailto:sanabria3210@gmail.com" className="lp-footer-contact-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-              sanabria3210@gmail.com
-            </a>
-          </div>
-          <p className="lp-footer-copy">© {new Date().getFullYear()} Novagendas. Todos los derechos reservados.</p>
-        </div>
-      </footer>
-
+        </>
+      )}
     </div>
   );
 }
