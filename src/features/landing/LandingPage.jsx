@@ -247,30 +247,73 @@ export default function LandingPage() {
   useEffect(() => {
     if (isLoading) return;
 
+    const heroEl   = heroRef.current;
+    const sectorsEl  = sectorsRef.current;
+    const featuresEl = featuresRef.current;
+
     // Asegurar que el canvas muestra el frame 0 inicialmente
     drawFrame(0, 1);
 
-    // 1. Inicializar Lenis para Scroll Suave
+    // ─── ESTADOS INICIALES ──────────────────────────────────────────────
+    gsap.set(heroEl,   { opacity: 1, y: 0, autoAlpha: 1 });
+    gsap.set(sectorsEl,  { opacity: 0, y: 30, autoAlpha: 0 });
+    gsap.set(featuresEl, { opacity: 0, y: 30, autoAlpha: 0 });
+
+    // Hijos del Hero (para animación de entrada)
+    gsap.set(heroEl.querySelectorAll('.title-line-inner'), { y: '105%' });
+    gsap.set(heroEl.querySelectorAll('.hero-tag'),         { opacity: 0, y: 20 });
+    gsap.set(heroEl.querySelector('.hero-subtitle'),       { opacity: 0, y: 20 });
+    gsap.set(heroEl.querySelectorAll('.hero-actions a'),   { opacity: 0, y: 18 });
+    gsap.set(heroEl.querySelectorAll('.premium-card'),     { opacity: 0, y: 24, scale: 0.97 });
+
+    // Hijos de Sectores (scrub-driven)
+    gsap.set(sectorsEl.querySelectorAll('.title-line-inner'), { y: '105%' });
+    gsap.set(sectorsEl.querySelector('.section-subtitle'),    { opacity: 0, y: 22 });
+    gsap.set(sectorsEl.querySelectorAll('.sector-card'),      { opacity: 0, y: 44, scale: 0.97 });
+
+    // Hijos de Features (scrub-driven)
+    gsap.set(featuresEl.querySelectorAll('.title-line-inner'), { y: '105%' });
+    gsap.set(featuresEl.querySelector('.section-subtitle'),    { opacity: 0, y: 22 });
+    gsap.set(featuresEl.querySelectorAll('.feature-card'),     { opacity: 0, y: 44, scale: 0.97 });
+
+    // ─── ANIMACIÓN DE ENTRADA DEL HERO (one-shot, sin scrub) ────────────
+    const heroEntry = gsap.timeline({ delay: 0.5 });
+    heroEntry
+      .to(heroEl.querySelectorAll('.hero-tag'), {
+        opacity: 1, y: 0, duration: 0.65, stagger: 0.14, ease: 'power3.out'
+      })
+      .to(heroEl.querySelectorAll('.title-line-inner'), {
+        y: '0%', duration: 1.05, stagger: 0.14, ease: 'power4.out'
+      }, '-=0.35')
+      .to(heroEl.querySelector('.hero-subtitle'), {
+        opacity: 1, y: 0, duration: 0.85, ease: 'power3.out'
+      }, '-=0.5')
+      .to(heroEl.querySelectorAll('.hero-actions a'), {
+        opacity: 1, y: 0, duration: 0.65, stagger: 0.1, ease: 'power3.out'
+      }, '-=0.5')
+      .to(heroEl.querySelectorAll('.premium-card'), {
+        opacity: 1, y: 0, scale: 1, duration: 0.75, stagger: 0.14, ease: 'power3.out'
+      }, '-=0.45');
+
+    // ─── LENIS (smooth scroll) ────────────────────────────────────────────
     const lenis = new Lenis({
-      duration: 1.4,
+      duration: 1.8,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      wheelMultiplier: 1.05,
+      wheelMultiplier: 0.85,
       touchMultiplier: 1.5,
     });
 
     lenis.on('scroll', ScrollTrigger.update);
 
-    // Sincronizar el ticker de GSAP con Lenis
-    const tickerCallback = (time) => {
-      lenis.raf(time * 1000);
-    };
+    const tickerCallback = (time) => { lenis.raf(time * 1000); };
     gsap.ticker.add(tickerCallback);
     gsap.ticker.lagSmoothing(0);
 
-    // 2. Línea de tiempo GSAP para la secuencia controlada por ScrollTrigger
+    // ─── TIMELINE SCRUB PRINCIPAL ─────────────────────────────────────────
+    // Total duración virtual: ~35 unidades — más lenta y cinemática
     const animObj = { frame: 0, scale: 1.0 };
 
     const tl = gsap.timeline({
@@ -278,151 +321,142 @@ export default function LandingPage() {
         trigger: '.landing-scroll-spacer',
         start: 'top top',
         end: 'bottom bottom',
-        scrub: 1.3, // Inercia fluida
+        scrub: 2.2,
         snap: {
           snapTo: (value, self) => {
             const snapPoints = [0.0, 0.33, 0.61, 1.0];
             const currentProgress = self.progress;
-
             if (self.direction === 1) {
-              // Scrolleando hacia abajo: siempre avanza al siguiente hito adelante, nunca retrocede
               const nextPoint = snapPoints.find(p => p >= currentProgress - 0.02);
               return nextPoint !== undefined ? nextPoint : 1.0;
             } else {
-              // Scrolleando hacia arriba: regresa al hito anterior atrás
               const prevPoints = [...snapPoints].reverse();
               const prevPoint = prevPoints.find(p => p <= currentProgress + 0.02);
               return prevPoint !== undefined ? prevPoint : 0.0;
             }
           },
-          duration: { min: 0.8, max: 1.5 },
+          duration: { min: 1.2, max: 2.0 },
           delay: 0.05,
-          ease: 'power2.out'
+          ease: 'power2.inOut'
         },
         onUpdate: (self) => {
-          // Ocultar indicador de scroll cuando el usuario empieza a bajar
-          if (self.progress > 0.015) {
-            setHideHint(true);
-          } else {
-            setHideHint(false);
-          }
+          if (self.progress > 0.015) setHideHint(true);
+          else setHideHint(false);
         }
       }
     });
 
-    // --- CONFIGURACIÓN DE LOS ESTADOS INICIALES EN DOM ---
-    gsap.set(heroRef.current, { opacity: 1, y: 0, autoAlpha: 1 });
-    gsap.set(sectorsRef.current, { opacity: 0, y: 30, autoAlpha: 0 });
-    gsap.set(featuresRef.current, { opacity: 0, y: 30, autoAlpha: 0 });
-
-    // --- SECUENCIA DE PAUSAS Y TRANSICIONES CINEMÁTICAS SINCRONIZADAS ---
-    // Total duración virtual = 27.0 unidades de scroll (mucho más lenta y controlada)
-
-    // A. Hold Inicial: Frame 1 (Index 0) -> Hero Activo
+    // A. Hold Inicial: frame 0 → Hero visible
     tl.to(animObj, {
-      frame: 0,
-      scale: 1.0,
-      duration: 1.5,
-      ease: 'none',
+      frame: 0, scale: 1.0, duration: 2.0, ease: 'none',
       onUpdate: () => drawFrame(0, animObj.scale)
     });
 
-    // B. Transición 1: De Frame 1 a 62 -> Fades del Hero y Sectores
-    tl.to(animObj, {
-      frame: 61,
-      scale: 1.018,
-      duration: 6.0,
-      ease: 'power1.inOut',
-      onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
-    });
-    // Ocultar Hero
-    tl.to(heroRef.current, {
-      opacity: 0,
-      y: -30,
-      autoAlpha: 0,
-      duration: 2.5,
-      ease: 'power1.inOut'
-    }, '<');
-    // Mostrar Sectores
-    tl.to(sectorsRef.current, {
-      opacity: 1,
-      y: 0,
-      autoAlpha: 1,
-      duration: 3.0,
-      ease: 'power1.inOut'
-    }, '>-2.0');
+    // ── TRANSICIÓN 1: HERO → SECTORES ──────────────────────────────
+    tl.addLabel('sectors-transition');
 
-    // C. Pausa 1: Mantener Frame 62 -> Sectores Activo
+    // B1. Avance de frames 0 → 61
     tl.to(animObj, {
-      frame: 61,
-      scale: 1.022,
-      duration: 3.0,
-      ease: 'none',
+      frame: 61, scale: 1.018, duration: 8.0, ease: 'power1.inOut',
+      onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
+    }, 'sectors-transition');
+
+    // B2. Hero desaparece
+    tl.to(heroEl, {
+      opacity: 0, y: -38, autoAlpha: 0, duration: 3.5, ease: 'power2.inOut'
+    }, 'sectors-transition');
+
+    // B3. Sección Sectores aparece
+    tl.to(sectorsEl, {
+      opacity: 1, y: 0, autoAlpha: 1, duration: 4.5, ease: 'power2.out'
+    }, 'sectors-transition+=2.5');
+
+    // B4. Título: reveal línea por línea
+    tl.to(sectorsEl.querySelectorAll('.title-line-inner'), {
+      y: '0%', duration: 2.5, stagger: 0.25, ease: 'power4.out'
+    }, 'sectors-transition+=4.0');
+
+    // B5. Subtítulo
+    tl.to(sectorsEl.querySelector('.section-subtitle'), {
+      opacity: 1, y: 0, duration: 2.0, ease: 'power3.out'
+    }, 'sectors-transition+=5.2');
+
+    // B6. Cards en cascada
+    tl.to(sectorsEl.querySelectorAll('.sector-card'), {
+      opacity: 1, y: 0, scale: 1, duration: 1.4, stagger: 0.18, ease: 'power3.out'
+    }, 'sectors-transition+=5.8');
+
+    // C. Hold Sectores: mantener frame 61
+    tl.addLabel('sectors-hold', 'sectors-transition+=8.0');
+    tl.to(animObj, {
+      frame: 61, scale: 1.022, duration: 4.0, ease: 'none',
       onUpdate: () => drawFrame(61, animObj.scale)
-    });
+    }, 'sectors-hold');
 
-    // D. Transición 2: De Frame 62 a 131 -> Fades de Sectores y Características
+    // ── TRANSICIÓN 2: SECTORES → FEATURES ─────────────────────────
+    tl.addLabel('features-transition', 'sectors-hold+=4.0');
+
+    // D1. Avance de frames 61 → 130
     tl.to(animObj, {
-      frame: 130,
-      scale: 1.038,
-      duration: 6.0,
-      ease: 'power1.inOut',
+      frame: 130, scale: 1.038, duration: 8.0, ease: 'power1.inOut',
       onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
-    });
-    // Ocultar Sectores
-    tl.to(sectorsRef.current, {
-      opacity: 0,
-      y: -30,
-      autoAlpha: 0,
-      duration: 2.5,
-      ease: 'power1.inOut'
-    }, '<');
-    // Mostrar Características
-    tl.to(featuresRef.current, {
-      opacity: 1,
-      y: 0,
-      autoAlpha: 1,
-      duration: 3.0,
-      ease: 'power1.inOut'
-    }, '>-2.0');
+    }, 'features-transition');
 
-    // E. Pausa 2: Mantener Frame 131 -> Características Activo
+    // D2. Sectores desaparece
+    tl.to(sectorsEl, {
+      opacity: 0, y: -38, autoAlpha: 0, duration: 3.5, ease: 'power2.inOut'
+    }, 'features-transition');
+
+    // D3. Features aparece
+    tl.to(featuresEl, {
+      opacity: 1, y: 0, autoAlpha: 1, duration: 4.5, ease: 'power2.out'
+    }, 'features-transition+=2.5');
+
+    // D4. Título: reveal línea por línea
+    tl.to(featuresEl.querySelectorAll('.title-line-inner'), {
+      y: '0%', duration: 2.5, stagger: 0.25, ease: 'power4.out'
+    }, 'features-transition+=4.0');
+
+    // D5. Subtítulo
+    tl.to(featuresEl.querySelector('.section-subtitle'), {
+      opacity: 1, y: 0, duration: 2.0, ease: 'power3.out'
+    }, 'features-transition+=5.2');
+
+    // D6. Feature cards en cascada
+    tl.to(featuresEl.querySelectorAll('.feature-card'), {
+      opacity: 1, y: 0, scale: 1, duration: 1.4, stagger: 0.18, ease: 'power3.out'
+    }, 'features-transition+=5.8');
+
+    // E. Hold Features: mantener frame 130
+    tl.addLabel('features-hold', 'features-transition+=8.0');
     tl.to(animObj, {
-      frame: 130,
-      scale: 1.042,
-      duration: 3.0,
-      ease: 'none',
+      frame: 130, scale: 1.042, duration: 4.0, ease: 'none',
       onUpdate: () => drawFrame(130, animObj.scale)
-    });
+    }, 'features-hold');
 
-    // F. Transición 3: De Frame 131 a 160 -> Fades de Características a Vacío
+    // ── TRANSICIÓN 3: FEATURES → FIN ───────────────────────────────
+    tl.addLabel('end-transition', 'features-hold+=4.0');
+
+    // F1. Avance de frames 130 → 159
     tl.to(animObj, {
-      frame: 159,
-      scale: 1.055,
-      duration: 6.0,
-      ease: 'power1.inOut',
+      frame: 159, scale: 1.055, duration: 7.0, ease: 'power1.inOut',
       onUpdate: () => drawFrame(Math.round(animObj.frame), animObj.scale)
-    });
-    // Ocultar Características
-    tl.to(featuresRef.current, {
-      opacity: 0,
-      y: -30,
-      autoAlpha: 0,
-      duration: 2.5,
-      ease: 'power1.inOut'
-    }, '<');
+    }, 'end-transition');
 
-    // G. Hold Final: Frame 160 (Index 159)
+    // F2. Features desaparece
+    tl.to(featuresEl, {
+      opacity: 0, y: -38, autoAlpha: 0, duration: 3.5, ease: 'power2.inOut'
+    }, 'end-transition');
+
+    // G. Hold Final: frame 159
     tl.to(animObj, {
-      frame: 159,
-      scale: 1.055,
-      duration: 1.5,
-      ease: 'none',
+      frame: 159, scale: 1.055, duration: 2.0, ease: 'none',
       onUpdate: () => drawFrame(159, animObj.scale)
     });
 
     // Limpieza al desmontar
     return () => {
+      heroEntry.kill();
       lenis.destroy();
       gsap.ticker.remove(tickerCallback);
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
@@ -438,8 +472,13 @@ export default function LandingPage() {
       {isLoading && (
         <div className={`landing-loader-overlay ${!isLoading ? 'fade-out' : ''}`}>
           <div className="landing-loader-content">
-            <h1 className="landing-loader-brand">Nova<span>gendas</span></h1>
-            <p className="landing-loader-tagline">Software de Agendamiento</p>
+            <div className="landing-loader-logo-row">
+              <div className="landing-loader-dot" />
+              <h1 className="landing-loader-brand">Nova<span>gendas</span></h1>
+            </div>
+            <p className="landing-loader-tagline">
+              Preparando tu plataforma<em>...</em>
+            </p>
             <div className="landing-loader-progress-wrapper">
               <div className="landing-loader-bar-outer">
                 <div
@@ -496,8 +535,8 @@ export default function LandingPage() {
                   </div>
                 </div>
                 <h1 className="hero-title">
-                  Agenda tu negocio.<br />
-                  <span className="caos">Sin caos.</span> <span className="papel">Sin papel.</span>
+                  <span className="title-line"><span className="title-line-inner">Agenda tu negocio.</span></span>
+                  <span className="title-line"><span className="title-line-inner"><span className="caos">Sin caos.</span> <span className="papel">Sin papel.</span></span></span>
                 </h1>
                 <p className="hero-subtitle">
                   La plataforma integral para gestionar citas, clientes y operaciones en tiempo real.
@@ -558,7 +597,9 @@ export default function LandingPage() {
           {/* 2. HITOS: SECTORES */}
           <section ref={sectorsRef} className="landing-section">
             <div className="section-center-content">
-              <h2 className="section-title">Diseñado para sectores que no se detienen</h2>
+              <h2 className="section-title">
+                <span className="title-line"><span className="title-line-inner">Diseñado para sectores que no se detienen</span></span>
+              </h2>
               <p className="section-subtitle">Adaptable a las <span className="highlight">necesidades específicas</span> de tu <span className="gold">industria</span>.</p>
 
               <div className="sectores-grid">
@@ -611,7 +652,9 @@ export default function LandingPage() {
           {/* 3. HITOS: CARACTERÍSTICAS (CONTROL TOTAL) */}
           <section ref={featuresRef} className="landing-section">
             <div className="section-center-content">
-              <h2 className="section-title">Control total en un solo lugar</h2>
+              <h2 className="section-title">
+                <span className="title-line"><span className="title-line-inner">Control total en un solo lugar</span></span>
+              </h2>
               <p className="section-subtitle">Herramientas <span className="highlight">poderosas</span> diseñadas para potenciar tu <span className="gold">productividad</span>.</p>
 
               <div className="features-grid">
