@@ -1195,7 +1195,6 @@ async function processStep(
           )
         );
         await save(supabase, conv, "MENU", {});
-        await send(buildMenu(businessName, telefonoContacto));
       }
       return;
     }
@@ -1210,14 +1209,17 @@ async function processStep(
     if (v === "PAYMENT_NO") {
       await send(buildText(confirmText));
       await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
     if (v === "PAYMENT_YES") {
-      await send(buildText(confirmText));
       await send(buildPaymentInfo(numeroNequi, llaveBreb, telefonoContacto));
+      const tel = telefonoContacto?.trim();
+      const comprobanteMsg = tel
+        ? `Compártenos el comprobante cuando lo realices 📎\n\nNúmero de contacto: *${tel}*`
+        : "Compártenos el comprobante cuando lo realices 📎";
+      await send(buildText(comprobanteMsg));
+      await send(buildText(confirmText));
       await save(supabase, conv, "MENU", {});
-      await send(buildMenu(businessName, telefonoContacto));
       return;
     }
   }
