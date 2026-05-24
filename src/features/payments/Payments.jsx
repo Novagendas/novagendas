@@ -48,7 +48,7 @@ export default function Payments({ user, tenant }) {
     setLoading(true);
 
     try {
-      const { data: methData } = await supabase.from('metodopago').select('*');
+      const { data: methData } = await supabase.from('metodopago').select('*').eq('idnegocios', tenant.id);
       const finalMethods = methData || [];
       setMethods(finalMethods);
 

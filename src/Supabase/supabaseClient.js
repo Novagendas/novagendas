@@ -8,7 +8,7 @@ export const isDevEnvironment =
   hostname.split('.')[0].startsWith('dev-') ||
   import.meta.env.VITE_ENV === 'development'
 
-const supabaseUrl = isDevEnvironment
+export const supabaseUrl = isDevEnvironment
   ? import.meta.env.VITE_SUPABASE_URL_DEV
   : import.meta.env.VITE_SUPABASE_URL
 

@@ -1,0 +1,292 @@
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f6f9; }
+
+  .page-title { text-align: center; padding: 2rem 1rem 0.5rem; font-size: 1.5rem; font-weight: 700; color: #0B3558; }
+  .page-sub { text-align: center; color: #476788; font-size: 0.95rem; margin-bottom: 2rem; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; padding: 0 1.5rem 2rem; max-width: 1300px; margin: 0 auto; }
+
+  .card { background: #fff; border-radius: 20px; border: 2px solid #e2e8f0; overflow: hidden; cursor: pointer; transition: all 0.25s; }
+  .card:hover { border-color: #006BFF; box-shadow: 0 8px 32px rgba(0,107,255,0.12); transform: translateY(-4px); }
+  .card.selected { border-color: #006BFF; box-shadow: 0 0 0 3px rgba(0,107,255,0.2); }
+
+  .card-preview { height: 340px; overflow: hidden; position: relative; }
+  .card-body { padding: 1.25rem 1.5rem 1.5rem; border-top: 1px solid #e2e8f0; }
+  .card-body h3 { font-size: 1.05rem; font-weight: 700; color: #0B3558; margin-bottom: 0.35rem; }
+  .card-body p { font-size: 0.83rem; color: #476788; line-height: 1.5; }
+  .card-tag { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 9px; border-radius: 99px; margin-bottom: 0.5rem; }
+  .tag-rec { background: #dcfce7; color: #15803d; }
+  .tag-bold { background: #ede9fe; color: #6d28d9; }
+  .tag-alt { background: #fff7ed; color: #c2410c; }
+
+  /* === OPCIÓN A: Clean Light (Calendly-style) === */
+  .preview-a { background: #fff; padding: 0; }
+  .pa-nav { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 20px; height: 40px; display: flex; align-items: center; justify-content: space-between; }
+  .pa-nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.75rem; color: #0B3558; }
+  .pa-nav-dot { width: 18px; height: 18px; background: #006BFF; border-radius: 5px; }
+  .pa-nav-links { display: flex; gap: 12px; }
+  .pa-nav-link { font-size: 0.62rem; font-weight: 600; color: #476788; }
+  .pa-nav-cta { background: #006BFF; color: #fff; font-size: 0.6rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; }
+  .pa-hero { padding: 22px 20px 16px; }
+  .pa-badge { background: #EEF4FF; color: #006BFF; font-size: 0.58rem; font-weight: 700; padding: 3px 8px; border-radius: 99px; display: inline-block; margin-bottom: 10px; }
+  .pa-h1 { font-size: 1.35rem; font-weight: 900; line-height: 1.08; color: #0B3558; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .pa-h1 span { color: #006BFF; }
+  .pa-sub { font-size: 0.65rem; color: #476788; line-height: 1.5; max-width: 200px; margin-bottom: 14px; }
+  .pa-ctas { display: flex; gap: 6px; }
+  .pa-btn-p { background: #006BFF; color: #fff; font-size: 0.6rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; }
+  .pa-btn-s { background: #fff; color: #0B3558; font-size: 0.6rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid #D4E0ED; }
+  .pa-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+  .pa-card { background: #F8F9FB; border: 1px solid #D4E0ED; border-radius: 10px; padding: 8px 10px; }
+  .pa-card-label { font-size: 0.52rem; font-weight: 700; color: #A6BBD1; text-transform: uppercase; letter-spacing: 0.08em; }
+  .pa-card-val { font-size: 1.1rem; font-weight: 900; color: #0B3558; }
+  .pa-card-sub { font-size: 0.52rem; color: #14AA51; font-weight: 600; }
+  .pa-card-wide { grid-column: span 2; }
+  .pa-week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-top: 5px; }
+  .pa-day-hd { font-size: 0.45rem; font-weight: 700; color: #A6BBD1; text-align: center; margin-bottom: 2px; }
+  .pa-ev { font-size: 0.42rem; font-weight: 700; padding: 2px 3px; border-radius: 3px; margin-bottom: 2px; }
+  .pa-ev-blue { background: #dbeafe; color: #2563eb; }
+  .pa-ev-green { background: #dcfce7; color: #16a34a; }
+  .pa-ev-purple { background: #ede9fe; color: #7c3aed; }
+  .pa-ev-main { background: #006BFF; color: #fff; }
+
+  /* === OPCIÓN B: Premium Dark === */
+  .preview-b { background: #0a0f1e; padding: 0; }
+  .pb-nav { background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 0 20px; height: 40px; display: flex; align-items: center; justify-content: space-between; }
+  .pb-nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.75rem; color: #fff; }
+  .pb-nav-dot { width: 18px; height: 18px; background: linear-gradient(135deg, #818cf8, #c084fc); border-radius: 5px; }
+  .pb-nav-links { display: flex; gap: 12px; }
+  .pb-nav-link { font-size: 0.62rem; font-weight: 500; color: rgba(255,255,255,0.5); }
+  .pb-nav-cta { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); font-size: 0.6rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); }
+  .pb-hero { padding: 22px 20px 16px; position: relative; }
+  .pb-glow { position: absolute; top: -30px; left: -20px; width: 150px; height: 150px; background: radial-gradient(circle, rgba(129,140,248,0.2) 0%, transparent 70%); pointer-events: none; }
+  .pb-badge { background: rgba(129,140,248,0.15); color: #a5b4fc; font-size: 0.58rem; font-weight: 700; padding: 3px 8px; border-radius: 99px; display: inline-block; margin-bottom: 10px; border: 1px solid rgba(129,140,248,0.25); }
+  .pb-h1 { font-size: 1.35rem; font-weight: 900; line-height: 1.08; color: #fff; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .pb-h1 span { background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .pb-sub { font-size: 0.65rem; color: rgba(255,255,255,0.5); line-height: 1.5; max-width: 200px; margin-bottom: 14px; }
+  .pb-ctas { display: flex; gap: 6px; }
+  .pb-btn-p { background: linear-gradient(135deg, #818cf8, #c084fc); color: #fff; font-size: 0.6rem; font-weight: 700; padding: 6px 12px; border-radius: 6px; }
+  .pb-btn-s { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); font-size: 0.6rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); }
+  .pb-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+  .pb-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 10px; backdrop-filter: blur(10px); }
+  .pb-card-label { font-size: 0.52rem; font-weight: 700; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.08em; }
+  .pb-card-val { font-size: 1.1rem; font-weight: 900; color: #fff; }
+  .pb-card-sub { font-size: 0.52rem; color: #4ade80; font-weight: 600; }
+  .pb-card-wide { grid-column: span 2; }
+  .pb-week { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; margin-top: 5px; }
+  .pb-day-hd { font-size: 0.45rem; font-weight: 700; color: rgba(255,255,255,0.25); text-align: center; margin-bottom: 2px; }
+  .pb-ev { font-size: 0.42rem; font-weight: 700; padding: 2px 3px; border-radius: 3px; margin-bottom: 2px; }
+  .pb-ev-1 { background: rgba(129,140,248,0.2); color: #a5b4fc; }
+  .pb-ev-2 { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .pb-ev-3 { background: rgba(192,132,252,0.2); color: #d8b4fe; }
+  .pb-ev-main { background: linear-gradient(135deg, #818cf8, #c084fc); color: #fff; }
+
+  /* === OPCIÓN C: Minimal Editorial === */
+  .preview-c { background: #FCFBF8; padding: 0; }
+  .pc-nav { background: #FCFBF8; border-bottom: 1px solid #e8e4dc; padding: 0 20px; height: 40px; display: flex; align-items: center; justify-content: space-between; }
+  .pc-nav-logo { display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 0.75rem; color: #0a0a0a; letter-spacing: -0.04em; }
+  .pc-nav-dot { width: 8px; height: 8px; background: #006BFF; border-radius: 50%; }
+  .pc-nav-links { display: flex; gap: 12px; }
+  .pc-nav-link { font-size: 0.62rem; font-weight: 500; color: #888; }
+  .pc-nav-cta { color: #0a0a0a; font-size: 0.6rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 1.5px solid #0a0a0a; }
+  .pc-hero { padding: 28px 20px 12px; }
+  .pc-eyebrow { font-size: 0.6rem; font-weight: 700; color: #006BFF; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .pc-h1 { font-size: 1.55rem; font-weight: 900; line-height: 1.0; color: #0a0a0a; letter-spacing: -0.04em; margin-bottom: 10px; }
+  .pc-h1 em { font-style: normal; color: #006BFF; }
+  .pc-rule { width: 32px; height: 3px; background: #006BFF; border-radius: 2px; margin-bottom: 10px; }
+  .pc-sub { font-size: 0.65rem; color: #666; line-height: 1.55; max-width: 210px; margin-bottom: 14px; }
+  .pc-ctas { display: flex; align-items: center; gap: 8px; }
+  .pc-btn-p { background: #0a0a0a; color: #fff; font-size: 0.6rem; font-weight: 700; padding: 7px 13px; border-radius: 7px; }
+  .pc-btn-s { font-size: 0.62rem; font-weight: 600; color: #006BFF; text-decoration: underline; }
+  .pc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-top: 16px; }
+  .pc-stat { background: #fff; border: 1px solid #e8e4dc; border-radius: 8px; padding: 8px 10px; }
+  .pc-stat-val { font-size: 1.2rem; font-weight: 900; color: #0a0a0a; letter-spacing: -0.04em; }
+  .pc-stat-label { font-size: 0.5rem; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .pc-agenda { grid-column: span 3; background: #fff; border: 1px solid #e8e4dc; border-radius: 8px; padding: 8px 10px; }
+  .pc-agenda-title { font-size: 0.52rem; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+  .pc-agenda-row { display: flex; align-items: center; gap: 6px; padding: 3px 0; border-bottom: 1px solid #f0ece4; }
+  .pc-agenda-row:last-child { border-bottom: none; }
+  .pc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .pc-agenda-time { font-size: 0.5rem; color: #888; width: 24px; flex-shrink: 0; }
+  .pc-agenda-name { font-size: 0.55rem; font-weight: 600; color: #0a0a0a; }
+  .pc-agenda-svc { font-size: 0.48rem; color: #aaa; }
+
+  .select-hint { text-align: center; font-size: 0.82rem; color: #476788; margin: 0 auto 1.5rem; }
+</style>
+
+<h2 class="page-title" style="font-size:1.4rem; margin-bottom:0.3rem;">Dirección de diseño — Hero & estilo visual</h2>
+<p class="page-sub">Tres enfoques distintos para la landing. Haz clic en el que más te guste (o en varios).</p>
+
+<div class="cards">
+
+  <!-- OPCIÓN A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-preview preview-a">
+      <!-- NAV -->
+      <div class="pa-nav">
+        <div class="pa-nav-logo"><div class="pa-nav-dot"></div>Novagendas</div>
+        <div class="pa-nav-links">
+          <span class="pa-nav-link">Funciones</span>
+          <span class="pa-nav-link">Cómo funciona</span>
+          <span class="pa-nav-link">Sectores</span>
+        </div>
+        <div class="pa-nav-cta">Contactar</div>
+      </div>
+      <!-- HERO -->
+      <div class="pa-hero">
+        <div class="pa-badge">⚡ Software de agendamiento</div>
+        <div class="pa-h1">Agenda tu negocio.<br/><span>Sin caos. Sin papel.</span></div>
+        <div class="pa-sub">Citas, clientes, pagos e inventario — todo centralizado desde cualquier dispositivo.</div>
+        <div class="pa-ctas">
+          <div class="pa-btn-p">Ver funcionalidades →</div>
+          <div class="pa-btn-s">Cómo funciona</div>
+        </div>
+        <!-- BENTO -->
+        <div class="pa-bento">
+          <div class="pa-card">
+            <div class="pa-card-label">Citas hoy</div>
+            <div class="pa-card-val">24</div>
+            <div class="pa-card-sub">↑ 3 vs ayer</div>
+          </div>
+          <div class="pa-card">
+            <div class="pa-card-label">Ingresos mes</div>
+            <div class="pa-card-val">$4.2M</div>
+            <div class="pa-card-sub">↑ 12% mes anterior</div>
+          </div>
+          <div class="pa-card pa-card-wide">
+            <div class="pa-card-label">Agenda esta semana</div>
+            <div class="pa-week">
+              <div><div class="pa-day-hd">LUN</div><div class="pa-ev pa-ev-blue">09:00</div><div class="pa-ev pa-ev-purple">11:30</div></div>
+              <div><div class="pa-day-hd">MAR</div><div class="pa-ev pa-ev-green">10:00</div></div>
+              <div><div class="pa-day-hd">MIÉ</div><div class="pa-ev pa-ev-main">09:00</div><div class="pa-ev pa-ev-blue">14:00</div></div>
+              <div><div class="pa-day-hd">JUE</div><div class="pa-ev pa-ev-purple">11:00</div><div class="pa-ev pa-ev-green">15:00</div></div>
+              <div><div class="pa-day-hd">VIE</div><div class="pa-ev pa-ev-blue">09:30</div><div class="pa-ev pa-ev-purple">15:00</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-tag tag-rec">⭐ Recomendado</div>
+      <h3>A — Clean Light (Calendly-style)</h3>
+      <p>Fondo blanco / azul navy. Muy espacioso. Tipografía fuerte. Inspirado en el design system del landing.md. Transmite confianza y profesionalismo. Mejor conversión.</p>
+    </div>
+  </div>
+
+  <!-- OPCIÓN B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-preview preview-b">
+      <div class="pb-nav">
+        <div class="pb-nav-logo"><div class="pb-nav-dot"></div>Novagendas</div>
+        <div class="pb-nav-links">
+          <span class="pb-nav-link">Funciones</span>
+          <span class="pb-nav-link">Cómo funciona</span>
+          <span class="pb-nav-link">Sectores</span>
+        </div>
+        <div class="pb-nav-cta">Contactar</div>
+      </div>
+      <div class="pb-hero">
+        <div class="pb-glow"></div>
+        <div class="pb-badge">⚡ Software de agendamiento</div>
+        <div class="pb-h1">Agenda tu negocio.<br/><span>Sin caos. Sin papel.</span></div>
+        <div class="pb-sub">Citas, clientes, pagos e inventario — todo centralizado desde cualquier dispositivo.</div>
+        <div class="pb-ctas">
+          <div class="pb-btn-p">Ver funcionalidades →</div>
+          <div class="pb-btn-s">Cómo funciona</div>
+        </div>
+        <div class="pb-bento">
+          <div class="pb-card">
+            <div class="pb-card-label">Citas hoy</div>
+            <div class="pb-card-val">24</div>
+            <div class="pb-card-sub">↑ 3 vs ayer</div>
+          </div>
+          <div class="pb-card">
+            <div class="pb-card-label">Ingresos mes</div>
+            <div class="pb-card-val">$4.2M</div>
+            <div class="pb-card-sub">↑ 12%</div>
+          </div>
+          <div class="pb-card pb-card-wide">
+            <div class="pb-card-label">Agenda esta semana</div>
+            <div class="pb-week">
+              <div><div class="pb-day-hd">LUN</div><div class="pb-ev pb-ev-1">09:00</div><div class="pb-ev pb-ev-3">11:30</div></div>
+              <div><div class="pb-day-hd">MAR</div><div class="pb-ev pb-ev-2">10:00</div></div>
+              <div><div class="pb-day-hd">MIÉ</div><div class="pb-ev pb-ev-main">09:00</div><div class="pb-ev pb-ev-1">14:00</div></div>
+              <div><div class="pb-day-hd">JUE</div><div class="pb-ev pb-ev-3">11:00</div><div class="pb-ev pb-ev-2">15:00</div></div>
+              <div><div class="pb-day-hd">VIE</div><div class="pb-ev pb-ev-1">09:30</div><div class="pb-ev pb-ev-3">15:00</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-tag tag-bold">✨ Más impacto</div>
+      <h3>B — Premium Dark (Linear / Raycast)</h3>
+      <p>Fondo negro profundo, acentos violeta/púrpura. Alta personalidad visual. Estilo startup tech. Se ve premium y moderno. Puede generar menos conversión en audiencia médica/spa.</p>
+    </div>
+  </div>
+
+  <!-- OPCIÓN C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-preview preview-c">
+      <div class="pc-nav">
+        <div class="pc-nav-logo"><div class="pc-nav-dot"></div>Novagendas</div>
+        <div class="pc-nav-links">
+          <span class="pc-nav-link">Funciones</span>
+          <span class="pc-nav-link">Cómo funciona</span>
+          <span class="pc-nav-link">Sectores</span>
+        </div>
+        <div class="pc-nav-cta">Contactar →</div>
+      </div>
+      <div class="pc-hero">
+        <div class="pc-eyebrow">Software de agendamiento</div>
+        <div class="pc-h1">Agenda tu negocio.<br/><em>Sin caos.</em><br/>Sin papel.</div>
+        <div class="pc-rule"></div>
+        <div class="pc-sub">Citas, clientes, pagos e inventario centralizados. Para cualquier negocio con citas.</div>
+        <div class="pc-ctas">
+          <div class="pc-btn-p">Ver funcionalidades</div>
+          <div class="pc-btn-s">Cómo funciona →</div>
+        </div>
+        <div class="pc-grid">
+          <div class="pc-stat">
+            <div class="pc-stat-val">24</div>
+            <div class="pc-stat-label">Citas hoy</div>
+          </div>
+          <div class="pc-stat">
+            <div class="pc-stat-val">$4.2M</div>
+            <div class="pc-stat-label">Ingresos mes</div>
+          </div>
+          <div class="pc-stat">
+            <div class="pc-stat-val">312</div>
+            <div class="pc-stat-label">Clientes</div>
+          </div>
+          <div class="pc-agenda">
+            <div class="pc-agenda-title">Próximas citas</div>
+            <div class="pc-agenda-row">
+              <div class="pc-dot" style="background:#006BFF"></div>
+              <div class="pc-agenda-time">09:00</div>
+              <div><div class="pc-agenda-name">María López</div><div class="pc-agenda-svc">Limpieza facial</div></div>
+            </div>
+            <div class="pc-agenda-row">
+              <div class="pc-dot" style="background:#14AA51"></div>
+              <div class="pc-agenda-time">10:30</div>
+              <div><div class="pc-agenda-name">Carlos Ruiz</div><div class="pc-agenda-svc">Masaje relajante</div></div>
+            </div>
+            <div class="pc-agenda-row">
+              <div class="pc-dot" style="background:#D946EF"></div>
+              <div class="pc-agenda-time">11:00</div>
+              <div><div class="pc-agenda-name">Ana Torres</div><div class="pc-agenda-svc">Tratamiento capilar</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-tag tag-alt">📰 Editorial</div>
+      <h3>C — Minimal Editorial (Apple / Notion)</h3>
+      <p>Fondo crema cálido, tipografía editorial muy grande. Sin bento grid — hero con stats limpios y agenda real. Estilo sobrio y distinto. Menos convencional, más memorizable.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="select-hint">Haz clic para seleccionar tu preferencia. Puedes elegir más de una.</p>

@@ -268,16 +268,20 @@ async function fetchServicios(tenantId) {
   const now = new Date();
   const thisMo = monthBounds(now);
 
-  const [resServicios, citasThisMo, citaServicios, pagos] = await Promise.all([
+  const [resServicios, citasThisMo, pagos] = await Promise.all([
     supabase.from('servicios').select('*').eq('idnegocios', tenantId).is('deleted_at', null),
     supabase.from('cita').select('idcita').eq('idnegocios', tenantId).gte('fechahorainicio', thisMo.start).lte('fechahorainicio', thisMo.end),
-    supabase.from('citaservicios').select('idcita, idservicios'),
     supabase.from('pagos').select('idservicios, monto').eq('idnegocios', tenantId).is('deleted_at', null)
       .gte('fecha', thisMo.start).lte('fecha', thisMo.end),
   ]);
 
   const servicios = resServicios.data || [];
-  const thisMoCitaIds = new Set((citasThisMo.data || []).map(c => c.idcita));
+  const citaIdList = (citasThisMo.data || []).map(c => c.idcita);
+  const thisMoCitaIds = new Set(citaIdList);
+
+  const citaServicios = citaIdList.length > 0
+    ? await supabase.from('citaservicios').select('idcita, idservicios').in('idcita', citaIdList)
+    : { data: [] };
   const citasMap = new Map();
   (citaServicios.data || []).filter(cs => thisMoCitaIds.has(cs.idcita))
     .forEach(cs => { citasMap.set(cs.idservicios, (citasMap.get(cs.idservicios) || 0) + 1); });

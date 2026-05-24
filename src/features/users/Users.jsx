@@ -1,14 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import { supabase, insertLog, supabaseAnon, supabaseUrl } from '../../Supabase/supabaseClient';
 import './Users.css';
 
-// Cliente auxiliar para crear entradas en auth.users sin afectar la sesión del admin
-const authHelper = createClient(
-  import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co/',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_kRI9Xe0UXW9Ma0ecTdQWZQ_6uba91Cm',
-  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
-);
+// supabaseAnon se usa para crear entradas en auth.users sin afectar la sesión del admin
 
 /* ─── Searchable Select Component ─────────────────────────── */
 const SearchableSelect = ({ label, options, value, onChange, placeholder, icon }) => {
@@ -359,7 +353,7 @@ export default function Users({ user, tenant }) {
         }]);
         if (negErr) console.warn('negociousuario link error:', negErr.message);
 
-        const { error: authErr } = await authHelper.auth.signUp({
+        const { error: authErr } = await supabaseAnon.auth.signUp({
           email: form.email,
           password: form.password,
           options: {
@@ -370,7 +364,6 @@ export default function Users({ user, tenant }) {
           console.warn('auth.users sync:', authErr.message);
         }
 
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co';
         fetch(`${supabaseUrl}/functions/v1/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

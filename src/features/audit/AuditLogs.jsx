@@ -24,16 +24,14 @@ export default function LogsView({ tenant, user }) {
       .order('fecha', { ascending: false });
 
     if (user?.role === 'especialista') {
-      const myName = user.name || '';
-      const first  = myName.split(' ')[0].replace('Dra.', '').replace('Dr.', '').trim();
-      query = query.or(`idusuario.eq.${user.idusuario || user.id},descripcion.ilike.%${first}%`);
+      query = query.eq('idusuario', user.idusuario || user.id);
     }
 
     const { data, error } = await query;
     if (error) console.error('Error fetching logs:', error);
     else setLogs(data || []);
     setLoading(false);
-  }, [tenant.id, user.idusuario, user.id, user.name, user.role]);
+  }, [tenant.id, user.idusuario, user.id, user.role]);
 
   useEffect(() => {
     const init = async () => {

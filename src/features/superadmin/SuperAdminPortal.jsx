@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import { supabase, insertLog, supabaseAnon, supabaseUrl } from '../../Supabase/supabaseClient';
 import ParticleBackground from '../../components/ParticleBackground';
 import ThemeToggle from '../../components/ThemeToggle';
 import './SuperAdminPortal.css';
 
-const authHelper = createClient(
-  import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co/',
-  import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_kRI9Xe0UXW9Ma0ecTdQWZQ_6uba91Cm',
-  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
-);
+// supabaseAnon se usa para crear entradas en auth.users sin afectar la sesión actual
 
 const ESTADO_OPTIONS = [
   { id: 1, label: 'Activo',      bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
@@ -403,8 +398,6 @@ export default function SuperAdminPortal() {
 
   /* Login */
   const [email, setEmail] = useState('');
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [masterPass, setMasterPass] = useState('');
   const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -510,22 +503,6 @@ export default function SuperAdminPortal() {
     await supabase.auth.signOut();
     setAdminLogged(false);
     setCurrentUser(null);
-  };
-
-  const handleRegisterSuper = async (e) => {
-    e.preventDefault();
-    if (masterPass !== 'super123') { setLoginError('Contraseña maestra incorrecta.'); return; }
-    setIsAuthLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password: pass, options: { data: { is_super_admin: true } } });
-    if (!error) {
-      await supabase.from('usuario').insert([{ nombre: 'Nuevo', apellido: 'SuperAdmin', email, password: pass, issuperadmin: true, idestado: 1 }]);
-      await insertLog({ accion: 'CREATE', entidad: 'SuperAdmin', descripcion: `Nueva cuenta SuperAdmin: ${email}`, idUsuario: data.user?.id, idNegocios: null });
-      showSnack('Cuenta SuperAdmin creada. Confirma el email si es necesario.');
-      setIsRegistering(false);
-    } else {
-      setLoginError('Error al crear SuperAdmin: ' + error.message);
-    }
-    setIsAuthLoading(false);
   };
 
   /* ── Negocios CRUD ── */
@@ -643,11 +620,10 @@ export default function SuperAdminPortal() {
     }
 
     if (isAdd && uForm.email && uForm.contrasena) {
-      const { error: authErr } = await authHelper.auth.signUp({ email: uForm.email, password: uForm.contrasena, options: { data: { nombre: uForm.nombre, apellido: uForm.apellido, idusuario: savedId, idnegocios: idnegociosPrincipal } } });
+      const { error: authErr } = await supabaseAnon.auth.signUp({ email: uForm.email, password: uForm.contrasena, options: { data: { nombre: uForm.nombre, apellido: uForm.apellido, idusuario: savedId, idnegocios: idnegociosPrincipal } } });
       if (authErr && !authErr.message?.toLowerCase().includes('already registered')) console.warn('auth.users sync:', authErr.message);
     }
 
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://aulddrljywoigivxugqf.supabase.co';
     const negocioNombre = tenants.find(t => t.idnegocios === idnegociosPrincipal)?.nombre || 'Novagendas';
 
     if (isAdd && uForm.email && uForm.contrasena) {
@@ -792,7 +768,7 @@ export default function SuperAdminPortal() {
           <div className="super-login-logo">
             <img src={document.documentElement.getAttribute('data-theme') === 'dark' ? '/logodark.jpeg' : '/logoclaro.jpeg'} alt="Logo" onError={e => e.target.style.display = 'none'} />
           </div>
-          <h2 style={{ margin: '0 0 0.25rem', fontWeight: 800 }}>{isRegistering ? 'Crear Super Admin' : 'Portal Super Admin'}</h2>
+          <h2 style={{ margin: '0 0 0.25rem', fontWeight: 800 }}>Portal Super Admin</h2>
           <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--text-3)' }}>Novagendas · Solo personal autorizado</p>
         </div>
 
@@ -803,22 +779,13 @@ export default function SuperAdminPortal() {
           </div>
         )}
 
-        <form onSubmit={isRegistering ? handleRegisterSuper : handleLogin} className="super-login-form">
+        <form onSubmit={handleLogin} className="super-login-form">
           <input type="email" className="input-field" placeholder="Correo electrónico" value={email} onChange={e => { setEmail(e.target.value); setLoginError(''); }} autoFocus />
           <input type="password" className="input-field" placeholder="Contraseña" value={pass} onChange={e => { setPass(e.target.value); setLoginError(''); }} />
-          {isRegistering && (
-            <input type="password" className="input-field" placeholder="Contraseña maestra de confirmación" value={masterPass} onChange={e => setMasterPass(e.target.value)} style={{ border: '1px solid var(--accent)' }} />
-          )}
           <button type="submit" className="btn btn-primary btn-full" style={{ padding: '0.9rem', marginTop: '0.25rem', borderRadius: 12 }} disabled={isAuthLoading}>
-            {isAuthLoading ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><span className="spinner-mini" />Procesando...</span> : isRegistering ? 'Registrar SuperAdmin' : 'Ingresar'}
+            {isAuthLoading ? <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}><span className="spinner-mini" />Procesando...</span> : 'Ingresar'}
           </button>
         </form>
-
-        {isRegistering && (
-          <div className="super-login-footer">
-            <button type="button" onClick={() => { setIsRegistering(false); setLoginError(''); }} className="super-text-link">← Volver al Login</button>
-          </div>
-        )}
       </div>
     </div>
   );
