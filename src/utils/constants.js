@@ -35,7 +35,6 @@ export const PAYMENT_METHOD_ICONS = {
 export const APPOINTMENT_STATUSES = [
   'Confirmada',
   'En Espera',
-  'Pendiente',
   'Cancelada',
   'Completada',
 ];
@@ -43,7 +42,6 @@ export const APPOINTMENT_STATUSES = [
 export const STATUS_COLORS = {
   'Confirmada': 'var(--success)',
   'En Espera': 'var(--warning)',
-  'Pendiente': 'var(--text-3)',
   'Cancelada': 'var(--danger)',
   'Completada': 'var(--primary)',
 };

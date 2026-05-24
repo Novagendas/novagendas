@@ -2,15 +2,9 @@ import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import { useState, useEffect, useCallback } from 'react';
 import { fmt } from '../../utils/formatters';
 import { parseDate } from '../../utils/dateHelpers';
+import { PAYMENT_METHOD_ICONS } from '../../utils/constants';
 import SelectableInput from '../../components/inputs/SelectableInput';
 import './Payments.css';
-
-const METHOD_ICONS = {
-  'Efectivo': 'cash-outline',
-  'Transferencia': 'swap-horizontal-outline',
-  'Tarjeta': 'card-outline',
-  'Crédito': 'bookmark-outline'
-};
 
 export default function Payments({ user, tenant }) {
   const [payments, setPayments] = useState([]);
@@ -48,7 +42,7 @@ export default function Payments({ user, tenant }) {
     setLoading(true);
 
     try {
-      const { data: methData } = await supabase.from('metodopago').select('*').eq('idnegocios', tenant.id);
+      const { data: methData } = await supabase.from('metodopago').select('*');
       const finalMethods = methData || [];
       setMethods(finalMethods);
 
@@ -443,7 +437,7 @@ export default function Payments({ user, tenant }) {
                           <td><span className="payment-service-name">{p.servicios?.nombre || '—'}</span></td>
                           <td>
                             <span className="badge badge-neutral payment-method-badge">
-                              {METHOD_ICONS[meth?.tipo] || '💰'} {meth?.tipo || '—'}
+                              {PAYMENT_METHOD_ICONS[meth?.tipo] || '💰'} {meth?.tipo || '—'}
                             </span>
                           </td>
                           <td><span className="payment-amount">{fmt(p.monto)}</span></td>
@@ -731,7 +725,7 @@ export default function Payments({ user, tenant }) {
                 </div>
                 <div className="payment-detail-field">
                   <span className="payment-detail-label">Método de Pago</span>
-                  <span className="payment-detail-value">{METHOD_ICONS[detailPayment.meth?.tipo] || '💰'} {detailPayment.meth?.tipo || '—'}</span>
+                  <span className="payment-detail-value">{PAYMENT_METHOD_ICONS[detailPayment.meth?.tipo] || '💰'} {detailPayment.meth?.tipo || '—'}</span>
                 </div>
               </div>
 

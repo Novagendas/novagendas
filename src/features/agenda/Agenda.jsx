@@ -281,8 +281,8 @@ export default function Agenda({ user, tenant }) {
             date: toDateStr(startD),
             time: toTimeStr(startD.getHours(), startD.getMinutes()),
             duration: totalDuration,
-            status: a.estadocita?.descripcion || 'Pendiente',
-            doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : 'Pendiente',
+            status: a.estadocita?.descripcion || 'En Espera',
+            doctor: a.usuario ? `${a.usuario.nombre} ${a.usuario.apellido}` : '—',
             gcalEventId: a.gcal_event_id || null,
             locationId: a.idubicacion || null,
             isGroup: !!a.escitagrupal,
@@ -382,11 +382,11 @@ export default function Agenda({ user, tenant }) {
     const totalDuration = selectedServices.reduce((sum, s) => sum + Number(s.duracion || 0), 0);
 
     const statusColors = {
-      Confirmada: '#16a34a', 'En Espera': '#a16207', Pendiente: '#64748b',
+      Confirmada: '#16a34a', 'En Espera': '#a16207',
       Cancelada: '#dc2626', Completada: '#7c3aed'
     };
     const statusBg = {
-      Confirmada: '#dcfce7', 'En Espera': '#fef9c3', Pendiente: '#f1f5f9',
+      Confirmada: '#dcfce7', 'En Espera': '#fef9c3',
       Cancelada: '#fee2e2', Completada: '#ede9fe'
     };
 
@@ -596,7 +596,7 @@ export default function Agenda({ user, tenant }) {
       }
 
       let appointmentId = editId;
-      const STATUS_ID_MAP = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4, 'Pendiente': 2 };
+      const STATUS_ID_MAP = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4 };
 
       if (editId) {
         const editPayload = { ...payload, idestadocita: STATUS_ID_MAP[form.status] || 2 };
@@ -1633,7 +1633,7 @@ export default function Agenda({ user, tenant }) {
                     <label className="searchable-select-label">Estado de la Cita</label>
                     <div className="cita-status-row">
                       {APPOINTMENT_STATUSES.map(s => {
-                        const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Pendiente': '🕒', 'Cancelada': '❌', 'Completada': '🎉' };
+                        const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Cancelada': '❌', 'Completada': '🎉' };
                         const iconEntry = Object.entries(icons).find(([key]) => key === s);
                         const icono = iconEntry ? iconEntry[1] : '';
                         const isLocked = form.status === 'Completada';
