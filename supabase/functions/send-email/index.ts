@@ -627,6 +627,644 @@ const TEMPLATES: Record<string, { subject: string; html: string }> = {
 </html>`,
   },
 
+  "nueva-cita-agendada": {
+    subject: "Nueva cita agendada — {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Nueva cita agendada — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Nueva cita agendada en {{negocio}} para {{nombre_cliente}} el {{fecha}}.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Notificación interna</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#1e40af 0%,#1e3a8a 60%,#172554 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">Plataforma Profesional de Agendamiento</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;"><tr>
+            <td style="width:36px;height:2px;background:rgba(139,92,246,0.35);border-radius:1px;"></td><td style="width:8px;"></td>
+            <td style="width:10px;height:6px;background:#8b5cf6;border-radius:3px;"></td><td style="width:8px;"></td>
+            <td style="width:36px;height:2px;background:rgba(139,92,246,0.35);border-radius:1px;"></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #e2e8f0;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Nueva cita agendada</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Se agendó una nueva cita en <strong style="color:#1e40af;font-weight:700;">{{negocio}}</strong> desde el sistema.</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.08em;">Detalles de la cita</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Paciente</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{nombre_cliente}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Fecha</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{fecha}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Hora</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{hora}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Especialista</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;">{{especialista}}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:#e2e8f0;"></td></tr></table></td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="vertical-align:middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:middle;padding-right:10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                  <td style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#1e3a8a);border-radius:8px;text-align:center;vertical-align:middle;">
+                    <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                  </td></tr></table></td>
+                <td style="vertical-align:middle;"><p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Notificación interna — no responder</p></td>
+              </tr></table>
+            </td>
+            <td align="right" style="vertical-align:middle;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-top:20px;">
+        <tr><td align="center" style="padding:0 20px;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#94a3b8;line-height:1.7;text-align:center;">Este correo es una notificación automática interna de Novagendas. No responder.</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "cita-cancelada-cliente": {
+    subject: "Tu cita en {{negocio}} fue cancelada",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Cita cancelada — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Tu cita en {{negocio}} del {{fecha}} fue cancelada.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Plataforma de Agendamiento</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#dc2626 0%,#b91c1c 60%,#7f1d1d 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">Plataforma Profesional de Agendamiento</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;"><tr>
+            <td style="width:36px;height:2px;background:rgba(255,255,255,0.2);border-radius:1px;"></td><td style="width:8px;"></td>
+            <td style="width:10px;height:6px;background:rgba(255,255,255,0.5);border-radius:3px;"></td><td style="width:8px;"></td>
+            <td style="width:36px;height:2px;background:rgba(255,255,255,0.2);border-radius:1px;"></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #fee2e2;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Tu cita fue cancelada</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Hola, <strong style="color:#0f172a;">{{nombre_cliente}}</strong>. Te informamos que tu cita en <strong style="color:#dc2626;font-weight:700;">{{negocio}}</strong> ha sido cancelada.</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fef2f2;border-radius:14px;border:1px solid #fecaca;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:0.08em;">Cita cancelada</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Fecha</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{fecha}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Hora</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;">{{hora}}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;">
+            <tr><td style="padding:16px 20px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:top;padding-right:12px;padding-top:1px;width:26px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                </td>
+                <td>
+                  <p style="margin:0 0 3px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:700;color:#1e40af;line-height:1.4;">¿Deseas reagendar?</p>
+                  <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;color:#1d4ed8;font-weight:500;line-height:1.6;">Contáctanos para agendar una nueva cita en el horario que mejor te convenga.</p>
+                </td>
+              </tr></table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:#e2e8f0;"></td></tr></table></td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="vertical-align:middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:middle;padding-right:10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                  <td style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#1e3a8a);border-radius:8px;text-align:center;vertical-align:middle;">
+                    <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                  </td></tr></table></td>
+                <td style="vertical-align:middle;"><p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Para negocios de salud y bienestar</p></td>
+              </tr></table>
+            </td>
+            <td align="right" style="vertical-align:middle;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-top:20px;">
+        <tr><td align="center" style="padding:0 20px;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#94a3b8;line-height:1.7;text-align:center;">Este correo fue enviado desde una dirección no monitoreada. Por favor no respondas a este mensaje.</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "cita-reprogramada": {
+    subject: "Tu cita en {{negocio}} fue reprogramada — {{fecha_nueva}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Cita reprogramada — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Tu cita en {{negocio}} fue reprogramada para el {{fecha_nueva}}.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Plataforma de Agendamiento</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#d97706 0%,#b45309 60%,#78350f 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">Plataforma Profesional de Agendamiento</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;"><tr>
+            <td style="width:36px;height:2px;background:rgba(255,255,255,0.2);border-radius:1px;"></td><td style="width:8px;"></td>
+            <td style="width:10px;height:6px;background:rgba(255,255,255,0.5);border-radius:3px;"></td><td style="width:8px;"></td>
+            <td style="width:36px;height:2px;background:rgba(255,255,255,0.2);border-radius:1px;"></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #fed7aa;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Tu cita fue reprogramada</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Hola, <strong style="color:#0f172a;">{{nombre_cliente}}</strong>. Tu cita en <strong style="color:#d97706;font-weight:700;">{{negocio}}</strong> ha sido actualizada. Aquí están los nuevos detalles:</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fffbeb;border-radius:14px;border:1px solid #fde68a;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:0.08em;">Nueva fecha y hora</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Fecha</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{fecha_nueva}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Hora</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;">{{hora_nueva}}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;">
+            <tr><td style="padding:16px 20px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:top;padding-right:12px;padding-top:1px;width:26px;">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                  </svg>
+                </td>
+                <td>
+                  <p style="margin:0 0 3px;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;font-weight:700;color:#1e40af;line-height:1.4;">Recuerda para tu cita</p>
+                  <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12.5px;color:#1d4ed8;font-weight:500;line-height:1.6;">Por favor llega con 10 minutos de anticipación. Si necesitas cancelar, contáctanos con al menos 24 horas de anticipación.</p>
+                </td>
+              </tr></table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:#e2e8f0;"></td></tr></table></td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="vertical-align:middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:middle;padding-right:10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                  <td style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#1e3a8a);border-radius:8px;text-align:center;vertical-align:middle;">
+                    <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                  </td></tr></table></td>
+                <td style="vertical-align:middle;"><p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Para negocios de salud y bienestar</p></td>
+              </tr></table>
+            </td>
+            <td align="right" style="vertical-align:middle;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-top:20px;">
+        <tr><td align="center" style="padding:0 20px;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#94a3b8;line-height:1.7;text-align:center;">Este correo fue enviado desde una dirección no monitoreada. Por favor no respondas a este mensaje.</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "confirmacion-pago": {
+    subject: "Confirmación de pago — {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Confirmación de pago — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Tu pago en {{negocio}} por {{monto}} fue registrado exitosamente.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Plataforma de Agendamiento</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#065f46 0%,#047857 60%,#064e3b 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">Plataforma Profesional de Agendamiento</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;"><tr>
+            <td style="width:36px;height:2px;background:rgba(255,255,255,0.2);border-radius:1px;"></td><td style="width:8px;"></td>
+            <td style="width:10px;height:6px;background:rgba(255,255,255,0.5);border-radius:3px;"></td><td style="width:8px;"></td>
+            <td style="width:36px;height:2px;background:rgba(255,255,255,0.2);border-radius:1px;"></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #d1fae5;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">¡Pago recibido!</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Hola, <strong style="color:#0f172a;">{{nombre_cliente}}</strong>. Hemos registrado exitosamente tu pago en <strong style="color:#047857;font-weight:700;">{{negocio}}</strong>.</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ecfdf5;border-radius:14px;border:1px solid #a7f3d0;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#047857;text-transform:uppercase;letter-spacing:0.08em;">Detalle del pago</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Monto pagado</td><td style="font-family:Helvetica,Arial,sans-serif;color:#047857;font-size:16px;font-weight:800;padding-bottom:10px;">{{monto}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Método de pago</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;">{{metodo}}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:#e2e8f0;"></td></tr></table></td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="vertical-align:middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:middle;padding-right:10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                  <td style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#1e3a8a);border-radius:8px;text-align:center;vertical-align:middle;">
+                    <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                  </td></tr></table></td>
+                <td style="vertical-align:middle;"><p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Para negocios de salud y bienestar</p></td>
+              </tr></table>
+            </td>
+            <td align="right" style="vertical-align:middle;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-top:20px;">
+        <tr><td align="center" style="padding:0 20px;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#94a3b8;line-height:1.7;text-align:center;">Este correo fue enviado desde una dirección no monitoreada. Por favor no respondas a este mensaje.</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "pago-registrado-admin": {
+    subject: "Nuevo pago registrado — {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Nuevo pago registrado — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Se registró un nuevo pago en {{negocio}} de {{nombre_cliente}} por {{monto}}.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Notificación interna</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#1e40af 0%,#1e3a8a 60%,#172554 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">Actividad financiera del negocio</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px auto 0;"><tr>
+            <td style="width:36px;height:2px;background:rgba(139,92,246,0.35);border-radius:1px;"></td><td style="width:8px;"></td>
+            <td style="width:10px;height:6px;background:#8b5cf6;border-radius:3px;"></td><td style="width:8px;"></td>
+            <td style="width:36px;height:2px;background:rgba(139,92,246,0.35);border-radius:1px;"></td>
+          </tr></table>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #e2e8f0;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Nuevo pago registrado</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Se registró un nuevo pago en <strong style="color:#1e40af;font-weight:700;">{{negocio}}</strong>.</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.08em;">Detalle del pago</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Paciente</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{nombre_cliente}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Monto</td><td style="font-family:Helvetica,Arial,sans-serif;color:#1e40af;font-size:16px;font-weight:800;padding-bottom:10px;">{{monto}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Método</td><td style="font-family:Helvetica,Arial,sans-serif;color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{metodo}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#64748b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Estado</td><td style="font-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:{{estado_color}};">{{estado}}</td></tr>
+              </table>
+              <p style="margin:10px 0 0;font-family:Helvetica,Arial,sans-serif;font-size:13px;color:#d97706;font-weight:600;">{{monto_pendiente}}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="height:1px;background:#e2e8f0;"></td></tr></table></td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="vertical-align:middle;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                <td style="vertical-align:middle;padding-right:10px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+                  <td style="width:30px;height:30px;background:linear-gradient(135deg,#1e40af,#1e3a8a);border-radius:8px;text-align:center;vertical-align:middle;">
+                    <span style="font-family:Helvetica,Arial,sans-serif;font-size:10px;font-weight:900;color:#8b5cf6;letter-spacing:-0.02em;line-height:30px;display:block;">NA</span>
+                  </td></tr></table></td>
+                <td style="vertical-align:middle;"><p style="margin:0 0 2px;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Notificación interna — no responder</p></td>
+              </tr></table>
+            </td>
+            <td align="right" style="vertical-align:middle;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;font-weight:500;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-top:20px;">
+        <tr><td align="center" style="padding:0 20px;"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11px;color:#94a3b8;line-height:1.7;text-align:center;">Este correo es una notificación automática interna de Novagendas. No responder.</p></td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "pago-parcial-cliente": {
+    subject: "Pago parcial registrado — {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Pago parcial — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Hola {{nombre_cliente}}, recibimos tu pago parcial de {{monto_pagado}}. Saldo pendiente: {{monto_pendiente}}.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Confirmación de Pago</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#b45309 0%,#92400e 60%,#78350f 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">{{negocio}}</p>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #e2e8f0;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Pago parcial registrado</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Hola <strong>{{nombre_cliente}}</strong>, recibimos tu pago. Aún queda un saldo pendiente para completar el servicio.</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fef3c7;border-radius:14px;border:1px solid #fcd34d;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:0.08em;">Detalle del pago</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#78350f;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#1c1917;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#78350f;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Total servicio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#1c1917;font-size:14px;font-weight:700;padding-bottom:10px;">{{monto_total}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#78350f;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Pagado ahora</td><td style="font-family:Helvetica,Arial,sans-serif;color:#059669;font-size:15px;font-weight:800;padding-bottom:10px;">{{monto_pagado}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#78350f;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Método</td><td style="font-family:Helvetica,Arial,sans-serif;color:#1c1917;font-size:14px;font-weight:700;padding-bottom:10px;">{{metodo}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#78350f;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:600;">Saldo pendiente</td><td style="font-family:Helvetica,Arial,sans-serif;color:#b45309;font-size:16px;font-weight:800;">{{monto_pendiente}}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#fef9c3;border-radius:10px;padding:14px 18px;">
+            <tr><td><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:13px;color:#713f12;line-height:1.6;">Por favor acércate a <strong>{{negocio}}</strong> para cancelar el saldo restante antes de tu próxima cita.</p></td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Correo automático — no responder</p></td>
+            <td align="right"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "abono-registrado": {
+    subject: "Abono registrado en {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" /><meta name="color-scheme" content="light" />
+  <title>Abono registrado — {{negocio}}</title>
+  <style>a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;}#MessageViewBody a{color:inherit;text-decoration:none;}</style>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px 56px;">
+    <tr><td align="center">
+      <div style="display:none;max-height:0;overflow:hidden;color:#f1f5f9;">Hola {{nombre_cliente}}, se registró un abono de {{monto}} en {{negocio}}. Estará disponible para tus citas.&nbsp;&#8204;&nbsp;&#8204;</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;margin-bottom:18px;">
+        <tr><td align="center"><span style="font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.12em;">Novagendas &nbsp;·&nbsp; Confirmación de Abono</span></td></tr>
+      </table>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;box-shadow:0 8px 48px rgba(15,23,42,0.13),0 2px 8px rgba(15,23,42,0.06);">
+        <tr><td style="background:linear-gradient(145deg,#065f46 0%,#064e3b 60%,#022c22 100%);padding:48px 40px 56px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 22px;"><tr>
+            <td style="width:80px;height:80px;background:#ffffff;border-radius:20px;text-align:center;vertical-align:middle;box-shadow:0 4px 24px rgba(0,0,0,0.28);">
+              <img src="https://aulddrljywoigivxugqf.supabase.co/storage/v1/object/public/Imagen%20logo/logoclaro.jpeg" alt="Novagendas" width="62" style="display:block;width:62px;height:62px;border-radius:14px;object-fit:cover;margin:9px auto;" />
+            </td></tr></table>
+          <h1 style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.03em;line-height:1.15;">Novagendas</h1>
+          <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:0.1em;text-transform:uppercase;">{{negocio}}</p>
+        </td></tr>
+        <tr><td style="background:#ffffff;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:-30px auto 0;"><tr>
+            <td style="width:58px;height:58px;background:#ffffff;border:3px solid #e2e8f0;border-radius:50%;text-align:center;vertical-align:middle;box-shadow:0 4px 18px rgba(15,23,42,0.12);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </td></tr></table>
+        </td></tr>
+        <tr><td style="padding:40px 44px 16px;">
+          <h2 style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;line-height:1.3;">Abono registrado exitosamente</h2>
+          <p style="margin:0 0 28px;font-family:Helvetica,Arial,sans-serif;font-size:15px;color:#475569;line-height:1.75;">Hola <strong>{{nombre_cliente}}</strong>, tu abono ha sido registrado. Quedará disponible como saldo a favor para ser aplicado en tus próximas citas.</p>
+        </td></tr>
+        <tr><td style="padding:0 44px 36px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#ecfdf5;border-radius:14px;border:1px solid #6ee7b7;">
+            <tr><td style="padding:20px 24px;">
+              <p style="margin:0 0 14px;font-family:Helvetica,Arial,sans-serif;font-size:11px;font-weight:700;color:#065f46;text-transform:uppercase;letter-spacing:0.08em;">Detalle del abono</p>
+              <table cellpadding="0" cellspacing="0" width="100%">
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#064e3b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Saldo a favor</td><td style="font-family:Helvetica,Arial,sans-serif;color:#059669;font-size:20px;font-weight:800;padding-bottom:10px;">{{monto}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#064e3b;font-size:13px;padding-bottom:10px;padding-right:20px;white-space:nowrap;font-weight:500;">Método</td><td style="font-family:Helvetica,Arial,sans-serif;color:#1c1917;font-size:14px;font-weight:700;padding-bottom:10px;">{{metodo}}</td></tr>
+                <tr><td style="font-family:Helvetica,Arial,sans-serif;color:#064e3b;font-size:13px;padding-right:20px;white-space:nowrap;font-weight:500;">Negocio</td><td style="font-family:Helvetica,Arial,sans-serif;color:#1c1917;font-size:14px;font-weight:700;">{{negocio}}</td></tr>
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="background:#f8fafc;border-top:1px solid #e2e8f0;padding:22px 44px 26px;border-radius:0 0 24px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a;">Novagendas</p><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">Correo automático — no responder</p></td>
+            <td align="right"><p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:11.5px;color:#94a3b8;">© ${new Date().getFullYear()} Novagendas</p></td>
+          </tr></table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "recordatorio-cita": {
+    subject: "Recordatorio: Tienes una cita mañana en {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recordatorio de cita — {{negocio}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;padding:48px 44px;">
+        <tr><td style="text-align:center;padding-bottom:24px;">
+          <p style="margin:0;font-size:40px;">🔔</p>
+          <h2 style="margin:16px 0 8px;font-size:22px;font-weight:800;color:#0f172a;">Recordatorio de cita</h2>
+          <p style="margin:0;font-size:15px;color:#475569;line-height:1.75;">Hola, <strong>{{nombre_cliente}}</strong>. Mañana tienes una cita en <strong style="color:#1e40af;">{{negocio}}</strong>.</p>
+        </td></tr>
+        <tr><td style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;padding:20px 24px;">
+          <table cellpadding="0" cellspacing="0" width="100%">
+            <tr><td style="color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;font-weight:500;">Servicio</td><td style="color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{servicio}}</td></tr>
+            <tr><td style="color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;font-weight:500;">Fecha</td><td style="color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{fecha}}</td></tr>
+            <tr><td style="color:#64748b;font-size:13px;padding-bottom:10px;padding-right:20px;font-weight:500;">Hora</td><td style="color:#0f172a;font-size:14px;font-weight:700;padding-bottom:10px;">{{hora}}</td></tr>
+            <tr><td style="color:#64748b;font-size:13px;padding-right:20px;font-weight:500;">Especialista</td><td style="color:#0f172a;font-size:14px;font-weight:700;">{{especialista}}</td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="padding-top:20px;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">© ${new Date().getFullYear()} Novagendas — Correo automático, no responder.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
+  "resumen-diario-agenda": {
+    subject: "Agenda del día — {{fecha}} · {{negocio}}",
+    html: `<!DOCTYPE html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agenda del día — {{negocio}}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;background:#ffffff;border-radius:24px;overflow:hidden;padding:48px 44px;">
+        <tr><td style="text-align:center;padding-bottom:24px;">
+          <p style="margin:0;font-size:40px;">📅</p>
+          <h2 style="margin:16px 0 8px;font-size:22px;font-weight:800;color:#0f172a;">Agenda de hoy</h2>
+          <p style="margin:0;font-size:15px;color:#475569;">Resumen de citas para el <strong>{{fecha}}</strong> en <strong style="color:#1e40af;">{{negocio}}</strong>.</p>
+        </td></tr>
+        <tr><td style="background:#eff6ff;border-radius:14px;border:1px solid #bfdbfe;padding:20px 24px;">
+          {{lista_citas}}
+        </td></tr>
+        <tr><td style="padding-top:20px;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">© ${new Date().getFullYear()} Novagendas — Correo automático, no responder.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  },
+
   "bot-cliente-registrado": {
     subject: "Bot WhatsApp — Nuevo cliente registrado · {{negocio}}",
     html: `<!DOCTYPE html>

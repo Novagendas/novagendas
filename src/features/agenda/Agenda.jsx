@@ -4,6 +4,7 @@ import SelectableInput from '../../components/inputs/SelectableInput';
 import SuggestionInput from '../../components/SuggestionInput';
 import { commonTerms } from '../../components/SuggestionDatalist';
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent, isCalendarConnected, clearCalendarAuth, connectCalendar } from '../../services/googleCalendar';
+import { sendEmail, getAdminEmails } from '../../services/emailService';
 import {
   addDays,
   startOf,
@@ -337,7 +338,12 @@ export default function Agenda({ user, tenant }) {
     if (!appt) return;
     try {
       const gcalEventId = appt.gcalEventId;
-      const clientName = clients.find(c => c.idcliente === appt.clientId)?.nombre || 'Paciente';
+      const client = clients.find(c => c.idcliente === appt.clientId);
+      const clientName = client?.nombre || 'Paciente';
+      const apptService = services.find(s => s.idservicios === appt.serviceId);
+      const fechaLabel = appt.date
+        ? new Date(appt.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : '';
 
       const { error } = await supabase.from('cita')
         .update({ deleted_at: new Date().toISOString() })
@@ -351,6 +357,16 @@ export default function Agenda({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
+
+      if (client?.email) {
+        sendEmail('cita-cancelada-cliente', client.email, {
+          nombre_cliente: `${client.nombre} ${client.apellido || ''}`.trim(),
+          servicio: apptService?.nombre || 'Servicio',
+          fecha: fechaLabel,
+          hora: appt.time || '',
+          negocio: tenant?.name || 'el negocio',
+        });
+      }
 
       if (gcalEventId) {
         try {
@@ -440,6 +456,7 @@ export default function Agenda({ user, tenant }) {
 
   /* ------ Drag state ------ */
   const dragging = useRef(null);
+  const originalAppt = useRef(null);
 
   /* ── Navigation ── */
   const goToday = () => setPivot(new Date());
@@ -497,6 +514,7 @@ export default function Agenda({ user, tenant }) {
 
   const startEdit = (appt) => {
     setEditId(appt.id);
+    originalAppt.current = { date: appt.date, time: appt.time, serviceIds: appt.serviceIds || [] };
     setForm({
       ...emptyForm(),
       clientId: appt.clientId,
@@ -699,6 +717,65 @@ export default function Agenda({ user, tenant }) {
       showSnack(editId ? 'Cita actualizada correctamente' : 'Cita agendada correctamente');
 
       const client = clients.find(c => c.idcliente === payload.idcliente);
+      const selectedServiceNames = selectedServices.map(s => s.nombre).join(', ');
+      const specialist = specialists.find(s => s.idusuario === parseInt(form.specialistId));
+      const fechaLabel = form.date
+        ? new Date(form.date + 'T12:00:00').toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : '';
+
+      if (editId) {
+        if (form.status === 'Cancelada') {
+          if (client?.email) {
+            sendEmail('cita-cancelada-cliente', client.email, {
+              nombre_cliente: `${client.nombre} ${client.apellido || ''}`.trim(),
+              servicio: selectedServiceNames,
+              fecha: fechaLabel,
+              hora: form.time,
+              negocio: tenant?.name || 'el negocio',
+            });
+          }
+        } else {
+          const orig = originalAppt.current;
+          const scheduleChanged = orig && (
+            form.date !== orig.date ||
+            form.time !== orig.time ||
+            JSON.stringify([...form.serviceIds].sort()) !== JSON.stringify([...orig.serviceIds].sort())
+          );
+          if (scheduleChanged && client?.email) {
+            sendEmail('cita-reprogramada', client.email, {
+              nombre_cliente: `${client.nombre} ${client.apellido || ''}`.trim(),
+              servicio: selectedServiceNames,
+              fecha_nueva: fechaLabel,
+              hora_nueva: form.time,
+              negocio: tenant?.name || 'el negocio',
+            });
+          }
+        }
+      } else {
+        if (client?.email) {
+          sendEmail('cita-confirmada', client.email, {
+            nombre_cliente: `${client.nombre} ${client.apellido || ''}`.trim(),
+            servicio: selectedServiceNames,
+            fecha: fechaLabel,
+            hora: form.time,
+            especialista: specialist ? `${specialist.nombre} ${specialist.apellido || ''}`.trim() : 'Por asignar',
+            negocio: tenant?.name || 'el negocio',
+          });
+        }
+        getAdminEmails(tenant.id).then(adminEmails => {
+          adminEmails.forEach(adminEmail => {
+            sendEmail('nueva-cita-agendada', adminEmail, {
+              nombre_cliente: `${client?.nombre || ''} ${client?.apellido || ''}`.trim(),
+              servicio: selectedServiceNames,
+              fecha: fechaLabel,
+              hora: form.time,
+              especialista: specialist ? `${specialist.nombre} ${specialist.apellido || ''}`.trim() : 'Por asignar',
+              negocio: tenant?.name || 'el negocio',
+            });
+          });
+        });
+      }
+
       await insertLog({
         accion: editId ? 'UPDATE' : 'CREATE',
         entidad: 'Cita',

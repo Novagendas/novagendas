@@ -1,4 +1,5 @@
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
+import { sendEmail, getAdminEmails } from '../../services/emailService';
 import { useState, useEffect, useCallback } from 'react';
 import { fmt } from '../../utils/formatters';
 import { parseDate } from '../../utils/dateHelpers';
@@ -25,6 +26,8 @@ export default function Payments({ user, tenant }) {
   const [showAbonoModal, setShowAbonoModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailPayment, setDetailPayment] = useState(null);
+  const [paymentHistory, setPaymentHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [detailAbono, setDetailAbono] = useState(null);
   const [form, setForm] = useState({ clientId: '', serviceId: '', amount: '', method: 'Efectivo', note: '' });
   const [abonoForm, setAbonoForm] = useState({ clientId: '', monto: '', method: 'Efectivo', note: '', serviceId: '' });
@@ -57,6 +60,7 @@ export default function Payments({ user, tenant }) {
         .select('*, cliente(nombre, apellido, cedula), servicios(nombre, precio)')
         .eq('idnegocios', tenant.id)
         .is('deleted_at', null)
+        .is('pago_padre_id', null)
         .order('idpagos', { ascending: false });
 
       if (!error) setPayments(payData || []);
@@ -83,6 +87,18 @@ export default function Payments({ user, tenant }) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (!detailPayment) { setPaymentHistory([]); return; }
+    setHistoryLoading(true);
+    supabase
+      .from('pagos')
+      .select('*, metodopago(tipo)')
+      .eq('pago_padre_id', detailPayment.idpagos)
+      .is('deleted_at', null)
+      .order('idpagos', { ascending: true })
+      .then(({ data }) => { setPaymentHistory(data || []); setHistoryLoading(false); });
+  }, [detailPayment?.idpagos]);
 
   const handleServiceChange = (serviceId) => {
     const svc = services.find(s => s.idservicios === parseInt(serviceId));
@@ -119,12 +135,55 @@ export default function Payments({ user, tenant }) {
 
     if (!error) {
       const client = clients.find(c => c.idcliente === parseInt(form.clientId));
+      const svc = form.serviceId ? services.find(s => s.idservicios === parseInt(form.serviceId)) : null;
+      const montoFmt = `$${payload.monto.toLocaleString('es-CO')} COP`;
+      const montoTotalFmt = svcPrice > 0 ? `$${svcPrice.toLocaleString('es-CO')} COP` : '';
+      const montoPendienteFmt = isPartial ? `Saldo pendiente: $${(svcPrice - amount).toLocaleString('es-CO')} COP` : '';
+      const clientName = `${client?.nombre || ''} ${client?.apellido || ''}`.trim();
+
       insertLog({
         accion: 'CREATE',
         entidad: 'Pago',
-        descripcion: `Se registró pago de ${fmt(payload.monto)} de ${client?.nombre || 'Paciente'} vía ${form.method}`,
+        descripcion: `Se registró pago de ${fmt(payload.monto)} de ${client?.nombre || 'Paciente'} vía ${form.method}${isPartial ? ` — saldo pendiente: ${fmt(svcPrice - amount)}` : ''}`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
+      });
+
+      if (client?.email) {
+        if (isPartial) {
+          sendEmail('pago-parcial-cliente', client.email, {
+            nombre_cliente: clientName,
+            servicio: svc?.nombre || 'Servicio',
+            monto_pagado: montoFmt,
+            monto_total: montoTotalFmt,
+            monto_pendiente: `$${(svcPrice - amount).toLocaleString('es-CO')} COP`,
+            metodo: form.method,
+            negocio: tenant?.name || 'el negocio',
+          });
+        } else {
+          sendEmail('confirmacion-pago', client.email, {
+            nombre_cliente: clientName,
+            servicio: svc?.nombre || 'Servicio',
+            monto: montoFmt,
+            metodo: form.method,
+            negocio: tenant?.name || 'el negocio',
+          });
+        }
+      }
+
+      getAdminEmails(tenant.id).then(adminEmails => {
+        adminEmails.forEach(adminEmail => {
+          sendEmail('pago-registrado-admin', adminEmail, {
+            nombre_cliente: clientName,
+            servicio: svc?.nombre || 'Servicio',
+            monto: montoFmt,
+            metodo: form.method,
+            negocio: tenant?.name || 'el negocio',
+            estado: isPartial ? 'Pago Parcial' : 'Pagado',
+            estado_color: isPartial ? '#d97706' : '#16a34a',
+            monto_pendiente: montoPendienteFmt,
+          });
+        });
       });
 
       showSnack('Pago registrado correctamente');
@@ -172,21 +231,78 @@ export default function Payments({ user, tenant }) {
     const nuevoSaldo = Number(pagarModal.monto_total) - nuevoMonto;
     const nuevoEstado = nuevoSaldo <= 0 ? 'Pagado' : 'Parcial';
 
-    const { error } = await supabase
+    const updateError = await supabase
       .from('pagos')
       .update({ monto: nuevoMonto, estado: nuevoEstado, idmetodopago: meth?.idmetodopago || pagarModal.idmetodopago })
-      .eq('idpagos', pagarModal.idpagos);
+      .eq('idpagos', pagarModal.idpagos)
+      .then(r => r.error);
 
-    if (!error) {
+    const childPayload = {
+      pago_padre_id: pagarModal.idpagos,
+      idcliente: pagarModal.idcliente,
+      idservicios: pagarModal.idservicios,
+      idmetodopago: meth?.idmetodopago || pagarModal.idmetodopago,
+      monto: montoIngresado,
+      monto_total: null,
+      estado: nuevoEstado,
+      observacion: `Cuota adicional — pago #${pagarModal.idpagos}`,
+      idnegocios: tenant.id,
+      fecha: new Date().toISOString(),
+    };
+    await supabase.from('pagos').insert([childPayload]);
+
+    if (!updateError) {
       const client = clients.find(c => c.idcliente === pagarModal.idcliente);
+      const svcForEmail = pagarModal.servicios;
+      const clientName = `${client?.nombre || ''} ${client?.apellido || ''}`.trim();
+      const montoFmt = `$${montoIngresado.toLocaleString('es-CO')} COP`;
+
       await insertLog({
         accion: 'UPDATE',
         entidad: 'Pago',
-        descripcion: `Abono de ${fmt(montoIngresado)} al pago #${pagarModal.idpagos} de ${client?.nombre || 'Paciente'}. ${nuevoEstado === 'Pagado' ? 'Pago completado.' : `Saldo restante: ${fmt(nuevoSaldo)}`}`,
+        descripcion: `Cuota de ${fmt(montoIngresado)} al pago #${pagarModal.idpagos} de ${client?.nombre || 'Paciente'}. ${nuevoEstado === 'Pagado' ? 'Pago completado.' : `Saldo restante: ${fmt(nuevoSaldo)}`}`,
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id,
       });
-      showSnack(nuevoEstado === 'Pagado' ? 'Pago completado correctamente' : 'Abono registrado, sigue con saldo pendiente');
+
+      if (client?.email) {
+        if (nuevoEstado === 'Pagado') {
+          sendEmail('confirmacion-pago', client.email, {
+            nombre_cliente: clientName,
+            servicio: svcForEmail?.nombre || 'Servicio',
+            monto: `$${nuevoMonto.toLocaleString('es-CO')} COP`,
+            metodo: pagarForm.method,
+            negocio: tenant?.name || 'el negocio',
+          });
+        } else {
+          sendEmail('pago-parcial-cliente', client.email, {
+            nombre_cliente: clientName,
+            servicio: svcForEmail?.nombre || 'Servicio',
+            monto_pagado: montoFmt,
+            monto_total: `$${Number(pagarModal.monto_total || 0).toLocaleString('es-CO')} COP`,
+            monto_pendiente: `$${nuevoSaldo.toLocaleString('es-CO')} COP`,
+            metodo: pagarForm.method,
+            negocio: tenant?.name || 'el negocio',
+          });
+        }
+      }
+
+      getAdminEmails(tenant.id).then(adminEmails => {
+        adminEmails.forEach(adminEmail => {
+          sendEmail('pago-registrado-admin', adminEmail, {
+            nombre_cliente: clientName,
+            servicio: svcForEmail?.nombre || 'Servicio',
+            monto: montoFmt,
+            metodo: pagarForm.method,
+            negocio: tenant?.name || 'el negocio',
+            estado: nuevoEstado === 'Pagado' ? 'Pagado' : 'Pago Parcial',
+            estado_color: nuevoEstado === 'Pagado' ? '#16a34a' : '#d97706',
+            monto_pendiente: nuevoEstado === 'Pagado' ? '' : `Saldo pendiente: $${nuevoSaldo.toLocaleString('es-CO')} COP`,
+          });
+        });
+      });
+
+      showSnack(nuevoEstado === 'Pagado' ? 'Pago completado correctamente' : 'Cuota registrada, sigue con saldo pendiente');
       setPagarModal(null);
       setPagarForm({ monto: '', method: methods[0]?.tipo || 'Efectivo' });
       fetchData();
@@ -226,6 +342,16 @@ export default function Payments({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id,
       });
+
+      if (client?.email) {
+        sendEmail('abono-registrado', client.email, {
+          nombre_cliente: `${client.nombre} ${client.apellido || ''}`.trim(),
+          monto: `$${monto.toLocaleString('es-CO')} COP`,
+          metodo: abonoForm.method,
+          negocio: tenant?.name || 'el negocio',
+        });
+      }
+
       showSnack('Abono registrado correctamente');
       setAbonoForm({ clientId: '', monto: '', method: methods[0]?.tipo || 'Efectivo', note: '', serviceId: '' });
       setShowAbonoModal(false);
@@ -716,7 +842,7 @@ export default function Payments({ user, tenant }) {
                   <span className="payment-detail-value">{detailPayment.client?.nombre} {detailPayment.client?.apellido}</span>
                 </div>
                 <div className="payment-detail-field">
-                  <span className="payment-detail-label">Fecha</span>
+                  <span className="payment-detail-label">Fecha inicial</span>
                   <span className="payment-detail-value">{detailPayment.fecha ? parseDate(detailPayment.fecha).toLocaleDateString('es-CO', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : '—'}</span>
                 </div>
                 <div className="payment-detail-field">
@@ -729,16 +855,57 @@ export default function Payments({ user, tenant }) {
                 </div>
               </div>
 
+              {/* ── Historial de cuotas ── */}
+              <div className="payment-detail-history">
+                <span className="payment-detail-label">Historial de pagos</span>
+                {historyLoading ? (
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Cargando historial...</p>
+                ) : (
+                  <div className="payment-history-timeline">
+                    {/* Pago inicial */}
+                    {(() => {
+                      const initialMonto = paymentHistory.length > 0
+                        ? detailPayment.monto - paymentHistory.reduce((s, c) => s + Number(c.monto), 0)
+                        : detailPayment.monto;
+                      return (
+                        <div className="payment-history-item payment-history-item--first">
+                          <div className="payment-history-dot payment-history-dot--first" />
+                          <div className="payment-history-content">
+                            <span className="payment-history-amount">{fmt(initialMonto)}</span>
+                            <span className="payment-history-meta">
+                              {detailPayment.fecha ? parseDate(detailPayment.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                              {detailPayment.meth?.tipo ? ` · ${detailPayment.meth.tipo}` : ''}
+                            </span>
+                            <span className="payment-history-tag">Pago inicial</span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    {/* Cuotas adicionales */}
+                    {paymentHistory.map((cuota, i) => (
+                      <div key={cuota.idpagos} className="payment-history-item">
+                        <div className="payment-history-dot" />
+                        <div className="payment-history-content">
+                          <span className="payment-history-amount">{fmt(cuota.monto)}</span>
+                          <span className="payment-history-meta">
+                            {cuota.fecha ? parseDate(cuota.fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                            {cuota.metodopago?.tipo ? ` · ${cuota.metodopago.tipo}` : ''}
+                          </span>
+                          <span className="payment-history-tag">Cuota {i + 2}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {paymentHistory.length === 0 && (
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.5rem 0 0' }}>Sin cuotas adicionales registradas.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {detailPayment.observacion && (
                 <div className="payment-detail-notes">
                   <span className="payment-detail-label">Notas / Observaciones</span>
                   <p className="payment-detail-notes-text">{detailPayment.observacion}</p>
-                </div>
-              )}
-              {!detailPayment.observacion && (
-                <div className="payment-detail-notes payment-detail-notes--empty">
-                  <span className="payment-detail-label">Notas / Observaciones</span>
-                  <p className="payment-detail-notes-empty">Sin notas registradas.</p>
                 </div>
               )}
             </div>
