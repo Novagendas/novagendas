@@ -1,0 +1,47 @@
+.lp-sectores {
+  background: var(--lp-bg-alt);
+  border-top: 1px solid var(--lp-border);
+  border-bottom: 1px solid var(--lp-border);
+  padding: 3rem 0;
+}
+.lp-sectores-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lp-text-muted);
+  text-align: center;
+  margin-bottom: 1.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.lp-sectores-chips {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.lp-sector-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--lp-border);
+  border-radius: var(--lp-radius-pill);
+  padding: 8px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--lp-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.lp-sector-chip:hover {
+  border-color: var(--lp-blue-light);
+  box-shadow: 0 2px 8px rgba(0, 107, 255, 0.08);
+}
+.lp-sector-chip--highlight {
+  background: var(--lp-blue-bg);
+  border-color: rgba(0, 107, 255, 0.25);
+  color: var(--lp-blue);
+}
+
+@media (max-width: 480px) {
+  .lp-sector-chip { font-size: 0.8rem; padding: 6px 14px; }
+}

@@ -22,7 +22,7 @@ import Statistics from './features/statistics/Statistics';
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
 import BotConfig from './features/bot/BotConfig';
-import LandingPage from './features/landing/LandingPage';
+import LandingPage from './features/landing-page/index';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
 import { supabase, supabaseAnon, isDevEnvironment } from './Supabase/supabaseClient';

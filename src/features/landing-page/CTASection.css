@@ -1,0 +1,40 @@
+.lp-cta-section {
+  padding: 7rem 0;
+  background: #fff;
+  border-top: 1px solid var(--lp-border);
+}
+.lp-cta-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+.lp-cta-h2 {
+  font-family: var(--lp-font);
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--lp-navy);
+}
+.lp-cta-sub {
+  font-size: 1rem;
+  color: var(--lp-text-2);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 480px;
+}
+.lp-cta-btn {
+  font-size: 1.05rem !important;
+  padding: 14px 28px !important;
+  height: 50px !important;
+}
+
+@media (max-width: 768px) {
+  .lp-cta-section { padding: 5rem 0; }
+  .lp-cta-h2 { font-size: 2rem; }
+}
