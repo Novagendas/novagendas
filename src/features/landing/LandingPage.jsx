@@ -76,6 +76,7 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadedCount, setLoadedCount] = useState(0);
   const [hideHint, setHideHint] = useState(false);
+  const [threadIndex, setThreadIndex] = useState(0); // 0-3 hilo activo
 
   // Selector de paleta de diseño dinámico (para cumplir con "haz varias opciones de colores, que prime un azul")
   const [selectedPalette, setSelectedPalette] = useState(() => {
@@ -247,41 +248,48 @@ export default function LandingPage() {
   useEffect(() => {
     if (isLoading) return;
 
-    const heroEl   = heroRef.current;
-    const sectorsEl  = sectorsRef.current;
+    const heroEl = heroRef.current;
+    const sectorsEl = sectorsRef.current;
     const featuresEl = featuresRef.current;
 
     // Asegurar que el canvas muestra el frame 0 inicialmente
     drawFrame(0, 1);
 
     // ─── ESTADOS INICIALES ──────────────────────────────────────────────
-    gsap.set(heroEl,   { opacity: 1, y: 0, autoAlpha: 1 });
-    gsap.set(sectorsEl,  { opacity: 0, y: 30, autoAlpha: 0 });
+    gsap.set(heroEl, { opacity: 0, y: 0, autoAlpha: 0 });
+    gsap.set('.landing-canvas-wrapper', { opacity: 0 });
+    gsap.set(sectorsEl, { opacity: 0, y: 30, autoAlpha: 0 });
     gsap.set(featuresEl, { opacity: 0, y: 30, autoAlpha: 0 });
 
     // Hijos del Hero (para animación de entrada)
     gsap.set(heroEl.querySelectorAll('.title-line-inner'), { y: '105%' });
-    gsap.set(heroEl.querySelectorAll('.hero-tag'),         { opacity: 0, y: 20 });
-    gsap.set(heroEl.querySelector('.hero-subtitle'),       { opacity: 0, y: 20 });
-    gsap.set(heroEl.querySelectorAll('.hero-actions a'),   { opacity: 0, y: 18 });
-    gsap.set(heroEl.querySelectorAll('.premium-card'),     { opacity: 0, y: 24, scale: 0.97 });
+    gsap.set(heroEl.querySelectorAll('.hero-tag'), { opacity: 0, y: 20 });
+    gsap.set(heroEl.querySelector('.hero-subtitle'), { opacity: 0, y: 20 });
+    gsap.set(heroEl.querySelectorAll('.hero-actions a'), { opacity: 0, y: 18 });
+    gsap.set(heroEl.querySelectorAll('.premium-card'), { opacity: 0, y: 24, scale: 0.97 });
 
     // Hijos de Sectores (scrub-driven)
     gsap.set(sectorsEl.querySelectorAll('.title-line-inner'), { y: '105%' });
-    gsap.set(sectorsEl.querySelector('.section-subtitle'),    { opacity: 0, y: 22 });
-    gsap.set(sectorsEl.querySelectorAll('.sector-card'),      { opacity: 0, y: 44, scale: 0.97 });
+    gsap.set(sectorsEl.querySelector('.section-subtitle'), { opacity: 0, y: 22 });
+    gsap.set(sectorsEl.querySelectorAll('.sector-card'), { opacity: 0, y: 44, scale: 0.97 });
 
     // Hijos de Features (scrub-driven)
     gsap.set(featuresEl.querySelectorAll('.title-line-inner'), { y: '105%' });
-    gsap.set(featuresEl.querySelector('.section-subtitle'),    { opacity: 0, y: 22 });
-    gsap.set(featuresEl.querySelectorAll('.feature-card'),     { opacity: 0, y: 44, scale: 0.97 });
+    gsap.set(featuresEl.querySelector('.section-subtitle'), { opacity: 0, y: 22 });
+    gsap.set(featuresEl.querySelectorAll('.feature-card'), { opacity: 0, y: 44, scale: 0.97 });
 
     // ─── ANIMACIÓN DE ENTRADA DEL HERO (one-shot, sin scrub) ────────────
     const heroEntry = gsap.timeline({ delay: 0.5 });
     heroEntry
+      .to('.landing-canvas-wrapper', {
+        opacity: 1, duration: 1.5, ease: 'power2.out'
+      })
+      .to(heroEl, {
+        opacity: 1, autoAlpha: 1, duration: 1.2, ease: 'power2.out'
+      }, '-=1.2')
       .to(heroEl.querySelectorAll('.hero-tag'), {
         opacity: 1, y: 0, duration: 0.65, stagger: 0.14, ease: 'power3.out'
-      })
+      }, '-=0.8')
       .to(heroEl.querySelectorAll('.title-line-inner'), {
         y: '0%', duration: 1.05, stagger: 0.14, ease: 'power4.out'
       }, '-=0.35')
@@ -292,7 +300,8 @@ export default function LandingPage() {
         opacity: 1, y: 0, duration: 0.65, stagger: 0.1, ease: 'power3.out'
       }, '-=0.5')
       .to(heroEl.querySelectorAll('.premium-card'), {
-        opacity: 1, y: 0, scale: 1, duration: 0.75, stagger: 0.14, ease: 'power3.out'
+        opacity: 1, y: 0, scale: 1, duration: 0.75, stagger: 0.14, ease: 'power3.out',
+        clearProps: 'transform'
       }, '-=0.45');
 
     // ─── LENIS (smooth scroll) ────────────────────────────────────────────
@@ -322,26 +331,31 @@ export default function LandingPage() {
         start: 'top top',
         end: 'bottom bottom',
         scrub: 2.2,
+        // Snap suave a los puntos de hold real del timeline (duración total 35u)
+        // Hero hold: 0-2/35=0.057 | Sectores hold: 10/35=0.286 | Features hold: 22/35=0.629 | Fin: 1.0
         snap: {
           snapTo: (value, self) => {
-            const snapPoints = [0.0, 0.33, 0.61, 1.0];
-            const currentProgress = self.progress;
-            if (self.direction === 1) {
-              const nextPoint = snapPoints.find(p => p >= currentProgress - 0.02);
-              return nextPoint !== undefined ? nextPoint : 1.0;
-            } else {
-              const prevPoints = [...snapPoints].reverse();
-              const prevPoint = prevPoints.find(p => p <= currentProgress + 0.02);
-              return prevPoint !== undefined ? prevPoint : 0.0;
-            }
+            const snapPoints = [0.0, 0.286, 0.629, 1.0];
+            const p = self.progress;
+            // Zona de intención: sólo snappear si estamos dentro de ±4% del punto
+            const nearest = snapPoints.reduce((a, b) => Math.abs(b - p) < Math.abs(a - p) ? b : a);
+            if (Math.abs(nearest - p) < 0.04) return nearest;
+            return p; // fuera de zona → seguir scroll libre
           },
-          duration: { min: 1.2, max: 2.0 },
-          delay: 0.05,
+          duration: { min: 0.6, max: 1.2 },
+          delay: 0.08,
           ease: 'power2.inOut'
         },
         onUpdate: (self) => {
           if (self.progress > 0.015) setHideHint(true);
           else setHideHint(false);
+
+          // Actualizar hilo activo según progreso
+          const p = self.progress;
+          if (p < 0.143) setThreadIndex(0);       // Hero (0 → 2/35)
+          else if (p < 0.457) setThreadIndex(1);  // Sectores (2/35 → 16/35)
+          else if (p < 0.771) setThreadIndex(2);  // Features (16/35 → 27/35)
+          else setThreadIndex(3);                  // Final
         }
       }
     });
@@ -469,32 +483,29 @@ export default function LandingPage() {
   return (
     <div className={`landing-page-root palette-${selectedPalette}`}>
       {/* Pantalla de Carga Clara Premium */}
-      {isLoading && (
-        <div className={`landing-loader-overlay ${!isLoading ? 'fade-out' : ''}`}>
-          <div className="landing-loader-content">
-            <div className="landing-loader-logo-row">
-              <div className="landing-loader-dot" />
-              <h1 className="landing-loader-brand">Nova<span>gendas</span></h1>
+      <div className={`landing-loader-overlay ${!isLoading ? 'fade-out' : ''}`}>
+        <div className="landing-loader-content">
+          <div className="landing-loader-logo-row">
+            <div className="landing-loader-dot" />
+            <h1 className="landing-loader-brand">Nova<span>gendas</span></h1>
+          </div>
+          <p className="landing-loader-tagline">
+            Preparando tu plataforma<em>...</em>
+          </p>
+          <div className="landing-loader-progress-wrapper">
+            <div className="landing-loader-bar-outer">
+              <div
+                className="landing-loader-bar-inner"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
-            <p className="landing-loader-tagline">
-              Preparando tu plataforma<em>...</em>
-            </p>
-            <div className="landing-loader-progress-wrapper">
-              <div className="landing-loader-bar-outer">
-                <div
-                  className="landing-loader-bar-inner"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <span className="landing-loader-percentage">{progressPercent}%</span>
-            </div>
+            <span className="landing-loader-percentage">{progressPercent}%</span>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Experiencia Cinemática */}
-      {!isLoading && (
-        <>
+      <>
           {/* Header Fijo Premium */}
           <header className="landing-header">
             <a href="/" className="landing-header-brand">
@@ -717,6 +728,17 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Indicador de Progreso por Hilo (4 puntos) */}
+          <div className={`thread-progress-indicator ${hideHint ? 'visible' : ''}`} aria-label="Progreso de sección">
+            {['Inicio', 'Sectores', 'Funciones', 'Detalle'].map((label, i) => (
+              <div
+                key={i}
+                className={`thread-dot ${i === threadIndex ? 'active' : ''} ${i < threadIndex ? 'done' : ''}`}
+                title={label}
+              />
+            ))}
+          </div>
+
           {/* Espaciador de Scroll Físico */}
           <div className="landing-scroll-spacer" />
 
@@ -913,7 +935,6 @@ export default function LandingPage() {
             </div>
           </div>
         </>
-      )}
     </div>
   );
 }
