@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../Supabase/supabaseClient';
+import { parseDate } from '../../utils/dateHelpers';
 import './AuditLogs.css';
 
 /* ── Badge de acción ── */
@@ -87,9 +88,10 @@ export default function LogsView({ tenant, user }) {
               ) : logs.map(log => (
                 <tr key={log.idlog}>
                   <td className="audit-date-cell">
-                    {new Date(log.fecha).toLocaleString('es-CO', {
+                    {parseDate(log.fecha).toLocaleString('es-CO', {
                       day: '2-digit', month: '2-digit', year: 'numeric',
-                      hour: '2-digit', minute: '2-digit'
+                      hour: '2-digit', minute: '2-digit',
+                      timeZone: 'America/Bogota'
                     })}
                   </td>
                   <td>

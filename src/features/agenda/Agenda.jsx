@@ -399,11 +399,11 @@ export default function Agenda({ user, tenant }) {
 
     const statusColors = {
       Confirmada: '#16a34a', 'En Espera': '#a16207',
-      Cancelada: '#dc2626', Completada: '#7c3aed'
+      Cancelada: '#dc2626', Completada: '#7c3aed', 'No Asistió': '#ea580c'
     };
     const statusBg = {
       Confirmada: '#dcfce7', 'En Espera': '#fef9c3',
-      Cancelada: '#fee2e2', Completada: '#ede9fe'
+      Cancelada: '#fee2e2', Completada: '#ede9fe', 'No Asistió': '#ffedd5'
     };
 
     const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
@@ -614,12 +614,22 @@ export default function Agenda({ user, tenant }) {
       }
 
       let appointmentId = editId;
-      const STATUS_ID_MAP = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4 };
+      const STATUS_ID_MAP = { 'Confirmada': 1, 'En Espera': 2, 'Cancelada': 3, 'Completada': 4, 'No Asistió': 5 };
 
       if (editId) {
         const editPayload = { ...payload, idestadocita: STATUS_ID_MAP[form.status] || 2 };
         const { error } = await supabase.from('cita').update(editPayload).eq('idcita', editId);
         if (error) throw error;
+
+        const prevStatus = originalAppt.current?.status;
+        const newStatus = form.status;
+        const clientId = parseInt(form.clientId);
+        if (prevStatus !== newStatus && (prevStatus === 'No Asistió' || newStatus === 'No Asistió')) {
+          const { data: clientRow } = await supabase.from('cliente').select('contadorinasistencias').eq('idcliente', clientId).single();
+          const current = clientRow?.contadorinasistencias || 0;
+          const updated = newStatus === 'No Asistió' ? current + 1 : Math.max(0, current - 1);
+          await supabase.from('cliente').update({ contadorinasistencias: updated }).eq('idcliente', clientId);
+        }
       } else {
         const { data: newAppt, error } = await supabase.from('cita').insert([payload]).select().single();
         if (error) throw error;
@@ -1710,7 +1720,7 @@ export default function Agenda({ user, tenant }) {
                     <label className="searchable-select-label">Estado de la Cita</label>
                     <div className="cita-status-row">
                       {APPOINTMENT_STATUSES.map(s => {
-                        const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Cancelada': '❌', 'Completada': '🎉' };
+                        const icons = { 'Confirmada': '✅', 'En Espera': '⏳', 'Cancelada': '❌', 'Completada': '🎉', 'No Asistió': '🚫' };
                         const iconEntry = Object.entries(icons).find(([key]) => key === s);
                         const icono = iconEntry ? iconEntry[1] : '';
                         const isLocked = form.status === 'Completada';

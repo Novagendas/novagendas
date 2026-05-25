@@ -41,7 +41,7 @@ export default function Clients({ user, tenant }) {
     const { data: dbClients, error } = await supabase
       .from('cliente')
       .select(`
-        idcliente, nombre, apellido, cedula, telefono, email,
+        idcliente, nombre, apellido, cedula, telefono, email, contadorinasistencias,
         historialclinico(
           idhistorial, fecha, titulo, notas, especialista
         )
@@ -71,6 +71,7 @@ export default function Clients({ user, tenant }) {
           phone: c.telefono || '',
           totalVisits: history.length,
           lastVisit: history.length > 0 ? history[0].date : 'Nuevo',
+          inasistencias: c.contadorinasistencias || 0,
           history
         };
       });
@@ -526,12 +527,19 @@ export default function Clients({ user, tenant }) {
                   <span className="collapsible-title">Historial de Citas</span>
                   <span className="collapsible-count">{clientAppointments.length}</span>
                 </div>
-                <svg
-                  className={`collapsible-arrow${openHistorialCitas ? ' collapsible-arrow--open' : ''}`}
-                  width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {activeClient.inasistencias > 0 && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, background: '#ffedd5', color: '#ea580c', border: '1px solid #fdba74', borderRadius: 99, padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                      🚫 {activeClient.inasistencias} inasistencia{activeClient.inasistencias !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  <svg
+                    className={`collapsible-arrow${openHistorialCitas ? ' collapsible-arrow--open' : ''}`}
+                    width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </div>
               </button>
 
               {openHistorialCitas && (
@@ -553,7 +561,7 @@ export default function Clients({ user, tenant }) {
                       {clientAppointments.map((cita) => {
                         const fecha = new Date(cita.fechahorainicio);
                         const estadoDesc = cita.estadocita?.descripcion || 'Pendiente';
-                        const estadoColor = estadoDesc === 'Completada' ? '#16a34a' : estadoDesc === 'Cancelada' ? '#dc2626' : '#2563eb';
+                        const estadoColor = estadoDesc === 'Completada' ? '#16a34a' : estadoDesc === 'Cancelada' ? '#dc2626' : estadoDesc === 'No Asistió' ? '#ea580c' : '#2563eb';
                         const serviciosNombres = cita.citaservicios?.map(cs => cs.servicios?.nombre).filter(Boolean);
                         const profesional = cita.usuario ? `${cita.usuario.nombre} ${cita.usuario.apellido}` : null;
                         const isOpen = selectedCitaDetail === cita.idcita;

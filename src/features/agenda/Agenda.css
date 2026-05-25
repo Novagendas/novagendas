@@ -2195,6 +2195,9 @@ input[type="time"].input-field:focus {
 .cita-status-chip--active[data-status="completada"] {
   background: #ede9fe; border-color: #c4b5fd; color: #7c3aed;
 }
+.cita-status-chip--active[data-status="no-asistió"] {
+  background: #ffedd5; border-color: #fdba74; color: #ea580c;
+}
 
 .cita-status-chip--locked {
   opacity: 0.45;

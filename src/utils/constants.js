@@ -37,6 +37,7 @@ export const APPOINTMENT_STATUSES = [
   'En Espera',
   'Cancelada',
   'Completada',
+  'No Asistió',
 ];
 
 export const STATUS_COLORS = {
@@ -44,6 +45,7 @@ export const STATUS_COLORS = {
   'En Espera': 'var(--warning)',
   'Cancelada': 'var(--danger)',
   'Completada': 'var(--primary)',
+  'No Asistió': '#f97316',
 };
 
 /* Calendar */
