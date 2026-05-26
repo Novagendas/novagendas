@@ -2,7 +2,7 @@ export function ManualNote({ children }) {
   return (
     <div style={{
       background: 'var(--primary-light)',
-      border: '1px solid rgba(59, 130, 246, 0.2)',
+      border: '1px solid var(--border)',
       borderRadius: 'var(--radius-sm)',
       padding: '0.75rem 1rem',
       marginBottom: '1rem',
@@ -21,8 +21,8 @@ export function ManualNote({ children }) {
 export function ManualTip({ children }) {
   return (
     <div style={{
-      background: '#f0fdf4',
-      border: '1px solid rgba(16, 185, 129, 0.2)',
+      background: 'var(--success-light)',
+      border: '1px solid var(--border)',
       borderRadius: 'var(--radius-sm)',
       padding: '0.75rem 1rem',
       marginBottom: '1rem',
@@ -41,8 +41,8 @@ export function ManualTip({ children }) {
 export function ManualWarning({ children }) {
   return (
     <div style={{
-      background: '#fffbeb',
-      border: '1px solid rgba(245, 158, 11, 0.2)',
+      background: 'var(--warning-light)',
+      border: '1px solid var(--border)',
       borderRadius: 'var(--radius-sm)',
       padding: '0.75rem 1rem',
       marginBottom: '1rem',
@@ -63,7 +63,7 @@ export function ManualStep({ number, title, children }) {
     <div style={{ display: 'flex', gap: '0.875rem', marginBottom: '1rem' }}>
       <div style={{
         width: 28, height: 28, borderRadius: '50%',
-        background: 'var(--primary)', color: '#fff',
+        background: 'var(--primary)', color: 'var(--surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: 2,
       }}>
