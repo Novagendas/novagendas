@@ -1,0 +1,103 @@
+---
+title: "Bloquea festivos y días no disponibles en el calendario"
+description: "Marca fechas específicas como festivos, no disponibles o en mantenimiento en Novagendas para que esos días aparezcan claramente en la Agenda y puedan prevenir nuevas reservas."
+---
+
+La función de **Días Bloqueados** te permite marcar fechas específicas del calendario como no disponibles para citas. Cuando una fecha está bloqueada, aparece resaltada en el calendario de la Agenda para que todo tu equipo pueda ver que no se deben hacer nuevas reservas ese día. Úsala para festivos, períodos de vacaciones de la clínica, días de capacitación del personal o mantenimiento programado.
+
+<Note>
+  Solo los Administradores y usuarios con el permiso **Editar Días Bloqueados** pueden agregar o eliminar fechas bloqueadas. Los demás miembros del equipo pueden ver los días bloqueados en el calendario pero no pueden modificarlos.
+</Note>
+
+## Tipos de bloqueo
+
+Novagendas admite tres tipos de días bloqueados, cada uno mostrado con un color distinto en el calendario:
+
+| Tipo | Color | Uso típico |
+| --- | --- | --- |
+| **Día Feriado** | Rojo | Festivos nacionales o locales |
+| **No Disponible** | Ámbar | Períodos de vacaciones, días de ausencia del personal |
+| **Mantenimiento** | Morado | Mantenimiento de instalaciones, renovaciones, días de limpieza profunda |
+
+## Bloquear una fecha
+
+<Steps>
+  <Step title="Abre el calendario de Días Bloqueados">
+    En el menú lateral, navega a **Días Bloqueados** (o accédelo desde tu **Perfil** si tu rol tiene el permiso correspondiente). La vista del calendario mensual se carga con las fechas bloqueadas existentes resaltadas.
+  </Step>
+  <Step title="Navega al mes correcto">
+    Usa las flechas **‹** y **›** para moverte entre meses hasta llegar a la fecha que deseas bloquear.
+  </Step>
+  <Step title="Haz clic en la fecha">
+    Haz clic en cualquier fecha futura no bloqueada en la cuadrícula del calendario. Se abrirá un cuadro de diálogo para esa fecha.
+  </Step>
+  <Step title="Elige un tipo de bloqueo">
+    Selecciona uno de los tres tipos del menú desplegable **Tipo de bloqueo**:
+
+    - **Feriado** — para festivos nacionales o locales
+    - **No Disponible** — para cierres planificados o vacaciones
+    - **Mantenimiento** — para tiempo de inactividad operativa
+  </Step>
+  <Step title="Ingresa un motivo">
+    Escribe una descripción corta en el campo **Motivo** (p. ej., _Festivo Nacional_, _Cierre por Semana Santa_, _Mantenimiento de equipos_). Este texto aparece en el tooltip del calendario y en la barra lateral de días bloqueados próximos.
+  </Step>
+  <Step title="Confirma el bloqueo">
+    Haz clic en **Bloquear día**. La fecha cambia inmediatamente al color del tipo de bloqueo seleccionado en el calendario, y un indicador de punto lo marca para todos los usuarios que ven la Agenda.
+  </Step>
+</Steps>
+
+## Cómo aparecen los días bloqueados en la Agenda
+
+Una vez que una fecha está bloqueada, cualquier miembro del equipo que abra la Agenda o el calendario de Días Bloqueados la verá resaltada con el color del tipo de bloqueo. Pasar el cursor o hacer clic en una fecha bloqueada muestra el tipo de bloqueo y el motivo que ingresaste.
+
+Un panel de **Próximos días bloqueados** en el lado derecho del calendario lista las próximas fechas bloqueadas en orden cronológico, para que tu equipo siempre tenga una vista rápida de los próximos cierres.
+
+<Warning>
+  Bloquear una fecha no cancela automáticamente ni notifica a los clientes sobre las citas existentes ese día. Antes de confirmar un bloqueo, haz clic en la fecha para revisar una lista de citas ya agendadas — luego contacta a esos clientes para reprogramar.
+</Warning>
+
+## Revisar las citas afectadas antes de bloquear
+
+Cuando haces clic en una fecha que ya tiene citas agendadas, Novagendas te muestra una lista de cada cita afectada, incluyendo:
+
+- Nombre del cliente
+- Hora de la cita
+- Servicio(s) reservado(s)
+- Especialista asignado
+- Número de teléfono del cliente
+
+Usa esta información para contactar a cada cliente y reprogramar antes de finalizar el bloqueo.
+
+## Eliminar un día bloqueado
+
+<Steps>
+  <Step title="Haz clic en la fecha bloqueada">
+    En el calendario, haz clic en la fecha resaltada que deseas desbloquear. El panel de detalles se abre, mostrando el tipo de bloqueo, el motivo y las citas afectadas.
+  </Step>
+  <Step title="Haz clic en Desbloquear día">
+    Selecciona el botón **Desbloquear día** en la parte inferior del panel de detalles.
+  </Step>
+  <Step title="Confirma">
+    La fecha vuelve a su estado normal en el calendario y está disponible para nuevas reservas de inmediato.
+  </Step>
+</Steps>
+
+## Consejos para escenarios comunes
+
+<AccordionGroup>
+  <Accordion title="Bloquear festivos nacionales">
+    Usa el tipo **Feriado** e ingresa el nombre oficial del festivo como motivo (p. ej., _Día de la Independencia_). Bloquea los festivos nacionales al inicio de cada año para que todo el equipo tenga visibilidad para la planificación.
+  </Accordion>
+
+  <Accordion title="Bloquear un período de vacaciones">
+    Bloquea cada día del período de vacaciones individualmente usando el tipo **No Disponible**. Ingresa el mismo motivo para cada día (p. ej., _Vacaciones de fin de año_) para que el contexto sea claro en la barra lateral del calendario.
+  </Accordion>
+
+  <Accordion title="Programar días de mantenimiento">
+    Usa el tipo **Mantenimiento** con un motivo específico (p. ej., _Mantenimiento de equipos láser_). Primero verifica si hay citas existentes y reprogramalas antes de bloquear.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Bloquea los festivos y fechas de cierre conocidas con anticipación. Los clientes y el personal que revisan la Agenda verán de inmediato que ciertas fechas no están disponibles, reduciendo las solicitudes de reprogramación de último momento.
+</Tip>

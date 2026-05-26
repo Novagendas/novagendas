@@ -1,0 +1,155 @@
+---
+title: "Agenda y gestión de citas con la agenda de Novagendas"
+description: "Crea, reprograma y da seguimiento a las citas en Novagendas. Cubre las vistas de Día, Semana y Mes, estados, arrastrar y soltar, detección de conflictos y depósitos."
+---
+
+La agenda es el corazón de Novagendas. Te ofrece un calendario en vivo donde puedes reservar citas, seguir su progreso y ver el horario de cada especialista de un vistazo. Las citas aparecen como bloques codificados por colores que reflejan tanto el color asignado al servicio como un indicador de estado en el borde izquierdo, para que puedas leer la carga del día en segundos.
+
+## Vistas del calendario
+
+La agenda ofrece tres vistas. Cambia entre ellas usando los botones **Día**, **Semana** y **Mes** en la barra de herramientas.
+
+<Tabs>
+  <Tab title="Vista de día">
+    Muestra un solo día como una línea de tiempo vertical desde tus horas de trabajo configuradas (por defecto 6 AM – 9 PM). Cada bloque de cita se muestra en su hora de inicio exacta y con un tamaño proporcional a su duración. Hasta cinco citas superpuestas se muestran lado a lado en la misma columna antes de que aparezcan los controles de paginación.
+
+    Haz clic en cualquier encabezado de columna de fecha en la vista Semana para ir directamente a ese día.
+  </Tab>
+  <Tab title="Vista de semana">
+    Muestra los siete días de la semana actual en columnas paralelas. Hasta dos citas superpuestas se muestran por columna de día en esta vista. Los días pasados aparecen ligeramente atenuados; las fechas bloqueadas muestran un indicador 🚫.
+
+    Usa las flechas **‹** y **›** o el botón **Hoy** para navegar entre semanas.
+  </Tab>
+  <Tab title="Vista de mes">
+    Muestra una cuadrícula mensual completa con el conteo de citas por día. Haz clic en cualquier celda de fecha para ver sus citas, o cambia a la vista de Día para más detalles. Esta vista es ideal para identificar días de alta demanda y planificar la cobertura.
+  </Tab>
+</Tabs>
+
+## Crear una cita
+
+<Steps>
+  <Step title="Abre el formulario de nueva cita">
+    Haz clic en cualquier espacio libre en el calendario. El formulario se abre con la fecha y hora en que hiciste clic. También puedes usar el botón **\+ Nueva Cita** en la barra de herramientas para abrir un formulario en blanco.
+
+    <Note>
+      No puedes reservar una cita en el pasado. Los espacios de hace más de una hora están en gris y no se pueden hacer clic.
+    </Note>
+  </Step>
+  <Step title="Selecciona el cliente">
+    Comienza a escribir el nombre o número de documento del cliente en el campo **Paciente**. El selector busca tanto por nombre como por número de documento mientras escribes.
+  </Step>
+  <Step title="Elige uno o más servicios">
+    Abre el selector de servicios y selecciona los procedimientos para esta sesión. Puedes agregar múltiples servicios — sus duraciones se suman automáticamente para determinar la duración total de la cita en el calendario.
+  </Step>
+  <Step title="Asigna un especialista y sede">
+    Elige el especialista del menú desplegable. Si tu clínica tiene una sola sede, se selecciona automáticamente; de lo contrario, elige la sucursal correspondiente.
+  </Step>
+  <Step title="Establece la fecha y hora">
+    Ajusta los campos de fecha y hora si es necesario. El formulario toma por defecto el espacio en que hiciste clic.
+  </Step>
+  <Step title="Agrega detalles opcionales">
+    Opcionalmente puedes:
+
+    - Agregar productos consumidos durante la sesión (ver [Productos usados durante una sesión](#productos-usados-durante-una-sesion))
+    - Aplicar un depósito (abono) existente al costo de la cita
+    - Escribir notas internas
+  </Step>
+  <Step title="Guarda">
+    Haz clic en **Agendar Cita**. Novagendas verifica conflictos de agendamiento antes de guardar. Si el espacio ya está ocupado por el mismo especialista, aparece una advertencia de conflicto con los detalles de la cita existente.
+  </Step>
+</Steps>
+
+## Estados de las citas
+
+Cada cita tiene uno de cuatro estados. El borde izquierdo de color en el bloque del calendario refleja el estado actual.
+
+<CardGroup cols={2}>
+  <Card title="Confirmada" icon="circle-check">
+    La cita ha sido confirmada con el cliente. El borde aparece en **verde**.
+  </Card>
+
+  <Card title="En Espera" icon="clock">
+    Agendada pero aún no confirmada. El borde aparece en **ámbar/amarillo**. Este es el estado predeterminado para las citas recién creadas.
+  </Card>
+
+  <Card title="Cancelada" icon="circle-x">
+    La cita fue cancelada. Las citas canceladas están ocultas en la cuadrícula del calendario pero permanecen en los informes. El borde aparece en **rojo**.
+  </Card>
+
+  <Card title="Completada" icon="badge-check">
+    La sesión ha sido completada. El borde aparece en **azul/primario**.
+  </Card>
+</CardGroup>
+
+Para cambiar el estado de una cita, ábrela haciendo clic en el ícono de lápiz y selecciona el nuevo estado en el menú desplegable **Estado**. Cuando marcas una cita como **Cancelada**, se envía automáticamente un correo de cancelación al cliente si tiene una dirección de correo registrada.
+
+## Arrastrar y soltar para reprogramar
+
+En las vistas de Día y Semana, arrastra cualquier bloque de cita a un nuevo espacio para reprogramarla. Novagendas:
+
+1. Verificará conflictos con el horario existente del especialista en el destino.
+2. Si se encuentra un conflicto, moverá automáticamente la cita al final del bloque conflictivo (hasta cinco intentos).
+3. Guardará el nuevo horario y sincronizará el cambio con Google Calendar si tu cuenta está conectada.
+
+<Warning>
+  No puedes arrastrar una cita a un espacio en el pasado. Aparecerá un mensaje de advertencia y el movimiento se cancelará.
+</Warning>
+
+## Detección de conflictos
+
+Novagendas evita la doble reserva de un especialista. Cuando guardas o arrastras una cita, el sistema verifica si el especialista ya tiene otra cita (que no esté cancelada) que se superponga con la misma ventana de tiempo. Si existe un conflicto, un modal muestra el nombre del cliente conflictivo y los horarios exactos de inicio y fin para que puedas elegir un espacio diferente.
+
+## Filtrar el calendario
+
+Usa el filtro **Especialista** en la barra de herramientas para ver solo las citas asignadas a un miembro específico del equipo. Un filtro adicional de **Sede** reduce la vista a una sola ubicación cuando tu clínica opera en múltiples sucursales. Los Especialistas ven por defecto solo sus propias citas cuando inician sesión.
+
+## Productos usados durante una sesión
+
+Puedes registrar los artículos de inventario consumidos durante una cita directamente en el formulario de cita. Esto mantiene tus niveles de stock precisos sin un paso adicional.
+
+<Steps>
+  <Step title="Abre el panel de productos">
+    En el formulario de cita, localiza la sección **Productos Utilizados**. Busca un producto por nombre usando el campo de búsqueda.
+  </Step>
+  <Step title="Establece la cantidad">
+    Ajusta la cantidad con los controles **\+** / **−**, luego haz clic en **Agregar** para añadir el artículo a la cita.
+  </Step>
+  <Step title="Guarda la cita">
+    Cuando guardas una nueva cita, Novagendas descuenta automáticamente el stock de cada producto agregado. Editar una cita existente no aplica un segundo descuento.
+  </Step>
+</Steps>
+
+<Tip>
+  Solo aparecen en la búsqueda de productos aquellos con stock mayor a cero. Si falta un producto en la lista, primero revisa el módulo de Inventario para reponerlo.
+</Tip>
+
+## Aplicar un depósito (abono) a una cita
+
+Si un cliente tiene un depósito con saldo disponible, puedes aplicarlo al crear una cita.
+
+<Steps>
+  <Step title="Selecciona el cliente">
+    Después de elegir el cliente en el formulario, el sistema obtiene automáticamente cualquier depósito con saldo positivo.
+  </Step>
+  <Step title="Elige un depósito">
+    Selecciona el depósito del menú desplegable **Abono disponible**. Ingresa el monto a aplicar — no puede exceder el saldo restante del depósito.
+  </Step>
+  <Step title="Guarda">
+    Al guardar, el saldo del depósito se reduce, se crea un registro de pago y la cita refleja el monto aplicado.
+  </Step>
+</Steps>
+
+## Eliminar o cancelar una cita
+
+Abre la cita haciendo clic en el ícono de edición, luego:
+
+- **Cancelar la cita**: Cambia el estado a **Cancelada** y guarda. La cita se marca como cancelada, se elimina de la cuadrícula activa del calendario y se envía un correo de cancelación al cliente.
+- **Eliminar la cita**: Haz clic en el botón **Eliminar** en la parte inferior del formulario. Esto realiza una eliminación suave — la cita se elimina del calendario e informes pero permanece en la base de datos para fines de auditoría. También se envía un correo de cancelación si el cliente tiene un correo registrado.
+
+<Warning>
+  La eliminación no se puede deshacer desde el calendario. Si necesitas recuperar una cita eliminada, contacta a tu administrador.
+</Warning>
+
+## Imprimir un recibo de cita
+
+Con una cita abierta, haz clic en **Imprimir Recibo** para generar un resumen imprimible que incluye el nombre del cliente, especialista, servicios, precio total, duración y estado actual. El recibo se abre en una nueva ventana del navegador y se imprime automáticamente.

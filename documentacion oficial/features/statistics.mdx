@@ -1,0 +1,117 @@
+---
+title: "Analiza el rendimiento con los informes de estadísticas de Novagendas"
+description: "Explora siete pestañas de informes en Estadísticas de Novagendas que cubren citas, ingresos, clientes, servicios, inventario y actividad del equipo. Exporta cualquier conjunto de datos a Excel."
+---
+
+El módulo de Estadísticas te ofrece una vista estructurada del desempeño de tu clínica. Siete pestañas dedicadas dividen los datos de rendimiento en áreas específicas para que puedas responder preguntas concretas — ¿cuánto ganamos este mes?, ¿cuál es el servicio más popular?, ¿qué clientes no han regresado en 60 días? y más. Cada gráfico y tabla puede exportarse a Excel para compartir con tu equipo o importar a otras herramientas.
+
+<Note>
+  Estadísticas está disponible solo para usuarios con el rol de **Administrador**. Los Especialistas y el personal de recepción no tienen acceso a esta sección.
+</Note>
+
+## Navegar por las pestañas
+
+Cambia entre secciones de informes usando la barra de pestañas en la parte superior de la página. Cada pestaña carga su propio conjunto de tarjetas KPI, gráficos y tablas. Cambiar de pestaña restablece cualquier filtro de rango de fechas activo para esa sección.
+
+<CardGroup cols={2}>
+  <Card title="General" icon="chart-bar">
+    Resumen ejecutivo de alto nivel: citas este mes, ingresos este mes, pacientes activos en los últimos 90 días y tasa de cancelación — todo comparado con el mes anterior.
+  </Card>
+
+  <Card title="Citas" icon="calendar">
+    Volumen de citas por día de la semana y hora del día, los 5 especialistas principales por conteo de citas y una lista de citas canceladas del período.
+  </Card>
+
+  <Card title="Pacientes" icon="users">
+    Total de pacientes, nuevos registros este mes, activos en los últimos 30 días y pacientes en riesgo (sin cita en más de 60 días). Incluye nuevos pacientes por mes y una tabla de los 10 pacientes más frecuentes.
+  </Card>
+
+  <Card title="Servicios" icon="stethoscope">
+    Conteo de servicios activos, servicio más solicitado este mes e ingresos generados. Muestra un gráfico de los 8 servicios principales y una tabla de ranking ordenable con citas, ingresos y precio por servicio.
+  </Card>
+
+  <Card title="Pagos & Abonos" icon="dollar-sign">
+    Ingresos este mes y hoy, número de depósitos con saldo disponible y monto total en depósitos. Incluye desglose por método de pago y un gráfico de línea de ingresos acumulados diarios.
+  </Card>
+
+  <Card title="Inventario" icon="package">
+    Total de productos, conteo y lista de artículos con stock crítico, valor total del inventario y un gráfico relativo de stock que muestra los 10 productos más cercanos a su umbral mínimo.
+  </Card>
+</CardGroup>
+
+También existe una pestaña de **Usuarios (Equipo)**, que muestra los conteos de usuarios activos por rol (Administrador, Especialista, Recepción), un gráfico de dona de distribución de roles y una tabla de la actividad de citas de cada miembro del equipo para el mes actual.
+
+## KPIs principales por sección
+
+<AccordionGroup>
+  <Accordion title="KPIs Generales">
+    - **Citas este mes** — total de citas en el mes actual, con cambio porcentual vs. el mes anterior
+    - **Ingresos este mes** — total de pagos recaudados este mes vs. el mes pasado
+    - **Pacientes activos (90d)** — pacientes distintos con al menos una cita en los últimos 90 días
+    - **Tasa de cancelación** — porcentaje de citas de este mes que fueron canceladas
+  </Accordion>
+
+  <Accordion title="KPIs de Citas">
+    - **Total citas** — citas en el rango de fechas seleccionado
+    - **Completadas** — porcentaje de citas marcadas como completadas
+    - **Canceladas** — porcentaje de citas canceladas
+    - **Promedio diario** — promedio de citas por día en el período
+  </Accordion>
+
+  <Accordion title="KPIs de Clientes">
+    - **Total pacientes** — todos los clientes registrados
+    - **Nuevos este mes** — clientes registrados en el mes calendario actual
+    - **Activos (últimos 30d)** — clientes con una cita en los últimos 30 días
+    - **En riesgo (\+60d sin cita)** — clientes que tuvieron al menos una cita pasada pero no han regresado en más de 60 días
+  </Accordion>
+
+  <Accordion title="KPIs de Pagos">
+    - **Ingresos este mes** — total de pagos en el mes actual
+    - **Ingresos hoy** — pagos recaudados hoy
+    - **Abonos con saldo** — conteo de depósitos con saldo positivo restante
+    - **Monto en abonos** — total en COP en depósitos no redimidos
+  </Accordion>
+
+  <Accordion title="KPIs de Inventario">
+    - **Total productos** — todos los productos en inventario
+    - **Stock crítico** — productos en o por debajo de su umbral mínimo
+    - **Valor del inventario** — valor total calculado como cantidad × costo unitario
+  </Accordion>
+</AccordionGroup>
+
+## Filtrar por rango de fechas
+
+La pestaña de **Citas** admite un filtro de rango de fechas personalizado. Usa las entradas de fecha **Desde** y **Hasta** para limitar los datos a cualquier período. Haz clic en **Este mes** para restablecer al mes actual.
+
+Las demás pestañas (General, Pacientes, Servicios, Pagos, Inventario, Equipo) calculan datos para períodos fijos (mes actual, últimos 6 meses, últimos 90 días) y no ofrecen una entrada de rango personalizado.
+
+## Gráficos
+
+Novagendas usa cuatro tipos de gráficos en las pestañas de estadísticas:
+
+| Tipo de gráfico | Usado para |
+| --- | --- |
+| **Gráfico de barras** | Ingresos por mes, citas por hora del día, nuevos pacientes por mes |
+| **Gráfico de línea** | Citas por semana, ingresos acumulados diarios |
+| **Barras horizontales** | Distribución de estados de citas, servicios principales, ingresos por método de pago, niveles de stock de inventario |
+| **Gráfico de dona** | Distribución de roles de usuario (pestaña Equipo) |
+
+Los gráficos muestran un mensaje de estado vacío cuando no hay datos para el período seleccionado, en lugar de mostrar una visualización vacía o engañosa.
+
+## Exportar a Excel
+
+Cada tabla principal del módulo de Estadísticas tiene un botón **Exportar** que descarga los datos subyacentes como un archivo Excel (.xlsx). Las exportaciones disponibles incluyen:
+
+| Pestaña | Qué se exporta |
+| --- | --- |
+| Citas | Todos los registros de citas del período: fecha, hora, paciente, especialista, estado, notas |
+| Pacientes | Todos los clientes con conteo de citas y fecha de última visita |
+| Servicios | Catálogo de servicios con conteo de citas, ingresos y precio |
+| Pagos | Transacciones de pago: fecha, cliente, servicio, método, monto, estado |
+| Abonos | Registros de depósitos con saldo restante |
+| Inventario | Productos con cantidades, stock mínimo, costo unitario, valor total y estado de stock |
+| Usuarios | Miembros del equipo con rol y citas atendidas este mes |
+
+<Tip>
+  Las acciones de exportación se registran en el historial de auditoría del sistema para que tengas un registro de quién exportó datos y cuándo.
+</Tip>

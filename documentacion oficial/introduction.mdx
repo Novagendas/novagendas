@@ -1,0 +1,82 @@
+---
+title: "Novagendas: gestión de citas para negocios de servicios"
+description: "Aprende qué es Novagendas, para quién está diseñado, cómo funcionan los subdominios multi-tenant y cómo tu equipo gestiona las citas de principio a fin."
+---
+
+Novagendas es una plataforma web de gestión de citas diseñada para clínicas estéticas, spas y negocios de servicios de salud. Le da a todo tu equipo — desde recepción hasta especialistas — un único lugar para gestionar el ciclo completo de una visita: agendamiento, historial de clientes, pagos, inventario e informes.
+
+La plataforma está diseñada como una **herramienta de operaciones interna**. Tu equipo gestiona las citas que llegan por llamadas, mensajes de WhatsApp o visitas presenciales. No hay portal de autoagendamiento para clientes — Novagendas mantiene el agendamiento bajo el control de tu equipo.
+
+## Cómo funciona Novagendas
+
+Cada negocio en Novagendas tiene su propio espacio de trabajo aislado, accesible a través de un subdominio dedicado:
+
+```text
+tunegocio.novagendas.com
+```
+
+Todo lo que tu equipo ve y hace — citas, clientes, pagos — está completamente circunscrito a tu negocio. Los datos de un negocio nunca son visibles para otro.
+
+Cuando tu equipo accede al subdominio, llega a una página de inicio de sesión con el nombre de tu negocio. Tras iniciar sesión, cada miembro del equipo ve únicamente las funcionalidades que su rol permite. Un especialista va directo a la Agenda; un recepcionista puede gestionar clientes e inventario; un administrador tiene acceso completo a todo.
+
+<Note>
+  Tu subdominio se configura cuando se crea tu cuenta en Novagendas. Contacta a tu gestor de cuenta si necesitas cambiarlo.
+</Note>
+
+## Funcionalidades principales
+
+<CardGroup cols={2}>
+  <Card title="Agenda" icon="calendar" href="/features/agenda">
+    Un calendario de arrastrar y soltar con vistas de día, semana y mes. Crea, edita y reprograma citas en segundos. La sincronización opcional con Google Calendar mantiene los calendarios personales de tu equipo actualizados automáticamente.
+  </Card>
+
+  <Card title="Clientes" icon="users" href="/features/clients">
+    Una base de datos completa de clientes con datos de contacto, historial de citas y notas clínicas. Cada visita queda registrada para que tus especialistas siempre tengan el contexto correcto antes de una sesión.
+  </Card>
+
+  <Card title="Pagos" icon="credit-card" href="/features/payments">
+    Registra pagos y depósitos parciales en el punto de servicio. Lleva el control de los ingresos diarios y saldos pendientes sin cambiar a otro sistema.
+  </Card>
+
+  <Card title="Inventario" icon="box" href="/features/inventory">
+    Supervisa los niveles de stock de productos y recibe alertas automáticas de stock bajo. Descuenta los insumos directamente al crear una cita para mantener tus conteos precisos.
+  </Card>
+
+  <Card title="Estadísticas" icon="chart-bar" href="/features/statistics">
+    Métricas en el panel e informes detallados sobre ingresos, citas y servicios más solicitados. Exporta datos a Excel para un análisis más profundo.
+  </Card>
+
+  <Card title="Gestión de equipo" icon="user-group" href="/admin/team-management">
+    Agrega miembros del personal, asigna roles y controla a qué tiene acceso cada persona. Tres niveles de roles cubren la jerarquía típica de una clínica.
+  </Card>
+</CardGroup>
+
+## Quién usa cada parte
+
+Novagendas está diseñado en torno a tres roles que reflejan cómo operan realmente las clínicas:
+
+- **Administrador** — generalmente el dueño o gerente de la clínica. Tiene acceso completo a todas las funcionalidades, incluyendo pagos, estadísticas, gestión de usuarios y registros de auditoría.
+- **Recepcionista** — personal de recepción que gestiona el agendamiento y la atención de clientes. Puede acceder a la Agenda, Clientes, Servicios e Inventario, pero no a Pagos ni Usuarios.
+- **Especialista** — profesionales que brindan los servicios. Ven únicamente la Agenda y sus propios clientes, manteniendo su vista enfocada en su agenda.
+
+Puedes leer el desglose completo de lo que cada rol puede ver y hacer en [Roles y permisos](/roles-and-permissions).
+
+## Qué hacer a continuación
+
+<CardGroup cols={2}>
+  <Card title="Comenzar" icon="rocket" href="/quickstart">
+    Accede a tu subdominio, inicia sesión y agenda tu primera cita.
+  </Card>
+
+  <Card title="Roles y permisos" icon="shield" href="/roles-and-permissions">
+    Descubre exactamente qué puede ver y hacer cada miembro del equipo.
+  </Card>
+
+  <Card title="Agenda y citas" icon="calendar" href="/features/agenda">
+    Aprende a crear, editar y gestionar citas.
+  </Card>
+
+  <Card title="Sincronización con Google Calendar" icon="calendar-days" href="/integrations/google-calendar">
+    Conecta el calendario de tu negocio para sincronización automática de eventos.
+  </Card>
+</CardGroup>

@@ -1,0 +1,138 @@
+---
+title: "Agrega, gestiona y desactiva miembros del equipo en Novagendas"
+description: "Aprende cómo invitar miembros del equipo, asignar roles con los niveles de acceso correctos, actualizar perfiles y desactivar cuentas en Novagendas."
+---
+
+La sección de **Equipo** te permite construir y gestionar a cada persona que trabaja en tu negocio — desde recepcionistas hasta especialistas. Solo los Administradores pueden acceder a esta sección. Cada miembro del equipo obtiene sus propias credenciales de inicio de sesión y solo ve los módulos que su rol permite.
+
+<Note>
+  Cada cuenta de negocio admite exactamente un Administrador (el titular principal de la cuenta). Todos los demás miembros del equipo se crean como Recepcionistas o Especialistas.
+</Note>
+
+## Comprendiendo los roles
+
+Novagendas tiene tres roles. Asigna el que mejor se ajuste a las responsabilidades de cada persona.
+
+<Tabs>
+  <Tab title="Administrador">
+    Acceso completo a todos los módulos de Novagendas, incluyendo informes financieros, pagos, inventario, gestión de usuarios y configuración.
+
+    | Módulo | Acceso |
+    | --- | --- |
+    | Panel | Completo |
+    | Agenda | Completo |
+    | Clientes | Completo |
+    | Servicios | Completo |
+    | Inventario | Completo |
+    | Pagos | Completo |
+    | Equipo (Usuarios) | Completo |
+    | Días bloqueados | Completo |
+  </Tab>
+  <Tab title="Recepcionista">
+    Ideal para el personal de recepción que gestiona citas y registros de clientes pero no debe ver datos financieros.
+
+    | Módulo | Acceso |
+    | --- | --- |
+    | Agenda | Completo |
+    | Clientes | Completo |
+    | Servicios | Lectura |
+    | Inventario | Lectura |
+    | Pagos | Ninguno |
+    | Equipo (Usuarios) | Ninguno |
+  </Tab>
+  <Tab title="Especialista">
+    Diseñado para profesionales que necesitan ver sus propias citas agendadas y actualizar notas clínicas solo de sus propios pacientes.
+
+    | Módulo | Acceso |
+    | --- | --- |
+    | Agenda | Solo citas propias |
+    | Clientes | Solo clientes propios |
+    | Todos los demás módulos | Ninguno |
+  </Tab>
+</Tabs>
+
+## Agregar un nuevo miembro del equipo
+
+<Steps>
+  <Step title="Abre la sección Equipo">
+    En el menú lateral, navega a **Equipo**. Verás una lista de todos los miembros actuales del equipo de tu negocio.
+  </Step>
+  <Step title="Haz clic en Nuevo Miembro">
+    Selecciona **Nuevo Miembro** en la esquina superior derecha. Se abrirá un modal de creación.
+  </Step>
+  <Step title="Ingresa los datos del miembro">
+    Completa los campos requeridos:
+
+    - **Nombre** y **Apellido** (p. ej., _María López_)
+    - **Correo electrónico** — la dirección que usará para iniciar sesión
+    - **Rol** — selecciona **Administrador**, **Recepcionista** o **Especialista**
+  </Step>
+  <Step title="Configura el acceso a módulos">
+    Una cuadrícula de **Módulos Permitidos** preselecciona los permisos estándar para el rol elegido. Activa o desactiva módulos individuales para ajustar exactamente a qué puede acceder esta persona antes de guardar.
+  </Step>
+  <Step title="Establece una contraseña">
+    Ingresa una contraseña para la nueva cuenta. Compártela de forma segura con el miembro del equipo — podrá actualizarla desde su **Perfil** después de su primer inicio de sesión.
+  </Step>
+  <Step title="Guarda la cuenta">
+    Haz clic en **Confirmar Miembro**. La cuenta se crea de inmediato y el miembro del equipo puede iniciar sesión en el subdominio de tu negocio de inmediato.
+  </Step>
+</Steps>
+
+<Note>
+  Los miembros del equipo inician sesión en el subdominio de tu negocio (p. ej., `tunombre.novagendas.com`) usando su correo y contraseña. No usan la página principal de Novagendas para iniciar sesión.
+</Note>
+
+## Editar un miembro del equipo
+
+Puedes actualizar los datos de un miembro del equipo o ajustar su acceso a módulos en cualquier momento.
+
+<Steps>
+  <Step title="Abre la sección Usuarios">
+    Navega a **Usuarios** en el menú lateral.
+  </Step>
+  <Step title="Haz clic en el ícono de edición">
+    Haz clic en el ícono de lápiz en la fila del miembro del equipo para abrir su formulario de edición. Actualiza el nombre, correo, rol o contraseña según sea necesario, luego haz clic en **Guardar Cambios**.
+  </Step>
+  <Step title="Ajusta el acceso a módulos (opcional)">
+    Para cambiar a qué módulos puede acceder un miembro del equipo sin cambiar su rol, haz clic en el ícono de candado en su fila. El panel **Permisos de Acceso** se abre con la cuadrícula de módulos actual. Activa o desactiva permisos, luego haz clic en **Guardar Permisos**.
+  </Step>
+</Steps>
+
+<Note>
+  El Administrador puede actualizar su propio nombre, correo y contraseña desde su página de **Perfil**.
+</Note>
+
+## Desactivar un miembro del equipo
+
+Desactivar a un miembro del equipo bloquea su inicio de sesión sin eliminar su historial ni registros.
+
+<Steps>
+  <Step title="Localiza al miembro del equipo">
+    Encuentra a la persona en la lista del Equipo.
+  </Step>
+  <Step title="Cambia su insignia de estado">
+    Haz clic en la insignia **Activo** / **Inactivo** en su tarjeta. El estado cambia de inmediato.
+  </Step>
+</Steps>
+
+<Warning>
+  Un miembro del equipo desactivado no puede iniciar sesión, pero sus citas pasadas, registros de clientes y entradas del registro de auditoría se conservan. Puedes reactivarlo en cualquier momento haciendo clic en la insignia nuevamente.
+</Warning>
+
+## Restablecer la contraseña de un miembro del equipo
+
+Si un miembro del equipo olvida su contraseña, puede solicitar un restablecimiento desde la página de inicio de sesión, o puedes iniciar el proceso en su nombre.
+
+<AccordionGroup>
+  <Accordion title="El miembro del equipo restablece su propia contraseña">
+    En la página de inicio de sesión del subdominio de tu negocio, el miembro del equipo hace clic en **¿Olvidaste tu contraseña?** e ingresa su correo. Novagendas envía un enlace de restablecimiento a esa dirección. Después de hacer clic en el enlace, ingresa y confirma una nueva contraseña.
+  </Accordion>
+
+  <Accordion title="El Administrador establece una nueva contraseña directamente">
+    Mientras edita el perfil de un miembro del equipo, ingresa una nueva contraseña en el campo **Contraseña** y confírmala, luego guarda. El miembro del equipo puede usar la nueva contraseña de inmediato.
+
+    <Tip>
+      Comparte la nueva contraseña de forma segura y pídele al miembro del equipo que la cambie después de su próximo inicio de sesión.
+    </Tip>
+  </Accordion>
+</AccordionGroup>

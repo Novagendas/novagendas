@@ -1,0 +1,82 @@
+---
+title: "Revisa y monitorea la actividad del equipo en los registros de auditoría de Novagendas"
+description: "Usa el registro de auditoría de Novagendas para rastrear cada acción de creación, actualización y eliminación realizada por los miembros de tu equipo, con marcas de tiempo y atribución de usuario."
+---
+
+El registro de auditoría te proporciona un historial completo y cronológico de cada acción significativa realizada dentro de tu cuenta de Novagendas. Cada vez que un miembro del equipo crea, actualiza o elimina un registro — ya sea un perfil de cliente, una cita, un pago o una cuenta de usuario — el sistema escribe una entrada con marca de tiempo en el registro.
+
+<Note>
+  El registro de auditoría es accesible solo para Administradores. Los miembros del equipo con el rol de Recepcionista o Especialista no ven esta sección.
+</Note>
+
+## Qué rastrea el registro de auditoría
+
+Cada entrada en el registro de auditoría captura la siguiente información:
+
+| Campo | Descripción |
+| --- | --- |
+| **Fecha y hora** | La marca de tiempo exacta de la acción (día, mes, año, horas, minutos) |
+| **Usuario** | El nombre del miembro del equipo que realizó la acción |
+| **Acción** | Uno de tres tipos: `CREATE`, `UPDATE` o `DELETE` |
+| **Entidad** | El tipo de registro que fue afectado (p. ej., _Cita_, _Cliente_, _Usuario_, _Sede_) |
+| **Descripción** | Un resumen en lenguaje simple de lo que cambió (p. ej., _"Perfil de cliente actualizado: Ana Torres"_) |
+
+Las acciones están codificadas por colores para que puedas escanear el registro rápidamente:
+
+- **CREATE** — se agregó un nuevo registro
+- **UPDATE** — se modificó un registro existente
+- **DELETE** — se eliminó o desactivó un registro
+
+## Ver el registro de auditoría
+
+<Steps>
+  <Step title="Abre la sección Registro de Auditoría">
+    En el menú lateral, navega a **Registro de Auditoría** (etiquetado como _Movimientos y Auditoría_ en la interfaz). El registro se carga automáticamente, ordenado del más reciente al más antiguo.
+  </Step>
+  <Step title="Navega por las entradas">
+    Desplázate por la tabla para revisar la actividad. Cada fila muestra la fecha, el usuario, la insignia de acción, la entidad afectada y una descripción del cambio.
+  </Step>
+  <Step title="Actualiza la vista">
+    Para cargar las entradas más recientes, haz clic en el botón **Actualizar** en la esquina superior derecha del registro.
+  </Step>
+</Steps>
+
+## Por qué importa el registro de auditoría
+
+<CardGroup cols={3}>
+  <Card title="Responsabilidad" icon="user-check">
+    Cada acción está atribuida a un miembro específico del equipo, lo que facilita identificar quién hizo un cambio y cuándo.
+  </Card>
+
+  <Card title="Cumplimiento normativo" icon="shield-check">
+    Los negocios de salud y servicios estéticos a menudo están sujetos a requisitos de manejo de datos. El registro de auditoría proporciona un historial de actividad listo para usar.
+  </Card>
+
+  <Card title="Solución de problemas" icon="magnifying-glass">
+    Cuando algo no cuadra — un registro eliminado, un cambio inesperado — el registro de auditoría te permite rastrear exactamente qué sucedió y revertirlo manualmente si es necesario.
+  </Card>
+</CardGroup>
+
+## Escenarios comunes
+
+<AccordionGroup>
+  <Accordion title="Un registro de cliente fue eliminado inesperadamente">
+    Filtra o desplázate por el registro y busca una entrada `DELETE` con la entidad **Cliente**. La descripción nombrará al cliente, y la columna **Usuario** mostrará quién eliminó el registro y a qué hora.
+  </Accordion>
+
+  <Accordion title="Una cita fue modificada sin mi conocimiento">
+    Busca una entrada `UPDATE` con la entidad **Cita**. La descripción describirá qué cambió, y la marca de tiempo confirmará cuándo ocurrió.
+  </Accordion>
+
+  <Accordion title="Se agregó un nuevo miembro del equipo a la cuenta">
+    Busca una entrada `CREATE` con la entidad **Usuario**. La descripción incluirá el nombre del nuevo usuario y el Administrador que creó la cuenta.
+  </Accordion>
+
+  <Accordion title="Una sede o servicio fue modificado">
+    Busca entradas `UPDATE` o `CREATE` con la entidad **Sede** o **Servicio** para revisar los cambios de configuración.
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Haz de la revisión del registro de auditoría parte de tu rutina regular de administración — un escaneo semanal rápido puede detectar eliminaciones accidentales o cambios no autorizados antes de que se conviertan en problemas.
+</Tip>

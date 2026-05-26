@@ -1,0 +1,130 @@
+---
+title: "Automatiza el agendamiento con el bot de WhatsApp de Novagendas"
+description: "Permite que los clientes consulten disponibilidad y agenden citas enviando un mensaje a tu número de WhatsApp Business — sin ninguna intervención manual de tu equipo."
+---
+
+El bot de WhatsApp de Novagendas se conecta a tu número de WhatsApp Business y gestiona automáticamente las conversaciones de agendamiento. Los clientes escriben a tu número de negocio, exploran los servicios disponibles y los horarios, y confirman sus citas — todo a través de WhatsApp. Tu equipo recibe una notificación y la cita aparece en la Agenda de inmediato.
+
+<Note>
+  Necesitas una cuenta activa de **WhatsApp Business** para usar esta función. Los números personales de WhatsApp no son compatibles. La conexión se completa a través del flujo oficial de registro integrado de Meta.
+</Note>
+
+## Conecta tu número de WhatsApp Business
+
+<Steps>
+  <Step title="Abre Configuración del Bot">
+    En el menú lateral izquierdo, haz clic en **Config. Bot**.
+  </Step>
+  <Step title="Inicia la conexión">
+    Desplázate hasta la sección **Número de WhatsApp** y haz clic en **Conectar número de WhatsApp**. Esto lanza el flujo de registro integrado de Meta en una ventana emergente.
+  </Step>
+  <Step title="Completa el inicio de sesión en Meta">
+    Inicia sesión en tu cuenta de Facebook (la vinculada a tu cuenta de WhatsApp Business) y sigue los pasos en pantalla para seleccionar tu Cuenta de WhatsApp Business (WABA) y número de teléfono.
+  </Step>
+  <Step title="Confirma la conexión">
+    Una vez que completes el flujo de Meta, la ventana emergente se cierra y Configuración del Bot muestra **Número conectado** con un indicador verde. El bot está ahora activo en tu número de WhatsApp Business.
+  </Step>
+</Steps>
+
+<Warning>
+  Debes tener acceso de administrador a la cuenta de Facebook Business que es propietaria de la Cuenta de WhatsApp Business. Si la ventana emergente se cierra sin mostrar "Número conectado", la conexión no se completó — inténtalo de nuevo o verifica que tienes los permisos correctos de la cuenta de Facebook.
+</Warning>
+
+## Configura el bot
+
+Después de conectar, configura el bot para que solo ofrezca citas durante tus horas de trabajo reales y con los servicios correctos. Todos los cambios tienen efecto inmediato después de guardar.
+
+### Días disponibles
+
+Selecciona los días de la semana en que tu negocio acepta citas. El bot no ofrecerá horarios en días que no estén seleccionados.
+
+Los días disponibles son de lunes a domingo. Por defecto, el bot está configurado de lunes a sábado (el domingo está desactivado).
+
+### Franjas horarias
+
+Para cada día activo puedes habilitar hasta tres turnos:
+
+| Turno | Horario por defecto | Habilitado por defecto |
+| --- | --- | --- |
+| Mañana | 08:00 – 12:00 | Sí |
+| Tarde | 13:00 – 18:00 | Sí |
+| Noche | 18:00 – 21:00 | No |
+
+Haz clic en cualquier día activo en la sección **Horario de atención** para expandirlo. Activa o desactiva cada turno y ajusta los horarios de inicio y fin según sea necesario.
+
+<Note>
+  Cada día activo debe tener al menos un turno habilitado, y la hora de inicio debe ser anterior a la hora de fin. El bot mostrará un error cuando intentes guardar si estas condiciones no se cumplen.
+</Note>
+
+### Horarios personalizados por día
+
+Para establecer horarios diferentes para un día específico — por ejemplo, horario reducido el sábado — expande ese día en la sección **Horario de atención** y ajusta sus turnos de forma independiente. La configuración por día reemplaza el horario predeterminado solo para ese día.
+
+### Servicios
+
+Por defecto, todos los servicios activos aparecen en el catálogo del bot. Para evitar que los clientes reserven un servicio específico a través del bot, desmárcalo en la sección **Servicios disponibles en el bot**. Los servicios excluidos siguen apareciendo en Novagendas y pueden reservarse manualmente por tu equipo.
+
+### Precios de servicios
+
+Usa el interruptor **Mostrar precios en catálogo** para controlar si el bot muestra precios a los clientes:
+
+- **Activado** — los clientes ven el precio de cada servicio en el catálogo.
+- **Desactivado** — los precios están ocultos para todos los servicios.
+
+Cuando los precios están habilitados de forma global, puedes ocultar el precio de servicios individuales desmarcando **Mostrar precio** junto a cada servicio en la lista de servicios.
+
+### Notificaciones y datos de contacto
+
+<CardGroup cols={2}>
+  <Card title="Correo de notificación" icon="envelope">
+    Ingresa un correo de administrador para recibir una notificación cada vez que el bot cree, modifique o cancele una cita. Déjalo en blanco para omitir las notificaciones por correo.
+  </Card>
+
+  <Card title="Teléfono de contacto" icon="phone">
+    Un número de teléfono directo que se muestra a los clientes cuando el bot encuentra un error o no puede encontrar disponibilidad. Déjalo en blanco para ocultar la opción de contacto.
+  </Card>
+
+  <Card title="Número Nequi" icon="credit-card">
+    Tu número de Nequi del negocio. Cuando se proporciona, el bot ofrece a los clientes la opción de enviar un depósito vía Nequi antes de su cita.
+  </Card>
+
+  <Card title="Clave Bre-B" icon="key">
+    Tu clave de pago Bre-B. Cuando se proporciona junto con el número Nequi, los clientes también pueden pagar un depósito a través de Bre-B. Deja ambos en blanco para omitir el paso de prepago.
+  </Card>
+</CardGroup>
+
+## Guarda tu configuración
+
+Haz clic en **Guardar configuración** al final de la página. El bot aplica la nueva configuración de inmediato — no se requiere reinicio.
+
+<Tip>
+  Después de guardar, envía un mensaje de prueba a tu número de WhatsApp Business para confirmar que el bot responde con los días, horarios y servicios correctos.
+</Tip>
+
+## Desconectar WhatsApp
+
+Para desvincular tu número de WhatsApp Business, desplázate hasta la sección **Número de WhatsApp** en Configuración del Bot. Cuando un número está conectado, aparece una opción de desconexión junto al indicador de estado conectado. Confirma la acción para eliminar la integración. El bot deja de responder inmediatamente después de desconectarse.
+
+## Solución de problemas
+
+<AccordionGroup>
+  <Accordion title="La ventana emergente de Meta se cerró pero el número sigue apareciendo como desconectado">
+    La conexión requiere completar todo el flujo de registro integrado de Meta, incluyendo la selección de una Cuenta de WhatsApp Business y un número de teléfono. Si cerraste la ventana emergente antes de tiempo o no completaste todos los pasos, la conexión no se guarda. Haz clic nuevamente en **Conectar número de WhatsApp** y completa cada paso del flujo de Meta.
+  </Accordion>
+
+  <Accordion title="El bot no está respondiendo a los mensajes">
+    Confirma que el número aparece como **Número conectado** (indicador verde) en Configuración del Bot. Si aparece como desconectado, reconéctalo a través del flujo de Meta. También verifica que al menos un día y un turno estén habilitados y guardados en la configuración de horarios.
+  </Accordion>
+
+  <Accordion title="Los clientes no pueden reservar ciertos servicios a través del bot">
+    Revisa la sección **Servicios disponibles en el bot**. Si un servicio está desmarcado, está excluido del catálogo del bot. Marca el servicio para rehabilitarlo y guarda la configuración.
+  </Accordion>
+
+  <Accordion title="El bot está ofreciendo horarios fuera del horario de atención">
+    Revisa la sección **Horario de atención** para cada día activo. Asegúrate de que los turnos habilitados reflejen tus horas de trabajo reales y que hayas guardado la configuración después de hacer cualquier cambio.
+  </Accordion>
+
+  <Accordion title="Los clientes no están viendo los precios">
+    El interruptor **Mostrar precios en catálogo** debe estar activado. Además, verifica que el servicio individual no tenga **Mostrar precio** desmarcado en la lista de servicios.
+  </Accordion>
+</AccordionGroup>
