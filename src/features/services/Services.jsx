@@ -37,7 +37,7 @@ export default function Services({ user, tenant }) {
     </svg>
   );
 
-  const catColor = { Inyectables: '#6366f1', Aparatología: '#0ea5e9', Cosmetología: '#ec4899', Valoraciones: '#f59e0b' };
+  const catColor = { /* opcional: colores por nombre si se desea mantener un set conocido */ };
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const fmt = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
@@ -145,13 +145,22 @@ export default function Services({ user, tenant }) {
         showSnack('Categoría editada');
       } else showAlert('Fallo en la Edición', "Error al editar categoría: " + error.message);
     } else {
-      // Crear
-      const { data, error } = await supabase.from('categoriaservicio').insert([{ descripcion: catName, idnegocios: tenant.id }]).select();
-      if (!error && data) {
-        showSnack('Categoría creada');
-        setCategories(prev => [...prev, data[0]]);
+      // Crear: validar duplicados por negocio
+      try {
+        const { data: exists } = await supabase.from('categoriaservicio').select('idcategoriaservicio').eq('idnegocios', tenant.id).ilike('descripcion', catName).limit(1).maybeSingle();
+        if (exists) {
+          showSnack('Ya existe una categoría con ese nombre para este negocio', 'error', 7000);
+        } else {
+          const { data, error } = await supabase.from('categoriaservicio').insert([{ descripcion: catName, idnegocios: tenant.id }]).select();
+          if (!error && data) {
+            showSnack('Categoría creada');
+            setCategories(prev => [...prev, data[0]]);
+          } else showAlert('Fallo en la Creación', "Error al crear categoría: " + error.message);
+        }
+      } catch (dupErr) {
+        console.warn('Error validando duplicado categoria:', dupErr.message || dupErr);
+        showAlert('Fallo en la Creación', "Error al crear categoría: " + (dupErr.message || dupErr));
       }
-      else showAlert('Fallo en la Creación', "Error al crear categoría: " + error.message);
     }
 
     setCatName('');
@@ -203,6 +212,23 @@ export default function Services({ user, tenant }) {
     setEditId(null);
     setSaving(false);
     
+    // Validar duplicados de servicio por negocio
+    try {
+      const { data: svcExists } = await supabase.from('servicios').select('idservicios').eq('idnegocios', tenant.id).ilike('nombre', form.name).limit(1).maybeSingle();
+      if (svcExists && !editId) {
+        showSnack('Ya existe un servicio con ese nombre para este negocio', 'error', 7000);
+        setSaving(false);
+        return;
+      }
+      if (svcExists && editId && Number(svcExists.idservicios) !== Number(editId)) {
+        showSnack('Ya existe otro servicio con ese nombre para este negocio', 'error', 7000);
+        setSaving(false);
+        return;
+      }
+    } catch (dupErr) {
+      console.warn('Error validando duplicado servicio:', dupErr.message || dupErr);
+    }
+
     if (editId) {
       supabase.from('servicios').update(payload).eq('idservicios', editId).then(({ error }) => {
         if (error) showAlert('Fallo de Edición', "Error actualizando: " + error.message);
@@ -247,7 +273,8 @@ export default function Services({ user, tenant }) {
     if (fullCatCount[c.descripcion] === undefined) fullCatCount[c.descripcion] = 0;
   });
 
-  const uniqueOptions = Array.from(new Set([...categories.map(c => c.descripcion), 'Inyectables', 'Aparatología', 'Cosmetología', 'Valoraciones']));
+  // Sólo usar las categorías que vienen de la base de datos
+  const uniqueOptions = Array.from(new Set(categories.map(c => c.descripcion)));
 
   return (
     <div className="services-container">

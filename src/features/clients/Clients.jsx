@@ -23,9 +23,9 @@ export default function Clients({ user, tenant }) {
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
-  const showSnack = (message, type = 'success') => {
+  const showSnack = (message, type = 'success', timeout = 7000) => {
     setSnackbar({ show: true, message, type });
-    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), 3000);
+    setTimeout(() => setSnackbar({ show: false, message: '', type: 'success' }), timeout);
   };
 
   const [showNoteModal, setShowNoteModal] = useState(false);
@@ -175,6 +175,28 @@ export default function Clients({ user, tenant }) {
     if (!form.doc || !form.name || !form.phone || !habeas) return;
     setSaving(true);
 
+    // Prevent duplicate email or cedula for the same business
+    try {
+      if (form.email) {
+        const { data: existingByEmail } = await supabase.from('cliente').select('idcliente').eq('email', form.email).eq('idnegocios', tenant.id).is('deleted_at', null).limit(1).maybeSingle();
+        if (existingByEmail) {
+          setSaving(false);
+          showSnack('El email ya está registrado para este negocio', 'error', 8000);
+          return;
+        }
+      }
+      if (form.doc) {
+        const { data: existingByDoc } = await supabase.from('cliente').select('idcliente').eq('cedula', form.doc).eq('idnegocios', tenant.id).is('deleted_at', null).limit(1).maybeSingle();
+        if (existingByDoc) {
+          setSaving(false);
+          showSnack('La cédula ya está registrada para este negocio', 'error', 8000);
+          return;
+        }
+      }
+    } catch (lookupErr) {
+      console.warn('Error validando duplicados cliente:', lookupErr.message || lookupErr);
+    }
+
     const parts = form.name.trim().split(' ');
     const nombre = parts[0];
     const apellido = parts.slice(1).join(' ') || '.';
@@ -201,11 +223,14 @@ export default function Clients({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      showSnack('Paciente registrado correctamente');
+      showSnack('Paciente registrado correctamente', 'success');
       fetchData();
     } else {
       setSaving(false);
-      alert("Error registrando paciente: " + error.message);
+      const em = (error.message || '').toLowerCase();
+      const dup = /duplicate|unique|already exists|clave duplicada/.test(em);
+      const msg = dup ? 'El email o identificación ya está registrado' : `Error registrando paciente: ${error.message}`;
+      showSnack(msg, 'error', 9000);
     }
   };
 
@@ -236,11 +261,11 @@ export default function Clients({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      showSnack('Evolución clínica guardada');
+      showSnack('Evolución clínica guardada', 'success');
       fetchData(); // Reload history
     } else {
       setSaving(false);
-      alert("Error insertando evolución médica: " + error.message);
+      showSnack(`Error insertando evolución médica: ${error.message}`, 'error', 9000);
     }
   };
 
@@ -252,6 +277,28 @@ export default function Clients({ user, tenant }) {
     }
     if (!editForm.doc || !editForm.name || !editForm.phone || !selectedId) return;
     setSaving(true);
+
+    // Prevent duplicate email or cedula for the same business (exclude current)
+    try {
+      if (editForm.email) {
+        const { data: existingByEmail } = await supabase.from('cliente').select('idcliente').eq('email', editForm.email).eq('idnegocios', tenant.id).is('deleted_at', null).limit(1).maybeSingle();
+        if (existingByEmail && Number(existingByEmail.idcliente) !== Number(selectedId)) {
+          setSaving(false);
+          showSnack('El email ya está registrado para este negocio', 'error', 8000);
+          return;
+        }
+      }
+      if (editForm.doc) {
+        const { data: existingByDoc } = await supabase.from('cliente').select('idcliente').eq('cedula', editForm.doc).eq('idnegocios', tenant.id).is('deleted_at', null).limit(1).maybeSingle();
+        if (existingByDoc && Number(existingByDoc.idcliente) !== Number(selectedId)) {
+          setSaving(false);
+          showSnack('La cédula ya está registrada para este negocio', 'error', 8000);
+          return;
+        }
+      }
+    } catch (lookupErr) {
+      console.warn('Error validando duplicados cliente (edit):', lookupErr.message || lookupErr);
+    }
 
     const parts = editForm.name.trim().split(' ');
     const nombre = parts[0];
@@ -276,11 +323,14 @@ export default function Clients({ user, tenant }) {
         idUsuario: user.idusuario || user.id,
         idNegocios: tenant.id
       });
-      showSnack('Datos actualizados correctamente');
+      showSnack('Datos actualizados correctamente', 'success');
       fetchData();
     } else {
       setSaving(false);
-      alert("Error actualizando paciente: " + error.message);
+      const em = (error.message || '').toLowerCase();
+      const dup = /duplicate|unique|already exists|clave duplicada/.test(em);
+      const msg = dup ? 'El email o identificación ya está registrado' : `Error actualizando paciente: ${error.message}`;
+      showSnack(msg, 'error', 9000);
     }
   };
 

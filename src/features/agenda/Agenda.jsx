@@ -514,7 +514,8 @@ export default function Agenda({ user, tenant }) {
 
   const startEdit = (appt) => {
     setEditId(appt.id);
-    originalAppt.current = { date: appt.date, time: appt.time, serviceIds: appt.serviceIds || [] };
+    // store previous productsUsed to compute stock deltas when editing
+    originalAppt.current = { date: appt.date, time: appt.time, serviceIds: appt.serviceIds || [], productsUsed: appt.productsUsed || [] };
     setForm({
       ...emptyForm(),
       clientId: appt.clientId,
@@ -656,24 +657,53 @@ export default function Agenda({ user, tenant }) {
         await supabase.from('detallecitagrupal').insert(groupEntries);
       }
 
-      // Sync product consumption
+      // Sync product consumption and adjust stock according to delta between previous and current productsUsed
+      await supabase.from('citaproducto').delete().eq('idcita', appointmentId);
       if (form.productsUsed.length > 0) {
-        await supabase.from('citaproducto').delete().eq('idcita', appointmentId);
         const productEntries = form.productsUsed.map(u => ({
           idcita: appointmentId,
           idproducto: u.idproducto,
           cantidad: u.cantidad,
         }));
         await supabase.from('citaproducto').insert(productEntries);
-        // Decrement stock (only on create, not on edit to avoid double-decrement)
-        if (!editId) {
-          for (const u of form.productsUsed) {
-            const prod = products.find(p => p.idproducto === u.idproducto);
-            if (prod) {
-              const newQty = Math.max(0, Number(prod.cantidad) - u.cantidad);
-              await supabase.from('producto').update({ cantidad: newQty }).eq('idproducto', u.idproducto);
-            }
+
+        // Compute deltas and update product stock accordingly
+        const prev = (originalAppt.current && originalAppt.current.productsUsed) || [];
+        const prevMap = new Map(prev.map(p => [Number(p.idproducto), Number(p.cantidad)]));
+        const newMap = new Map(form.productsUsed.map(p => [Number(p.idproducto), Number(p.cantidad)]));
+        const allIds = new Set([...prevMap.keys(), ...newMap.keys()]);
+
+        for (const pid of allIds) {
+          const prevQty = prevMap.get(pid) || 0;
+          const newQty = newMap.get(pid) || 0;
+          const delta = newQty - prevQty; // positive => consume more, negative => restock
+          if (delta === 0) continue;
+
+          // Fetch current quantity (prefer cached products list)
+          const prod = products.find(p => Number(p.idproducto) === Number(pid));
+          let currentQty = prod ? Number(prod.cantidad || 0) : null;
+          if (currentQty === null) {
+            const { data: pd } = await supabase.from('producto').select('cantidad').eq('idproducto', pid).maybeSingle();
+            currentQty = pd ? Number(pd.cantidad || 0) : 0;
           }
+
+          const updatedQty = Math.max(0, currentQty - delta);
+          await supabase.from('producto').update({ cantidad: updatedQty }).eq('idproducto', pid);
+        }
+      } else {
+        // No products now: if previously had products, restore their quantities
+        const prev = (originalAppt.current && originalAppt.current.productsUsed) || [];
+        for (const p of prev) {
+          const pid = Number(p.idproducto);
+          const qty = Number(p.cantidad || 0);
+          const prod = products.find(pp => Number(pp.idproducto) === pid);
+          let currentQty = prod ? Number(prod.cantidad || 0) : null;
+          if (currentQty === null) {
+            const { data: pd } = await supabase.from('producto').select('cantidad').eq('idproducto', pid).maybeSingle();
+            currentQty = pd ? Number(pd.cantidad || 0) : 0;
+          }
+          const updatedQty = Math.max(0, currentQty + qty);
+          await supabase.from('producto').update({ cantidad: updatedQty }).eq('idproducto', pid);
         }
       }
       
