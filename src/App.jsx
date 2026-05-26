@@ -4,6 +4,7 @@ import './index.css';
 import './App.css';
 import TourOverlay from './components/tour/TourOverlay';
 import './components/tour/TourOverlay.css';
+import './features/manual/Manual.css';
 import Login from './features/auth/Login';
 import ForgotPassword from './features/auth/ForgotPassword';
 import ResetPassword from './features/auth/ResetPassword';
@@ -19,6 +20,7 @@ import Profile from './features/users/Profile';
 import AuditLogs from './features/audit/AuditLogs.jsx';
 import Statistics from './features/statistics/Statistics';
 
+import Manual from './features/manual/Manual';
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
 import BotConfig from './features/bot/BotConfig';
@@ -62,6 +64,48 @@ function LoadingScreen() {
           />
         ))}
       </div>
+    </div>
+  );
+}
+
+function HelpMenu({ userRole, onShowTour, onShowManual }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    document.addEventListener('click', close);
+    return () => document.removeEventListener('click', close);
+  }, [open]);
+
+  return (
+    <div className="help-menu-wrapper">
+      {open && (
+        <div className="help-menu-popup">
+          <button
+            className="help-menu-item"
+            onClick={() => { onShowManual(); setOpen(false); }}
+          >
+            📖 Ver manual
+          </button>
+          {userRole === 'admin' && (
+            <button
+              className="help-menu-item"
+              onClick={() => { onShowTour(); setOpen(false); }}
+            >
+              🎯 Ver tutorial
+            </button>
+          )}
+        </div>
+      )}
+      <button
+        className="tour-help-btn"
+        onClick={e => { e.stopPropagation(); setOpen(o => !o); }}
+        title="Ayuda"
+        aria-label="Abrir menú de ayuda"
+      >
+        ?
+      </button>
     </div>
   );
 }
@@ -201,6 +245,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
       case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;
       case 'bot':           return user.role === 'admin' ? <BotConfig user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
+      case 'manual': return <Manual user={user} tenant={tenant} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
   };
@@ -244,15 +289,12 @@ function TenantApp({ tenant, initialView = 'login' }) {
         />
       )}
 
-      {!showTour && user.role === 'admin' && (
-        <button
-          className="tour-help-btn"
-          onClick={() => setShowTour(true)}
-          title="Iniciar tour de la aplicación"
-          aria-label="Ayuda: ver tour de la aplicación"
-        >
-          ?
-        </button>
+      {!showTour && (
+        <HelpMenu
+          userRole={user.role}
+          onShowTour={() => setShowTour(true)}
+          onShowManual={() => setCurrentRoute('manual')}
+        />
       )}
     </GlobalProvider>
   );
