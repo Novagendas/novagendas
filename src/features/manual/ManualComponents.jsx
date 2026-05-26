@@ -62,10 +62,10 @@ export function ManualStep({ number, title, children }) {
   return (
     <div style={{ display: 'flex', gap: '0.875rem', marginBottom: '1rem' }}>
       <div style={{
-        width: 28, height: 28, borderRadius: '50%',
+        width: '28px', height: '28px', borderRadius: '50%',
         background: 'var(--primary)', color: 'var(--surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: 2,
+        fontSize: '0.75rem', fontWeight: 700, flexShrink: 0, marginTop: '2px',
       }}>
         {number}
       </div>
