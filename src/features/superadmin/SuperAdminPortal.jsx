@@ -22,10 +22,11 @@ const ROL_OPTIONS = [
 ];
 
 const TABS = [
-  { id: 'negocios',   label: 'Negocios',    icon: '🏢' },
-  { id: 'usuarios',   label: 'Usuarios',    icon: '👥' },
-  { id: 'ubicaciones',label: 'Ubicaciones', icon: '📍' },
-  { id: 'monitoreo',  label: 'Monitoreo',   icon: '📊' },
+  { id: 'negocios',    label: 'Negocios',     icon: '🏢' },
+  { id: 'usuarios',    label: 'Usuarios',     icon: '👥' },
+  { id: 'ubicaciones', label: 'Ubicaciones',  icon: '📍' },
+  { id: 'monitoreo',   label: 'Monitoreo',    icon: '📊' },
+  { id: 'arquitectura',label: 'Arquitectura', icon: '🏗️' },
 ];
 
 /* ─── Small components ─────────────────────────────────── */
@@ -340,6 +341,145 @@ function UserForm({ form, setForm, onSubmit, onDelete, isEdit, saving, tenants }
         {isEdit && <button type="button" onClick={onDelete} className="super-btn-delete-alt">🗑️ Eliminar Usuario</button>}
       </div>
     </form>
+  );
+}
+
+/* ─── Architecture Tab ──────────────────────────────────── */
+function ArchitectureTab() {
+  const codeStyle = {
+    display: 'block',
+    background: 'var(--bg-subtle)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '1rem',
+    fontFamily: 'var(--font-mono)',
+    fontSize: '0.8125rem',
+    overflowX: 'auto',
+    marginBottom: '1rem',
+    color: 'var(--text-2)',
+    whiteSpace: 'pre',
+  };
+  const tableStyle = {
+    width: '100%', borderCollapse: 'collapse',
+    fontSize: '0.875rem', marginBottom: '1.25rem',
+  };
+  const thStyle = {
+    textAlign: 'left', padding: '0.5rem 0.75rem',
+    borderBottom: '2px solid var(--border)',
+    color: 'var(--text)', fontWeight: 600,
+  };
+  const tdStyle = {
+    padding: '0.5rem 0.75rem',
+    borderBottom: '1px solid var(--border-light)',
+    color: 'var(--text-2)', verticalAlign: 'top',
+  };
+
+  return (
+    <div style={{ padding: '1.5rem', maxWidth: 900, lineHeight: 1.7 }}>
+      <h2 style={{ fontSize: '1.375rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.25rem' }}>
+        Arquitectura del Sistema Novagendas
+      </h2>
+      <div style={{ height: 3, width: 48, background: 'linear-gradient(90deg, var(--primary), var(--accent))', borderRadius: 99, marginBottom: '1.5rem' }} />
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>1. Resumen General</h3>
+      <p style={{ color: 'var(--text-2)', marginBottom: '1rem' }}>
+        Novagendas es una <strong>plataforma SaaS multi-tenant de gestión de citas</strong> orientada a clínicas estéticas. Opera bajo un modelo de <strong>subdominio por negocio</strong>. Es una herramienta de operaciones interna — no hay portal público de autoagendamiento.
+      </p>
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>2. Capas de la Arquitectura</h3>
+      <table style={tableStyle}>
+        <thead><tr><th style={thStyle}>Capa</th><th style={thStyle}>Responsabilidad</th></tr></thead>
+        <tbody>
+          {[
+            ['Routing por Subdominio', 'Identifica el tenant a partir del subdominio y enruta la sesión al espacio correcto'],
+            ['Autenticación', 'Valida credenciales, genera sesiones con TTL 24h, controla acceso por rol'],
+            ['Core de Negocio', 'Lógica de dominio: citas, clientes, servicios, pagos, inventario, equipo'],
+            ['Integraciones', 'Adaptadores hacia Google Calendar API y WhatsApp Business API de Meta'],
+            ['Base de Datos', 'Persistencia por tenant con aislamiento lógico (Supabase/PostgreSQL)'],
+          ].map(([cap, resp], i) => (
+            <tr key={i}><td style={tdStyle}><strong>{cap}</strong></td><td style={tdStyle}>{resp}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>3. Control de Acceso (RBAC)</h3>
+      <table style={tableStyle}>
+        <thead><tr><th style={thStyle}>Rol</th><th style={thStyle}>Módulos accesibles</th></tr></thead>
+        <tbody>
+          {[
+            ['Administrador', 'Todos: Agenda, Clientes, Servicios, Pagos, Inventario, Usuarios, Estadísticas, Auditoría, Sedes, Bot'],
+            ['Recepcionista', 'Agenda, Clientes, Servicios (lectura), Inventario (lectura)'],
+            ['Especialista', 'Agenda propias, Clientes propios, Perfil'],
+          ].map(([rol, modulos], i) => (
+            <tr key={i}><td style={tdStyle}><strong>{rol}</strong></td><td style={tdStyle}>{modulos}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>4. Ciclo de vida de una cita</h3>
+      <pre style={codeStyle}>{`[*] --> EnEspera    : Cita creada
+EnEspera --> Confirmada : Cliente confirmado
+EnEspera --> Cancelada  : Cancelación
+Confirmada --> Completada : Sesión realizada
+Confirmada --> Cancelada  : Cancelación
+Cancelada --> [*]
+Completada --> [*]`}</pre>
+      <p style={{ color: 'var(--text-2)', marginBottom: '1rem' }}>
+        Comportamientos clave: detección de conflictos antes de guardar, drag &amp; drop en vistas Día/Semana, descuento automático de inventario al crear (no al editar), sincronización no bloqueante con Google Calendar.
+      </p>
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>5. Stack Técnico</h3>
+      <table style={tableStyle}>
+        <thead><tr><th style={thStyle}>Componente</th><th style={thStyle}>Tecnología</th></tr></thead>
+        <tbody>
+          {[
+            ['Frontend', 'React 19 + Vite 8, JavaScript (sin TypeScript), CSS custom properties'],
+            ['Backend / DB', 'Supabase (PostgreSQL + Auth + SMTP + Edge Functions)'],
+            ['Auth', 'RPC custom login_usuario — NO usa Supabase Auth para login'],
+            ['Google Calendar', 'OAuth2 Authorization Code via Edge Functions, tokens en tabla google_integrations'],
+            ['WhatsApp', 'Meta Embedded Signup, webhook via Edge Functions'],
+            ['Multi-tenancy', 'Subdominio → tabla negocios → idnegocios en cada query'],
+          ].map(([comp, tech], i) => (
+            <tr key={i}><td style={tdStyle}><strong>{comp}</strong></td><td style={tdStyle}>{tech}</td></tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>6. Buenas Prácticas</h3>
+      <ul style={{ color: 'var(--text-2)', paddingLeft: '1.5rem', marginBottom: '1rem' }}>
+        <li><strong>Soft delete generalizado</strong> — preserva integridad referencial e histórico</li>
+        <li><strong>Append-only en notas clínicas</strong> — integridad del historial médico</li>
+        <li><strong>RBAC con sobreescritura por usuario</strong> — flexibilidad sin romper el modelo de roles</li>
+        <li><strong>Integraciones externas no bloqueantes</strong> — resiliencia ante fallos de Google/Meta</li>
+        <li><strong>Aislamiento de tenant por subdominio</strong> — separación a nivel DNS, app y DB</li>
+        <li><strong>Auditoría CRUD completa</strong> — trazabilidad total de acciones</li>
+        <li><strong>TTL fijo de sesión 24h</strong> — seguridad predecible</li>
+        <li><strong>Consentimiento Habeas Data obligatorio</strong> — cumplimiento Ley 1581 Colombia</li>
+      </ul>
+
+      <h3 style={{ color: 'var(--text)', marginBottom: '0.5rem' }}>7. Riesgos y Puntos de Mejora</h3>
+      <table style={tableStyle}>
+        <thead><tr><th style={thStyle}>Riesgo</th><th style={thStyle}>Nivel</th><th style={thStyle}>Mitigación recomendada</th></tr></thead>
+        <tbody>
+          {[
+            ['Fallo silencioso de sync Google Calendar', 'Medio', 'Cola de reintentos con backoff exponencial'],
+            ['Sesiones activas tras desactivar usuario', 'Medio', 'Lista negra de tokens para invalidación inmediata'],
+            ['Sin rate limiting en bot WhatsApp', 'Medio', 'Throttling por número de teléfono'],
+            ['Passwords en texto plano en tabla usuario', 'Alto', 'Hashear con bcrypt en RPC login_usuario'],
+          ].map(([riesgo, nivel, mit], i) => (
+            <tr key={i}>
+              <td style={tdStyle}>{riesgo}</td>
+              <td style={{ ...tdStyle, color: nivel === 'Alto' ? 'var(--danger)' : 'var(--warning)', fontWeight: 600 }}>{nivel}</td>
+              <td style={tdStyle}>{mit}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <p style={{ color: 'var(--text-4)', fontSize: '0.8125rem', marginTop: '1rem' }}>
+        Fuente: <code style={{ fontFamily: 'var(--font-mono)' }}>documentacion oficial/technical/architecture.mdx</code>
+      </p>
+    </div>
   );
 }
 
@@ -756,7 +896,7 @@ export default function SuperAdminPortal() {
   const ubicacionesCount = ubicaciones.length;
 
   /* ─── Current tab count badge ─── */
-  const tabCount = { negocios: filteredTenants.length, usuarios: filteredUsers.length, ubicaciones: filteredUbic.length, monitoreo: tenants.length };
+  const tabCount = { negocios: filteredTenants.length, usuarios: filteredUsers.length, ubicaciones: filteredUbic.length, monitoreo: tenants.length, arquitectura: null };
 
   /* ═══════════════ LOGIN SCREEN ═══════════════ */
   if (!adminLogged) return (
@@ -829,7 +969,7 @@ export default function SuperAdminPortal() {
             Salir
           </button>
           <ThemeToggle style={{ position: 'relative' }} />
-          {tab !== 'monitoreo' && (
+          {tab !== 'monitoreo' && tab !== 'arquitectura' && (
             <button
               className="btn btn-primary"
               style={{ borderRadius: 10, padding: '0.5rem 1.1rem', fontSize: '0.85rem' }}
@@ -1103,6 +1243,9 @@ export default function SuperAdminPortal() {
             </div>
           </div>
         )}
+
+        {/* ══════════ ARQUITECTURA TAB ══════════ */}
+        {tab === 'arquitectura' && <ArchitectureTab />}
 
         {/* ══════════ MONITOREO TAB ══════════ */}
         {tab === 'monitoreo' && (
