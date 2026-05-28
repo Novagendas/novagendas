@@ -18,7 +18,7 @@ export function buildMenu(
   telefonoContacto?: string | null
 ): Record<string, unknown> {
   const phone = telefonoContacto?.trim() ?? "";
-  const contactLine = phone ? `\n\n📞 Contacto directo: *${phone}*` : "";
+  const contactLine = phone ? `\n\nComunicate con un asesor dando clic aqui: *${phone}*` : "";
 
   return {
     type: "interactive",
@@ -357,4 +357,113 @@ export function buildPaymentInfo(
   }
   lines.push("\n¡Gracias por tu preferencia! 🙏");
   return buildText(lines.join("\n"));
+}
+
+export function buildViewCategoryList(
+  categories: Array<{ idcategoriaservicio: number; descripcion: string }>
+): Record<string, unknown> {
+  const rows = categories.slice(0, 10).map((c) => ({
+    id: `VCAT_${c.idcategoriaservicio}`,
+    title: trunc(c.descripcion, 24),
+    description: "Ver servicios de esta categoría",
+  }));
+  return {
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: "¿Qué categoría de servicios deseas ver?" },
+      action: { button: "Ver categorías", sections: [{ title: "Categorías", rows }] },
+    },
+  };
+}
+
+export function buildViewServiceList(
+  services: Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>,
+  showPrice = true,
+  preciosOcultos: number[] = [],
+  excluidos: number[] = []
+): Record<string, unknown> {
+  const filtered = services.filter((s) => !excluidos.includes(s.idservicios));
+  if (filtered.length === 0) {
+    return buildText("No hay servicios disponibles en esta categoría.");
+  }
+  const rows = filtered.slice(0, 10).map((s) => {
+    const showThisPrice = showPrice && !preciosOcultos.includes(s.idservicios);
+    return {
+      id: `VSVC_${s.idservicios}`,
+      title: trunc(s.nombre, 24),
+      description: trunc(
+        showThisPrice
+          ? `${formatCOP(s.precio)} · ${s.duracion} min — toca para ver descripción`
+          : `${s.duracion} min — toca para ver descripción`,
+        72
+      ),
+    };
+  });
+  return {
+    type: "interactive",
+    interactive: {
+      type: "list",
+      body: { text: "Selecciona un servicio para ver su descripción:" },
+      action: { button: "Ver servicios", sections: [{ title: "Servicios", rows }] },
+    },
+  };
+}
+
+export function buildCategoryCard(
+  cat: { idcategoriaservicio: number; descripcion: string }
+): Record<string, unknown> {
+  return {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: `📂 *${cat.descripcion}*` },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: `VCAT_${cat.idcategoriaservicio}`, title: "Ver servicios" } },
+        ],
+      },
+    },
+  };
+}
+
+export function buildServiceCard(
+  svc: { idservicios: number; nombre: string; precio: number; duracion: number },
+  showPrice = true,
+  isPriceHidden = false
+): Record<string, unknown> {
+  const priceInfo = showPrice && !isPriceHidden
+    ? `💰 ${formatCOP(svc.precio)} · ⏱ ${svc.duracion} min`
+    : `⏱ ${svc.duracion} min`;
+  return {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: `💆 *${svc.nombre}*\n${priceInfo}` },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: `VSVC_${svc.idservicios}`, title: "Ver descripción" } },
+        ],
+      },
+    },
+  };
+}
+
+export function buildBookFromServicePrompt(
+  svcId: number,
+  svcNombre: string
+): Record<string, unknown> {
+  return {
+    type: "interactive",
+    interactive: {
+      type: "button",
+      body: { text: `¿Deseas agendar una cita de *${trunc(svcNombre, 40)}*?` },
+      action: {
+        buttons: [
+          { type: "reply", reply: { id: `BOOK_SVC_${svcId}`, title: "Sí, quiero agendar" } },
+          { type: "reply", reply: { id: "CONTACT_ASESOR", title: "Hablar con asesor" } },
+        ],
+      },
+    },
+  };
 }

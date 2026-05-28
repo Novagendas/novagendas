@@ -4,7 +4,6 @@ import './index.css';
 import './App.css';
 import TourOverlay from './components/tour/TourOverlay';
 import './components/tour/TourOverlay.css';
-import './features/manual/Manual.css';
 import Login from './features/auth/Login';
 import ForgotPassword from './features/auth/ForgotPassword';
 import ResetPassword from './features/auth/ResetPassword';
@@ -20,7 +19,6 @@ import Profile from './features/users/Profile';
 import AuditLogs from './features/audit/AuditLogs.jsx';
 import Statistics from './features/statistics/Statistics';
 
-import Manual from './features/manual/Manual';
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
 import BotConfig from './features/bot/BotConfig';
@@ -68,7 +66,7 @@ function LoadingScreen() {
   );
 }
 
-function HelpMenu({ userRole, onShowTour, onShowManual }) {
+function HelpMenu({ userRole, onShowTour }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -84,7 +82,7 @@ function HelpMenu({ userRole, onShowTour, onShowManual }) {
         <div className="help-menu-popup">
           <button
             className="help-menu-item"
-            onClick={() => { onShowManual(); setOpen(false); }}
+            onClick={() => { window.open('https://manual-novagendas.vercel.app', '_blank'); setOpen(false); }}
           >
             📖 Ver manual
           </button>
@@ -245,7 +243,6 @@ function TenantApp({ tenant, initialView = 'login' }) {
       case 'logs':          return <AuditLogs tenant={tenant} user={user} />;
       case 'estadisticas':  return <Statistics user={user} tenant={tenant} />;
       case 'bot':           return user.role === 'admin' ? <BotConfig user={user} tenant={tenant} /> : <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
-      case 'manual': return <Manual user={user} tenant={tenant} />;
       default: return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
   };
@@ -293,7 +290,6 @@ function TenantApp({ tenant, initialView = 'login' }) {
         <HelpMenu
           userRole={user.role}
           onShowTour={() => setShowTour(true)}
-          onShowManual={() => setCurrentRoute('manual')}
         />
       )}
     </GlobalProvider>

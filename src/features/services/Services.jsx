@@ -22,7 +22,7 @@ export default function Services({ user, tenant }) {
   const [editCatId, setEditCatId] = useState(null);
 
   const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ name: '', category: '', duration: 30, price: '', color: '#3b82f6' });
+  const [form, setForm] = useState({ name: '', category: '', duration: 30, price: '', color: '#3b82f6', description: '' });
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'success' });
@@ -107,13 +107,13 @@ export default function Services({ user, tenant }) {
       return;
     }
     setEditId(null);
-    setForm({ name: '', category: categories[0].descripcion, duration: 30, price: '', color: '#3b82f6' });
+    setForm({ name: '', category: categories[0].descripcion, duration: 30, price: '', color: '#3b82f6', description: '' });
     setShowModal(true);
   };
 
   const startEdit = (s) => {
     setEditId(s.id);
-    setForm({ name: s.name, category: s.category, duration: s.duration, price: s.price, color: s.color });
+    setForm({ name: s.name, category: s.category, duration: s.duration, price: s.price, color: s.color, description: s.description || '' });
     setShowModal(true);
   };
 
@@ -200,6 +200,7 @@ export default function Services({ user, tenant }) {
 
     const payload = {
       nombre: form.name,
+      descripcion: form.description?.trim() || null,
       idcategoriaservicio: catId,
       duracion: parseInt(form.duration, 10),
       precio: parseFloat(form.price),
@@ -449,18 +450,30 @@ export default function Services({ user, tenant }) {
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="service-modal-form">
+            <form id="service-form" onSubmit={handleSubmit} className="service-modal-form">
               <div className="input-group">
                 <label className="service-form-label">Nombre del servicio</label>
-                <SuggestionInput 
-                  placeholder="Ej. Depilación Láser Axilas" 
-                  value={form.name} 
-                  onChange={e => update('name', e.target.value)} 
-                  required 
-                  className="rounded-12" 
-                  spellCheck={true} 
-                  lang="es" 
-                  suggestions={[...new Set([...services.map(s => s.name), ...commonTerms])]} 
+                <SuggestionInput
+                  placeholder="Ej. Depilación Láser Axilas"
+                  value={form.name}
+                  onChange={e => update('name', e.target.value)}
+                  required
+                  className="rounded-12"
+                  spellCheck={true}
+                  lang="es"
+                  suggestions={[...new Set([...services.map(s => s.name), ...commonTerms])]}
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="service-form-label">Descripción (opcional)</label>
+                <textarea
+                  className="input-field rounded-12"
+                  placeholder="Describe brevemente el servicio..."
+                  value={form.description}
+                  onChange={e => update('description', e.target.value)}
+                  rows={3}
+                  style={{ resize: 'vertical', minHeight: '72px' }}
                 />
               </div>
 
@@ -513,24 +526,25 @@ export default function Services({ user, tenant }) {
                   <input type="color" className="input-field service-color-input" value={form.color} onChange={e => update('color', e.target.value)} />
                 </div>
               </div>
-
-              <div className="service-modal-footer">
-                <button type="button" className="btn btn-outline service-cancel-btn" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
-                <button 
-                  type="submit" 
-                  className="btn btn-primary service-submit-btn" 
-                  style={{ '--submit-bg': `linear-gradient(135deg, ${form.color}, ${form.color}cc)`, '--submit-shadow': `${form.color}33` }} 
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <div className="flex items-center gap-2">
-                      <div className="spinner spinner-small"></div>
-                      Guardando...
-                    </div>
-                  ) : (editId ? 'Guardar Cambios' : 'Registrar Servicio')}
-                </button>
-              </div>
             </form>
+
+            <div className="service-modal-footer">
+              <button type="button" className="btn btn-outline service-cancel-btn" onClick={() => setShowModal(false)} disabled={saving}>Cancelar</button>
+              <button
+                type="submit"
+                form="service-form"
+                className="btn btn-primary service-submit-btn"
+                style={{ '--submit-bg': `linear-gradient(135deg, ${form.color}, ${form.color}cc)`, '--submit-shadow': `${form.color}33` }}
+                disabled={saving}
+              >
+                {saving ? (
+                  <div className="flex items-center gap-2">
+                    <div className="spinner spinner-small"></div>
+                    Guardando...
+                  </div>
+                ) : (editId ? 'Guardar Cambios' : 'Registrar Servicio')}
+              </button>
+            </div>
           </div>
         </div>
       )}

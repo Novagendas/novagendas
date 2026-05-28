@@ -34,6 +34,23 @@ export async function getClientByCedula(
   return data ?? null;
 }
 
+export async function getClientByTelefono(
+  supabase: SupabaseClient,
+  idnegocios: number,
+  telefono: string
+): Promise<ClientRecord | null> {
+  const { data } = await supabase
+    .from("cliente")
+    .select("idcliente, nombre, apellido, email")
+    .eq("idnegocios", idnegocios)
+    .eq("telefono", telefono.trim())
+    .is("deleted_at", null)
+    .limit(1)
+    .maybeSingle();
+
+  return data ?? null;
+}
+
 export async function createAppointment(
   supabase: SupabaseClient,
   idnegocios: number,

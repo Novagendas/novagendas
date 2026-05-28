@@ -1,22 +1,23 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { sendMessage } from "./send.ts";
 import {
-  buildMenu, buildCategoryList, buildServiceList, buildServiceCatalog, buildSpecialistList,
+  buildMenu, buildCategoryList, buildServiceList, buildSpecialistList,
   buildDateList, buildTimeList, buildJornadaSelector, buildConfirmation,
   buildAppointmentList, buildCancelConfirmation, buildText,
   buildEditAppointmentList, buildEditConfirmation,
   buildPaymentOptions, buildPaymentInfo,
+  buildCategoryCard, buildServiceCard, buildBookFromServicePrompt,
 } from "./messages.ts";
 import { getAvailableDates, getAvailableSlots, validateCustomDate } from "./availability.ts";
 import {
-  getClientByCedula, createAppointment, updateAppointment,
+  getClientByTelefono, createAppointment, updateAppointment,
   getUpcomingAppointments, cancelAppointment, createClient,
   type ClientRecord,
 } from "./appointment.ts";
 
 type Step =
   | "MENU"
-  | "ASK_CEDULA"
+  | "ASK_TELEFONO"
   | "REGISTER_NOMBRE"
   | "REGISTER_EMAIL"
   | "REGISTER_TELEFONO"
@@ -36,7 +37,10 @@ type Step =
   | "EDIT_DATE_CUSTOM"
   | "EDIT_JORNADA"
   | "EDIT_TIME"
-  | "EDIT_CONFIRM";
+  | "EDIT_CONFIRM"
+  | "VIEW_SERVICE_CAT"
+  | "VIEW_SERVICE_SVC"
+  | "VIEW_SVC_BOOK";
 
 interface ConvData {
   pending_action?: "AGENDAR" | "VER" | "CANCELAR" | "EDITAR";
@@ -44,8 +48,10 @@ interface ConvData {
   client_nombre?: string;
   client_email?: string | null;
   reg_cedula?: string;
+  reg_telefono?: string;
   reg_nombre?: string;
   reg_email?: string;
+  view_category_id?: number;
   selectedCategory?: { id: number; descripcion: string } | null;
   servicio_id?: number;
   servicio_nombre?: string;
@@ -317,6 +323,37 @@ async function continueAfterClientFound(
   };
 
   if (conv.data.pending_action === "AGENDAR") {
+    // Servicio pre-seleccionado desde el catálogo → ir directo a especialista
+    if (baseData.servicio_id) {
+      const { data: links } = await supabase
+        .from("negociousuario")
+        .select("idusuario")
+        .eq("idnegocios", idnegocios);
+      const userIds = (links ?? []).map((l: { idusuario: number }) => l.idusuario);
+      type SpecRow = { idusuario: number; nombre: string; apellido: string };
+      let specialists: SpecRow[] = [];
+      if (userIds.length > 0) {
+        const { data: rolData } = await supabase
+          .from("rolpermisos")
+          .select("idusuario")
+          .eq("idrol", 3)
+          .in("idusuario", userIds);
+        const specialistIds = (rolData ?? []).map((r: { idusuario: number }) => r.idusuario);
+        if (specialistIds.length > 0) {
+          const { data: espData } = await supabase
+            .from("usuario")
+            .select("idusuario, nombre, apellido")
+            .in("idusuario", specialistIds)
+            .is("deleted_at", null);
+          specialists = (espData ?? []) as SpecRow[];
+        }
+      }
+      await save(supabase, conv, "SELECT_SPECIALIST", baseData);
+      await send(buildText(`Hola *${client.nombre}* 👋 ¿Con qué especialista prefieres tu cita de *${baseData.servicio_nombre ?? "el servicio"}*?`));
+      await send(buildSpecialistList(specialists));
+      return;
+    }
+
     const [catsResult, botCfgResult] = await Promise.all([
       supabase
         .from("categoriaservicio")
@@ -490,43 +527,39 @@ async function processStep(
 
   // ── MENU_AGENDAR ──────────────────────────────────────────────────────────
   if (v === "MENU_AGENDAR") {
-    await save(supabase, conv, "ASK_CEDULA", { pending_action: "AGENDAR" });
-    await send(buildText("Para continuar, escribe tu número de cédula:"));
+    await save(supabase, conv, "ASK_TELEFONO", { pending_action: "AGENDAR" });
+    await send(buildText("Para continuar, escribe tu número de teléfono:"));
     return;
   }
 
   // ── MENU_VER ──────────────────────────────────────────────────────────────
   if (v === "MENU_VER") {
-    await save(supabase, conv, "ASK_CEDULA", { pending_action: "VER" });
-    await send(buildText("Para continuar, escribe tu número de cédula:"));
+    await save(supabase, conv, "ASK_TELEFONO", { pending_action: "VER" });
+    await send(buildText("Para continuar, escribe tu número de teléfono:"));
     return;
   }
 
   // ── MENU_CANCELAR ─────────────────────────────────────────────────────────
   if (v === "MENU_CANCELAR") {
-    await save(supabase, conv, "ASK_CEDULA", { pending_action: "CANCELAR" });
-    await send(buildText("Para continuar, escribe tu número de cédula:"));
+    await save(supabase, conv, "ASK_TELEFONO", { pending_action: "CANCELAR" });
+    await send(buildText("Para continuar, escribe tu número de teléfono:"));
     return;
   }
 
   // ── MENU_EDITAR ───────────────────────────────────────────────────────────
   if (v === "MENU_EDITAR") {
-    await save(supabase, conv, "ASK_CEDULA", { pending_action: "EDITAR" });
-    await send(buildText("Para continuar, escribe tu número de cédula:"));
+    await save(supabase, conv, "ASK_TELEFONO", { pending_action: "EDITAR" });
+    await send(buildText("Para continuar, escribe tu número de teléfono:"));
     return;
   }
 
   // ── MENU_SERVICIOS ────────────────────────────────────────────────────────
   if (v === "MENU_SERVICIOS") {
-    const [svcsResult, botConfigResult] = await Promise.all([
+    const [catsResult, botConfigResult] = await Promise.all([
       supabase
-        .from("servicios")
-        .select(
-          "idservicios, nombre, precio, duracion, idcategoriaservicio, categoriaservicio(descripcion)"
-        )
+        .from("categoriaservicio")
+        .select("idcategoriaservicio, descripcion")
         .eq("idnegocios", idnegocios)
-        .is("deleted_at", null)
-        .neq("idestado", 2)
         .order("idcategoriaservicio"),
       supabase
         .from("bot_config")
@@ -535,59 +568,89 @@ async function processStep(
         .maybeSingle(),
     ]);
 
+    const cats = (catsResult.data ?? []) as Array<{ idcategoriaservicio: number; descripcion: string }>;
     const excluidos: number[] =
-      (botConfigResult.data as { servicios_excluidos: number[] } | null)
-        ?.servicios_excluidos ?? [];
+      (botConfigResult.data as { servicios_excluidos: number[] } | null)?.servicios_excluidos ?? [];
     const mostrarPrecios: boolean =
-      (botConfigResult.data as { mostrar_precios: boolean } | null)
-        ?.mostrar_precios ?? true;
+      (botConfigResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
     const preciosOcultos: number[] =
-      (botConfigResult.data as { servicios_precios_ocultos: number[] } | null)
-        ?.servicios_precios_ocultos ?? [];
+      (botConfigResult.data as { servicios_precios_ocultos: number[] } | null)?.servicios_precios_ocultos ?? [];
 
-    const catalog = (svcsResult.data ?? [])
-      .filter((s: unknown) => {
-        const row = s as { idservicios: number };
-        return !excluidos.includes(row.idservicios);
-      })
-      .map((s: unknown) => {
-        const row = s as {
-          idservicios: number;
-          nombre: string;
-          precio: number;
-          duracion: number;
-          categoriaservicio: { descripcion: string } | null;
-        };
-        return {
-          nombre: row.nombre,
-          precio: (mostrarPrecios && !preciosOcultos.includes(row.idservicios)) ? row.precio : null,
-          duracion: row.duracion,
-          categoria: row.categoriaservicio?.descripcion ?? "General",
-        };
-      });
+    if (cats.length === 0) {
+      const { data: svcsData } = await supabase
+        .from("servicios")
+        .select("idservicios, nombre, precio, duracion")
+        .eq("idnegocios", idnegocios)
+        .is("deleted_at", null)
+        .neq("idestado", 2)
+        .order("nombre");
+      const svcs = ((svcsData ?? []) as Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>)
+        .filter((s) => !excluidos.includes(s.idservicios));
+      if (svcs.length === 0) {
+        await send(buildText("No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)));
+        await save(supabase, conv, "MENU", {});
+        await send(buildMenu(businessName, telefonoContacto));
+        return;
+      }
+      await save(supabase, conv, "VIEW_SERVICE_SVC", {});
+      await send(buildText("Aquí están nuestros servicios:"));
+      for (const svc of svcs) {
+        await send(buildServiceCard(svc, mostrarPrecios, preciosOcultos.includes(svc.idservicios)));
+      }
+      return;
+    }
 
-    await send(buildServiceCatalog(catalog));
-    await save(supabase, conv, "MENU", {});
-    await send(buildMenu(businessName, telefonoContacto));
+    if (cats.length === 1) {
+      const cat = cats[0];
+      const { data: svcsData } = await supabase
+        .from("servicios")
+        .select("idservicios, nombre, precio, duracion")
+        .eq("idnegocios", idnegocios)
+        .eq("idcategoriaservicio", cat.idcategoriaservicio)
+        .is("deleted_at", null)
+        .neq("idestado", 2)
+        .order("nombre");
+      const svcs = ((svcsData ?? []) as Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>)
+        .filter((s) => !excluidos.includes(s.idservicios));
+      if (svcs.length === 0) {
+        await send(buildText("No hay servicios disponibles en este momento." + contactSuffix(telefonoContacto)));
+        await save(supabase, conv, "MENU", {});
+        await send(buildMenu(businessName, telefonoContacto));
+        return;
+      }
+      await save(supabase, conv, "VIEW_SERVICE_SVC", { view_category_id: cat.idcategoriaservicio });
+      await send(buildText(`Servicios de *${cat.descripcion}*:`));
+      for (const svc of svcs) {
+        await send(buildServiceCard(svc, mostrarPrecios, preciosOcultos.includes(svc.idservicios)));
+      }
+      return;
+    }
+
+    await save(supabase, conv, "VIEW_SERVICE_CAT", {});
+    await send(buildText("Selecciona una categoría para ver sus servicios:"));
+    for (const cat of cats) {
+      await send(buildCategoryCard(cat));
+    }
     return;
   }
 
-  // ── ASK_CEDULA → buscar cliente ───────────────────────────────────────────
-  if (conv.step === "ASK_CEDULA") {
-    if (v.trim().length > 20) {
-      await send(buildText("El número de cédula ingresado no es válido. Inténtalo de nuevo:"));
+  // ── ASK_TELEFONO → buscar cliente por teléfono ────────────────────────────
+  if (conv.step === "ASK_TELEFONO") {
+    const telefono = v.trim();
+    if (telefono.length < 7 || telefono.length > 20) {
+      await send(buildText("El número de teléfono ingresado no es válido. Inténtalo de nuevo:"));
       return;
     }
-    const client = await getClientByCedula(supabase, idnegocios, v);
+    const client = await getClientByTelefono(supabase, idnegocios, telefono);
 
     if (!client) {
       await save(supabase, conv, "REGISTER_NOMBRE", {
         ...conv.data,
-        reg_cedula: v.trim(),
+        reg_telefono: telefono,
       });
       await send(
         buildText(
-          `No encontramos tu cédula *${v.trim()}* en nuestros registros. ` +
+          `No encontramos el número *${telefono}* en nuestros registros. ` +
           `Te registraremos para que puedas continuar. 📝\n\n` +
           `¿Cuál es tu nombre completo?`
         )
@@ -617,7 +680,7 @@ async function processStep(
     return;
   }
 
-  // ── REGISTER_EMAIL → validar email, pedir teléfono ────────────────────────
+  // ── REGISTER_EMAIL → validar email, crear cliente ────────────────────────
   if (conv.step === "REGISTER_EMAIL") {
     const email = v.trim().toLowerCase();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -627,28 +690,12 @@ async function processStep(
       );
       return;
     }
-    await save(supabase, conv, "REGISTER_TELEFONO", {
-      ...conv.data,
-      reg_email: email,
-    });
-    await send(buildText("Perfecto. ¿Cuál es tu número de teléfono?"));
-    return;
-  }
 
-  // ── REGISTER_TELEFONO → crear cliente y continuar flujo ───────────────────
-  if (conv.step === "REGISTER_TELEFONO") {
-    const telefono = v.trim();
-    if (telefono.length < 7 || telefono.length > 20) {
-      await send(buildText("Por favor ingresa un número de teléfono válido:"));
-      return;
-    }
-
-    const cedula = conv.data.reg_cedula ?? "";
-    const nombre = conv.data.reg_nombre ?? "";
-    const email  = conv.data.reg_email  ?? "";
+    const telefono = conv.data.reg_telefono ?? "";
+    const nombre   = conv.data.reg_nombre   ?? "";
 
     const newClient = await createClient(
-      supabase, idnegocios, cedula, nombre, email, telefono
+      supabase, idnegocios, telefono, nombre, email, telefono
     );
 
     if (!newClient) {
@@ -672,7 +719,7 @@ async function processStep(
 
     await notifyAdminNewClient(emailNotificaciones, {
       nombre_cliente: newClient.nombre,
-      documento_cliente: cedula,
+      documento_cliente: telefono,
       telefono_cliente: telefono,
       email_cliente: email,
       negocio: businessName,
@@ -1605,6 +1652,101 @@ async function processStep(
     }
   }
 
+  // ── VIEW_SERVICE_CAT → VCAT_{id} ──────────────────────────────────────────
+  if (conv.step === "VIEW_SERVICE_CAT" && v.startsWith("VCAT_")) {
+    const catId = parseInt(v.slice(5), 10);
+    const { data: cat } = await supabase
+      .from("categoriaservicio")
+      .select("idcategoriaservicio, descripcion")
+      .eq("idcategoriaservicio", catId)
+      .eq("idnegocios", idnegocios)
+      .single();
+
+    if (!cat) {
+      await send(buildText("Categoría no encontrada. Por favor intenta de nuevo."));
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+
+    const [botCfgResult, svcsResult] = await Promise.all([
+      supabase.from("bot_config").select("servicios_excluidos, mostrar_precios, servicios_precios_ocultos").eq("idnegocios", idnegocios).maybeSingle(),
+      supabase.from("servicios").select("idservicios, nombre, precio, duracion").eq("idnegocios", idnegocios).eq("idcategoriaservicio", catId).is("deleted_at", null).neq("idestado", 2).order("nombre"),
+    ]);
+
+    const c = cat as { idcategoriaservicio: number; descripcion: string };
+    const excluidos: number[] = (botCfgResult.data as { servicios_excluidos: number[] } | null)?.servicios_excluidos ?? [];
+    const mostrarPrecios: boolean = (botCfgResult.data as { mostrar_precios: boolean } | null)?.mostrar_precios ?? true;
+    const preciosOcultos: number[] = (botCfgResult.data as { servicios_precios_ocultos: number[] } | null)?.servicios_precios_ocultos ?? [];
+    const svcs = ((svcsResult.data ?? []) as Array<{ idservicios: number; nombre: string; precio: number; duracion: number }>)
+      .filter((s) => !excluidos.includes(s.idservicios));
+
+    if (svcs.length === 0) {
+      await send(buildText("No hay servicios disponibles en esa categoría." + contactSuffix(telefonoContacto)));
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+
+    await save(supabase, conv, "VIEW_SERVICE_SVC", { view_category_id: c.idcategoriaservicio });
+    await send(buildText(`Servicios de *${c.descripcion}*:`));
+    for (const svc of svcs) {
+      await send(buildServiceCard(svc, mostrarPrecios, preciosOcultos.includes(svc.idservicios)));
+    }
+    return;
+  }
+
+  // ── VIEW_SERVICE_SVC → VSVC_{id} ──────────────────────────────────────────
+  if (conv.step === "VIEW_SERVICE_SVC" && v.startsWith("VSVC_")) {
+    const svcId = parseInt(v.slice(5), 10);
+    const { data: svc } = await supabase
+      .from("servicios")
+      .select("idservicios, nombre, descripcion, precio, duracion")
+      .eq("idservicios", svcId)
+      .eq("idnegocios", idnegocios)
+      .single();
+
+    if (!svc) {
+      await send(buildText("Servicio no encontrado. Por favor intenta de nuevo."));
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+
+    const s = svc as { idservicios: number; nombre: string; descripcion: string | null; precio: number; duracion: number };
+    const descText = s.descripcion?.trim() || "No hay descripción disponible para este servicio.";
+    await send(buildText(`💆 *${s.nombre}*\n\n📝 ${descText}\n\n⏱ Duración: ${s.duracion} min`));
+    await save(supabase, conv, "VIEW_SVC_BOOK", {
+      servicio_id: s.idservicios,
+      servicio_nombre: s.nombre,
+      servicio_duracion: s.duracion,
+    });
+    await send(buildBookFromServicePrompt(s.idservicios, s.nombre));
+    return;
+  }
+
+  // ── VIEW_SVC_BOOK → BOOK_SVC_{id} | CONTACT_ASESOR ───────────────────────
+  if (conv.step === "VIEW_SVC_BOOK") {
+    if (v.startsWith("BOOK_SVC_")) {
+      await save(supabase, conv, "ASK_TELEFONO", {
+        ...conv.data,
+        pending_action: "AGENDAR",
+      });
+      await send(buildText("Para continuar, escribe tu número de teléfono:"));
+      return;
+    }
+    if (v === "CONTACT_ASESOR") {
+      const tel = telefonoContacto?.trim();
+      const msg = tel
+        ? `Comunicate con un asesor dando clic aqui: *${tel}*`
+        : "Contáctanos directamente.";
+      await send(buildText(msg));
+      await save(supabase, conv, "MENU", {});
+      await send(buildMenu(businessName, telefonoContacto));
+      return;
+    }
+  }
+
   // Fallback
   await save(supabase, conv, "MENU", {});
   await send(buildMenu(businessName, telefonoContacto));
@@ -1619,7 +1761,7 @@ function isKnownAction(v: string, step: Step): boolean {
     v === "MENU_SERVICIOS"
   )
     return true;
-  if (step === "ASK_CEDULA")        return true;
+  if (step === "ASK_TELEFONO")      return true;
   if (step === "REGISTER_NOMBRE")   return true;
   if (step === "REGISTER_EMAIL")    return true;
   if (step === "REGISTER_TELEFONO") return true;
@@ -1640,5 +1782,8 @@ function isKnownAction(v: string, step: Step): boolean {
   if (step === "EDIT_TIME"          && v.startsWith("TIME_"))     return true;
   if (step === "EDIT_CONFIRM"       && (v === "EDIT_CONFIRM_YES" || v === "EDIT_CONFIRM_NO")) return true;
   if (step === "ASK_PAYMENT"        && (v === "PAYMENT_YES" || v === "PAYMENT_NO"))           return true;
+  if (step === "VIEW_SERVICE_CAT"   && v.startsWith("VCAT_"))  return true;
+  if (step === "VIEW_SERVICE_SVC"   && v.startsWith("VSVC_"))  return true;
+  if (step === "VIEW_SVC_BOOK"      && (v.startsWith("BOOK_SVC_") || v === "CONTACT_ASESOR")) return true;
   return false;
 }

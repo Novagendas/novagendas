@@ -306,6 +306,10 @@
   flex-direction: column;
   gap: 1.25rem;
   background: var(--surface);
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .service-form-label {
@@ -341,7 +345,10 @@
 .service-modal-footer {
   display: flex;
   gap: 1rem;
-  margin-top: 0.75rem;
+  padding: 1.25rem 2rem;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
 }
 
 .service-cancel-btn {
