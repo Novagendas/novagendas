@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const META_APP_ID = Deno.env.get("META_APP_ID")!;
-const META_APP_SECRET = Deno.env.get("META_APP_SECRET")!;
+const META_APP_ID = Deno.env.get("META_APP_ID_2") ?? Deno.env.get("META_APP_ID")!;
+const META_APP_SECRET = Deno.env.get("META_APP_SECRET_2") ?? Deno.env.get("META_APP_SECRET")!;
 const META_API_VERSION = Deno.env.get("META_API_VERSION") ?? "v18.0";
-const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN")!;
+const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN_2") ?? Deno.env.get("META_VERIFY_TOKEN")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 

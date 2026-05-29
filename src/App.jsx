@@ -22,6 +22,7 @@ import Statistics from './features/statistics/Statistics';
 import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
 import BotConfig from './features/bot/BotConfig';
+import WhatsAppConnectPopup from './features/bot/WhatsAppConnectPopup';
 import LandingPage from './features/landing-page/index';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
@@ -326,6 +327,12 @@ export default function App() {
         .forEach(k => localStorage.removeItem(k));
 
       const params = new URLSearchParams(window.location.search);
+
+      if (params.get('wa_connect') === '1') {
+        setView('wa_connect');
+        return;
+      }
+
       const hasCode = params.has('code');
       const hasRecoveryHash = window.location.hash.includes('type=recovery');
       if (hasCode || hasRecoveryHash) {
@@ -402,6 +409,7 @@ export default function App() {
   }, []);
 
   if (view === 'loading') return <LoadingScreen />;
+  if (view === 'wa_connect') return <WhatsAppConnectPopup />;
   if (view === 'terminos') return <TermsPage />;
   if (view === 'condiciones') return <ConditionsPage />;
   if (view === 'eliminaciondatos') return <DataDeletionPage />;

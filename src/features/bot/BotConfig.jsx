@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase, insertLog } from '../../Supabase/supabaseClient';
 import './BotConfig.css';
 
-const FB_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
-const EMBEDDED_SIGNUP_CONFIG_ID = import.meta.env.VITE_EMBEDDED_SIGNUP_CONFIG_ID;
 const ONBOARDING_URL = 'https://aulddrljywoigivxugqf.supabase.co/functions/v1/whatsapp-onboarding';
+const POPUP_BASE_URL = window.location.hostname.includes('localhost')
+  ? `${window.location.origin}?wa_connect=1`
+  : 'https://novagendas.com?wa_connect=1';
 
 const DAYS = [
   { value: 1, label: 'Lunes' },
@@ -54,7 +55,6 @@ export default function BotConfig({ user, tenant }) {
   const [expandedDays, setExpandedDays] = useState(new Set());
   const [waConnected, setWaConnected] = useState(false);
   const [waConnecting, setWaConnecting] = useState(false);
-  const wabaDataRef = useRef({ waba_id: null, phone_number_id: null });
 
   const showSnack = (message, type = 'success') => {
     setSnackbar({ show: true, message, type });
@@ -66,71 +66,39 @@ export default function BotConfig({ user, tenant }) {
     setWaConnected(!!data);
   }, [tenant.id]);
 
-  const loadFbSdk = () =>
-    new Promise((resolve) => {
-      if (window.FB) { resolve(); return; }
-      window.fbAsyncInit = () => {
-        window.FB.init({ appId: FB_APP_ID, cookie: true, xfbml: false, version: 'v22.0' });
-        resolve();
-      };
-      const script = document.createElement('script');
-      script.src = 'https://connect.facebook.net/es_LA/sdk.js';
-      script.async = true;
-      document.body.appendChild(script);
-    });
+  const launchEmbeddedSignup = () => {
+    const popup = window.open(
+      POPUP_BASE_URL,
+      'wa_connect',
+      'width=600,height=700,scrollbars=yes,resizable=yes'
+    );
 
-  const launchEmbeddedSignup = async () => {
-    if (!FB_APP_ID || !EMBEDDED_SIGNUP_CONFIG_ID) {
-      showSnack('Faltan variables VITE_FACEBOOK_APP_ID o VITE_EMBEDDED_SIGNUP_CONFIG_ID', 'error');
+    if (!popup) {
+      showSnack('El navegador bloqueó la ventana emergente. Permite popups para este sitio.', 'error');
       return;
     }
+
     setWaConnecting(true);
-    wabaDataRef.current = { waba_id: null, phone_number_id: null };
 
-    const onMessage = (event) => {
-      if (event.origin !== 'https://www.facebook.com') return;
+    const onMessage = async (event) => {
+      if (!event.data || typeof event.data !== 'object') return;
+      if (event.data.type !== 'WA_CONNECT_RESULT' && event.data.type !== 'WA_CONNECT_ERROR') return;
+
+      window.removeEventListener('message', onMessage);
+      clearInterval(closedCheck);
+
+      if (event.data.type === 'WA_CONNECT_ERROR') {
+        showSnack(event.data.error || 'Error al conectar WhatsApp', 'error');
+        setWaConnecting(false);
+        return;
+      }
+
+      const { waba_id, phone_number_id, access_token } = event.data.data;
       try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'WA_EMBEDDED_SIGNUP' && msg.event === 'FINISH') {
-          wabaDataRef.current = {
-            waba_id: msg.data?.waba_id ?? null,
-            phone_number_id: msg.data?.phone_number_id ?? null,
-          };
-        }
-      } catch { /* ignorar mensajes no JSON */ }
-    };
-
-    window.addEventListener('message', onMessage);
-
-    try {
-      await loadFbSdk();
-      await new Promise((resolve, reject) => {
-        window.FB.login((response) => {
-          if (response.authResponse) resolve(response.authResponse);
-          else reject(new Error('El usuario canceló el inicio de sesión'));
-        }, {
-          scope: 'whatsapp_business_management,whatsapp_business_messaging',
-          extras: {
-            feature: 'whatsapp_embedded_signup',
-            setup: {},
-            sessionInfoVersion: 2,
-            config_id: EMBEDDED_SIGNUP_CONFIG_ID,
-          },
-        });
-      }).then(async (authResponse) => {
-        const { waba_id, phone_number_id } = wabaDataRef.current;
-        if (!waba_id || !phone_number_id) {
-          throw new Error('No se recibió WABA ID o Phone Number ID de Meta');
-        }
         const res = await fetch(ONBOARDING_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            idnegocios: tenant.id,
-            waba_id,
-            phone_number_id,
-            access_token: authResponse.accessToken,
-          }),
+          body: JSON.stringify({ idnegocios: tenant.id, waba_id, phone_number_id, access_token }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
@@ -139,13 +107,22 @@ export default function BotConfig({ user, tenant }) {
         setWaConnected(true);
         await insertLog(tenant.id, user.idusuario, 'whatsapp_integrations', 'CREATE', { waba_id, phone_number_id });
         showSnack('WhatsApp conectado correctamente');
-      });
-    } catch (err) {
-      showSnack(err.message, 'error');
-    } finally {
-      window.removeEventListener('message', onMessage);
-      setWaConnecting(false);
-    }
+      } catch (err) {
+        showSnack(err.message, 'error');
+      } finally {
+        setWaConnecting(false);
+      }
+    };
+
+    window.addEventListener('message', onMessage);
+
+    const closedCheck = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(closedCheck);
+        window.removeEventListener('message', onMessage);
+        setWaConnecting(false);
+      }
+    }, 1000);
   };
 
   const disconnectWhatsApp = async () => {

@@ -2,8 +2,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleIncomingMessage } from "./bot-engine.ts";
 
-const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN")!;
+const META_VERIFY_TOKEN = Deno.env.get("META_VERIFY_TOKEN") ?? "";
+const META_VERIFY_TOKEN_2 = Deno.env.get("META_VERIFY_TOKEN_2") ?? "";
 const META_APP_SECRET = Deno.env.get("META_APP_SECRET") ?? "";
+const META_APP_SECRET_2 = Deno.env.get("META_APP_SECRET_2") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -16,7 +18,9 @@ serve(async (req) => {
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
 
-    if (mode === "subscribe" && token === META_VERIFY_TOKEN && challenge) {
+    const validToken = (META_VERIFY_TOKEN && token === META_VERIFY_TOKEN) ||
+                       (META_VERIFY_TOKEN_2 && token === META_VERIFY_TOKEN_2);
+    if (mode === "subscribe" && validToken && challenge) {
       return new Response(challenge, { status: 200 });
     }
     return new Response("Forbidden", { status: 403 });
@@ -27,8 +31,12 @@ serve(async (req) => {
     const body = await req.text();
     const signature = req.headers.get("x-hub-signature-256");
 
-    if (META_APP_SECRET && signature && !await verifySignature(body, signature, META_APP_SECRET)) {
-      return new Response("Unauthorized", { status: 401 });
+    if (signature) {
+      const valid1 = META_APP_SECRET && await verifySignature(body, signature, META_APP_SECRET);
+      const valid2 = META_APP_SECRET_2 && await verifySignature(body, signature, META_APP_SECRET_2);
+      if (!valid1 && !valid2) {
+        return new Response("Unauthorized", { status: 401 });
+      }
     }
 
     let payload: Record<string, unknown>;
