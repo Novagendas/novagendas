@@ -43,12 +43,10 @@ export default function WhatsAppConnectPopup() {
             if (response.authResponse) resolve(response.authResponse);
             else reject(new Error('El usuario canceló el inicio de sesión'));
           }, {
-            scope: 'whatsapp_business_management,whatsapp_business_messaging',
+            config_id: EMBEDDED_SIGNUP_CONFIG_ID,
             extras: {
-              feature: 'whatsapp_embedded_signup',
               setup: {},
               sessionInfoVersion: 2,
-              config_id: EMBEDDED_SIGNUP_CONFIG_ID,
             },
           });
         });
