@@ -25,6 +25,7 @@ import BotConfig from './features/bot/BotConfig';
 import LandingPage from './features/landing-page/index';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
+import DataDeletionPage from './features/legal/DataDeletionPage';
 import { supabase, supabaseAnon, isDevEnvironment } from './Supabase/supabaseClient';
 
 function LoadingScreen() {
@@ -313,6 +314,10 @@ export default function App() {
         setView('condiciones');
         return;
       }
+      if (pathname === '/eliminaciondatos' || pathname.startsWith('/eliminaciondatos')) {
+        setView('eliminaciondatos');
+        return;
+      }
 
       // Limpiar sesiones Supabase Auth del localStorage sin hacer llamadas API
       // (supabase-js v2.64+ llama /auth/v1/user dentro de signOut → 403 con tokens expirados)
@@ -399,6 +404,7 @@ export default function App() {
   if (view === 'loading') return <LoadingScreen />;
   if (view === 'terminos') return <TermsPage />;
   if (view === 'condiciones') return <ConditionsPage />;
+  if (view === 'eliminaciondatos') return <DataDeletionPage />;
   if (view === 'landing') return <LandingPage />;
 
   if (view === 'not_found') return (
