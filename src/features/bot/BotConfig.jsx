@@ -70,7 +70,7 @@ export default function BotConfig({ user, tenant }) {
     new Promise((resolve) => {
       if (window.FB) { resolve(); return; }
       window.fbAsyncInit = () => {
-        window.FB.init({ appId: FB_APP_ID, cookie: true, xfbml: false, version: 'v18.0' });
+        window.FB.init({ appId: FB_APP_ID, cookie: true, xfbml: false, version: 'v22.0' });
         resolve();
       };
       const script = document.createElement('script');
