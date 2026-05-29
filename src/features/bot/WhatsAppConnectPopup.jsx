@@ -21,24 +21,34 @@ export default function WhatsAppConnectPopup() {
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
-    const wabaData = { waba_id: null, phone_number_id: null };
-
-    const onMetaMessage = (event) => {
-      if (event.origin !== 'https://www.facebook.com') return;
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === 'WA_EMBEDDED_SIGNUP' && msg.event === 'FINISH') {
-          wabaData.waba_id = msg.data?.waba_id ?? null;
-          wabaData.phone_number_id = msg.data?.phone_number_id ?? null;
-        }
-      } catch { /* ignorar mensajes no JSON */ }
-    };
-    window.addEventListener('message', onMetaMessage);
+    let removeListener = () => {};
 
     const run = async () => {
       try {
         await loadFbSdk();
-        const authResponse = await new Promise((resolve, reject) => {
+
+        // Promesa que resuelve cuando Meta envía el evento FINISH del Embedded Signup
+        const wabaPromise = new Promise((resolve, reject) => {
+          const timeout = setTimeout(
+            () => reject(new Error('No se recibió WABA ID o Phone Number ID de Meta')),
+            20000
+          );
+          const handler = (event) => {
+            if (event.origin !== 'https://www.facebook.com') return;
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === 'WA_EMBEDDED_SIGNUP' && msg.event === 'FINISH') {
+                clearTimeout(timeout);
+                window.removeEventListener('message', handler);
+                resolve({ waba_id: msg.data?.waba_id ?? null, phone_number_id: msg.data?.phone_number_id ?? null });
+              }
+            } catch { /* ignorar mensajes no JSON */ }
+          };
+          window.addEventListener('message', handler);
+          removeListener = () => { clearTimeout(timeout); window.removeEventListener('message', handler); };
+        });
+
+        const loginPromise = new Promise((resolve, reject) => {
           window.FB.login((response) => {
             if (response.authResponse) resolve(response.authResponse);
             else reject(new Error('El usuario canceló el inicio de sesión'));
@@ -46,14 +56,13 @@ export default function WhatsAppConnectPopup() {
             config_id: EMBEDDED_SIGNUP_CONFIG_ID,
             response_type: 'code',
             override_default_response_type: true,
-            extras: {
-              setup: {},
-              sessionInfoVersion: 2,
-            },
+            extras: { setup: {}, featureType: '', sessionInfoVersion: 3 },
           });
         });
 
-        const { waba_id, phone_number_id } = wabaData;
+        // Esperar ambos: login OAuth y el mensaje FINISH del Embedded Signup
+        const [authResponse, { waba_id, phone_number_id }] = await Promise.all([loginPromise, wabaPromise]);
+
         if (!waba_id || !phone_number_id) {
           throw new Error('No se recibió WABA ID o Phone Number ID de Meta');
         }
@@ -74,7 +83,7 @@ export default function WhatsAppConnectPopup() {
         }
         setTimeout(() => window.close(), 2500);
       } finally {
-        window.removeEventListener('message', onMetaMessage);
+        removeListener();
       }
     };
 
