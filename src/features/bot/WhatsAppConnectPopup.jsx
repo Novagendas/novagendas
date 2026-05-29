@@ -44,6 +44,8 @@ export default function WhatsAppConnectPopup() {
             else reject(new Error('El usuario canceló el inicio de sesión'));
           }, {
             config_id: EMBEDDED_SIGNUP_CONFIG_ID,
+            response_type: 'code',
+            override_default_response_type: true,
             extras: {
               setup: {},
               sessionInfoVersion: 2,
@@ -60,7 +62,7 @@ export default function WhatsAppConnectPopup() {
         if (window.opener) {
           window.opener.postMessage({
             type: 'WA_CONNECT_RESULT',
-            data: { waba_id, phone_number_id, access_token: authResponse.accessToken },
+            data: { waba_id, phone_number_id, code: authResponse.code },
           }, '*');
         }
         setTimeout(() => window.close(), 1500);

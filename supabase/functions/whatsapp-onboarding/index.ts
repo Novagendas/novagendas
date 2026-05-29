@@ -19,6 +19,22 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+async function exchangeCodeForToken(code: string): Promise<string> {
+  const url = new URL(`https://graph.facebook.com/${META_API_VERSION}/oauth/access_token`);
+  url.searchParams.set("client_id", META_APP_ID);
+  url.searchParams.set("client_secret", META_APP_SECRET);
+  url.searchParams.set("code", code);
+
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(`Code exchange failed: ${JSON.stringify(err)}`);
+  }
+
+  const { access_token } = await res.json();
+  return access_token as string;
+}
+
 async function exchangeForLongLivedToken(shortToken: string): Promise<string> {
   const url = new URL(`https://graph.facebook.com/${META_API_VERSION}/oauth/access_token`);
   url.searchParams.set("grant_type", "fb_exchange_token");
@@ -54,17 +70,24 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  let body: { idnegocios: number; waba_id: string; phone_number_id: string; access_token: string };
+  let body: { idnegocios: number; waba_id: string; phone_number_id: string; code: string };
   try {
     body = await req.json();
   } catch {
     return json({ error: "Invalid JSON" }, 400);
   }
 
-  const { idnegocios, waba_id, phone_number_id, access_token: shortToken } = body;
+  const { idnegocios, waba_id, phone_number_id, code } = body;
 
-  if (!idnegocios || !waba_id || !phone_number_id || !shortToken) {
-    return json({ error: "Faltan parámetros: idnegocios, waba_id, phone_number_id, access_token" }, 400);
+  if (!idnegocios || !waba_id || !phone_number_id || !code) {
+    return json({ error: "Faltan parámetros: idnegocios, waba_id, phone_number_id, code" }, 400);
+  }
+
+  let shortToken: string;
+  try {
+    shortToken = await exchangeCodeForToken(code);
+  } catch (err) {
+    return json({ error: (err as Error).message }, 502);
   }
 
   let longLivedToken: string;

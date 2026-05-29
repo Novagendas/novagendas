@@ -93,12 +93,12 @@ export default function BotConfig({ user, tenant }) {
         return;
       }
 
-      const { waba_id, phone_number_id, access_token } = event.data.data;
+      const { waba_id, phone_number_id, code } = event.data.data;
       try {
         const res = await fetch(ONBOARDING_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ idnegocios: tenant.id, waba_id, phone_number_id, access_token }),
+          body: JSON.stringify({ idnegocios: tenant.id, waba_id, phone_number_id, code }),
         });
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
