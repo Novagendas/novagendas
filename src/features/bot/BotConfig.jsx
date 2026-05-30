@@ -67,6 +67,10 @@ export default function BotConfig({ user, tenant }) {
   }, [tenant.id]);
 
   const launchEmbeddedSignup = () => {
+    if (localStorage.getItem('novagendas_demo_mode') === 'true') {
+      alert("En el modo de Agenda Demo no se permite la vinculación con cuentas de WhatsApp reales.");
+      return;
+    }
     const popup = window.open(
       POPUP_BASE_URL,
       'wa_connect',
@@ -126,6 +130,11 @@ export default function BotConfig({ user, tenant }) {
   };
 
   const disconnectWhatsApp = async () => {
+    if (localStorage.getItem('novagendas_demo_mode') === 'true') {
+      setWaConnected(false);
+      showSnack('WhatsApp desconectado');
+      return;
+    }
     const { error } = await supabase.rpc('disconnect_whatsapp_integration', { p_idnegocios: tenant.id });
     if (error) { showSnack('Error al desconectar WhatsApp', 'error'); return; }
     setWaConnected(false);

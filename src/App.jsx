@@ -23,7 +23,7 @@ import SuperAdminPortal from './features/superadmin/SuperAdminPortal';
 import HolidayCalendar from './features/agenda/HolidayCalendar';
 import BotConfig from './features/bot/BotConfig';
 import WhatsAppConnectPopup from './features/bot/WhatsAppConnectPopup';
-import LandingPage from './features/landing-page/index';
+import LandingPage from './features/landing/index';
 import TermsPage from './features/legal/TermsPage';
 import ConditionsPage from './features/legal/ConditionsPage';
 import DataDeletionPage from './features/legal/DataDeletionPage';
@@ -225,7 +225,8 @@ function TenantApp({ tenant, initialView = 'login' }) {
     if (user.role === 'recepcion' && (currentRoute === 'payments' || currentRoute === 'users' || currentRoute === 'estadisticas')) {
       return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
-    if (currentRoute === 'estadisticas' && user.role !== 'admin') {
+    const isDemo = localStorage.getItem('novagendas_demo_mode') === 'true';
+    if (currentRoute === 'estadisticas' && (user.role !== 'admin' || isDemo)) {
       return <Dashboard user={user} tenant={tenant} onNavigate={setCurrentRoute} onSetupPendingChange={setHasPendingSetupSteps} hasBotEnabled={hasBotEnabled} />;
     }
 
@@ -275,7 +276,7 @@ function TenantApp({ tenant, initialView = 'login' }) {
 
   return (
     <GlobalProvider tenantId={tenant.id}>
-      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} hasPendingSetupSteps={hasPendingSetupSteps} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); }} isTourActive={showTour}>
+      <Layout user={user} tenant={tenant} currentRoute={currentRoute} onNavigate={setCurrentRoute} hasBotEnabled={hasBotEnabled} hasPendingSetupSteps={hasPendingSetupSteps} onLogout={() => { setUser(null); localStorage.removeItem('novagendas_user'); localStorage.removeItem('novagendas_demo_mode'); if (tenant?.id === 'demo') { window.location.reload(); } }} isTourActive={showTour}>
         {renderRoute()}
       </Layout>
 
@@ -305,6 +306,17 @@ export default function App() {
 
   useEffect(() => {
     const init = async () => {
+      if (localStorage.getItem('novagendas_demo_mode') === 'true') {
+        setTenant({
+          id: 'demo',
+          name: 'Novagendas Demo',
+          subdomain: 'demo',
+          active: true,
+          bot_activo: false
+        });
+        setView('tenant');
+        return;
+      }
       // Detectar rutas legales (/terminos y /condiciones) — aplican en cualquier host
       const pathname = window.location.pathname;
       if (pathname === '/terminos' || pathname.startsWith('/terminos')) {
@@ -413,7 +425,38 @@ export default function App() {
   if (view === 'terminos') return <TermsPage />;
   if (view === 'condiciones') return <ConditionsPage />;
   if (view === 'eliminaciondatos') return <DataDeletionPage />;
-  if (view === 'landing') return <LandingPage />;
+  if (view === 'landing') return (
+    <LandingPage 
+      onLaunchDemo={() => {
+        localStorage.setItem('novagendas_demo_mode', 'true');
+        const demoUser = {
+          id: 'demo-user',
+          idusuario: 'demo-user',
+          nombre: 'Daniel',
+          apellido: 'González',
+          email: 'demo@novagendas.com',
+          role: 'admin',
+          tour: true,
+          tenant_id: 'demo'
+        };
+        localStorage.setItem('novagendas_user', JSON.stringify({
+          user: demoUser,
+          exp: new Date().getTime() + 24 * 60 * 60 * 1000
+        }));
+        
+        // All mock DB tables are now initialized and handled purely in-memory (resetting on reload) in supabaseClient.js
+        
+        setTenant({
+          id: 'demo',
+          name: 'Novagendas Demo',
+          subdomain: 'demo',
+          active: true,
+          bot_activo: false
+        });
+        setView('tenant');
+      }} 
+    />
+  );
 
   if (view === 'not_found') return (
     <div className="not-found-screen animate-fade-in">

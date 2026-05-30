@@ -158,17 +158,34 @@ export default function Sidebar({ user, tenant, currentRoute, onNavigate, hasBot
 
           {uRole === 'admin' && (
             <>
-              <SectionLabel label="Análisis" />
-              {ADMIN_STATS_NAV.map(item => (
-                <NavBtn
-                  key={item.id}
-                  item={item}
-                  active={currentRoute === item.id}
-                  onNavigate={onNavigate}
-                />
-              ))}
-              <SectionLabel label="Administración" />
-              {ADMIN_NAV.filter(item => item.id !== 'bot' || hasBotEnabled).map(item => (
+              {localStorage.getItem('novagendas_demo_mode') !== 'true' && (
+                <>
+                  <SectionLabel label="Análisis" />
+                  {ADMIN_STATS_NAV.map(item => (
+                    <NavBtn
+                      key={item.id}
+                      item={item}
+                      active={currentRoute === item.id}
+                      onNavigate={onNavigate}
+                    />
+                  ))}
+                </>
+              )}
+              {!(localStorage.getItem('novagendas_demo_mode') === 'true' && 
+                 ADMIN_NAV.filter(item => {
+                   if (item.id === 'users' || item.id === 'logs') return false;
+                   if (item.id === 'bot' && !hasBotEnabled) return false;
+                   return true;
+                 }).length === 0) && (
+                <SectionLabel label="Administración" />
+              )}
+              {ADMIN_NAV.filter(item => {
+                if (localStorage.getItem('novagendas_demo_mode') === 'true') {
+                  if (item.id === 'users' || item.id === 'logs') return false;
+                }
+                if (item.id === 'bot' && !hasBotEnabled) return false;
+                return true;
+              }).map(item => (
                 <NavBtn
                   key={item.id}
                   item={item}

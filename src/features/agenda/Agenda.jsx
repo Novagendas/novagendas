@@ -1010,7 +1010,9 @@ export default function Agenda({ user, tenant }) {
     const height = Math.max((appt.duration / 60) * SLOT_H, 28);
 
     // Exact Service Color (from first service)
-    const service = appt.services?.[0] || services.find(s => s.idservicios === appt.serviceIds?.[0]);
+    // Use String() comparison to avoid type mismatch between numeric DB IDs and string mock IDs
+    const firstSvcId = appt.serviceIds?.[0];
+    const service = appt.services?.[0] || services.find(s => String(s.idservicios) === String(firstSvcId));
     const baseColor = service?.color || 'var(--primary)';
     const borderColor = statusColor[appt.status] || 'rgba(255,255,255,0.4)';
 

@@ -3,16 +3,24 @@ import { supabase } from '../Supabase/supabaseClient';
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '')}/functions/v1`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+const isDemo = () => localStorage.getItem('novagendas_demo_mode') === 'true';
+
 export const connectCalendar = (idnegocios) => {
+  if (isDemo()) {
+    alert("En el modo de Agenda Demo no se permite la vinculación con cuentas reales.");
+    return;
+  }
   window.location.href = `${FUNCTIONS_URL}/google-calendar-login?idnegocios=${idnegocios}`;
 };
 
 export const isCalendarConnected = async (idnegocios) => {
+  if (isDemo()) return false;
   const { data, error } = await supabase.rpc('has_google_integration', { p_idnegocios: idnegocios });
   return !error && data === true;
 };
 
 export const clearCalendarAuth = async (idnegocios) => {
+  if (isDemo()) return;
   await supabase.rpc('disconnect_google_integration', { p_idnegocios: idnegocios });
 };
 
